@@ -24,18 +24,18 @@ class FourierPupil(Pupil):
         self.pupil_radius = params.pupil_radius
 
         if pupil_function is None:
-            self.pupil_function = self.create_pupil(self.n_pix, self.pupil_radius)
+            self.create_pupil(self.n_pix, self.pupil_radius)
 
     def create_pupil(self, n_pix, pupil_radius):
         x = torch.linspace(-1, 1, n_pix)
         y = torch.linspace(-1, 1, n_pix)
         xx, yy = torch.meshgrid(x, y)
-        self.pupil_function = torch.sqrt(xx ** 2 + yy ** 2) < pupil_radius
+        self.pupil_function = (torch.sqrt(xx ** 2 + yy ** 2) < pupil_radius).type(torch.complex64)
 
     def return_pupil(self):
         return self.pupil_function
 
     def display_pupil(self):
         plt.figure()
-        plt.imshow(self.pupil_function)
+        plt.imshow(torch.real(self.pupil_function))
         plt.show()

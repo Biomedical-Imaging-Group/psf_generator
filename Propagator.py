@@ -13,13 +13,14 @@ class Propagator(ABC):
         pass
 
     @abstractmethod
-    def display_field(self):
+    def display_psf(self):
         pass
 
 class FourierPropagator(Propagator):
     def __init__(self, pupil, params):
         super().__init__(pupil, params)
 
+        self.pupil = pupil
         self.n_pix = params.n_pix
         self.field = None
 
@@ -33,7 +34,7 @@ class FourierPropagator(Propagator):
         field = torch.fft.fft2(pupil)
         self.field = torch.fft.fftshift(field)
 
-    def display_field(self):
+    def display_psf(self):
         if self.field is None:
             self.compute_focus_field()
         intensity = torch.abs(self.field)**2
