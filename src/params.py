@@ -65,3 +65,7 @@ class Params:
 
     def get_num(self, key):
         return self._num_params[key]
+
+    @property
+    def device(self):
+        return self._device
