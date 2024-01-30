@@ -31,7 +31,9 @@ class ScalarInput(FieldInput):
         x = torch.linspace(-1, 1, n_pix)
         y = torch.linspace(-1, 1, n_pix)
         xx, yy = torch.meshgrid(x, y)
-        self.pupil_function = (torch.sqrt(xx ** 2 + yy ** 2) < pupil_radius).type(torch.complex64)
+        disk_mask = torch.sqrt(xx ** 2 + yy ** 2) < pupil_radius
+        flat_field = torch.zeros(n_pix, n_pix, dtype=torch.complex64)
+        self.pupil_function = torch.exp(1j * flat_field) * disk_mask
 
     def return_input(self):
         return self.pupil_function
