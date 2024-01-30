@@ -2,10 +2,11 @@ import torch
 from abc import ABC, abstractmethod
 import matplotlib.pyplot as plt
 from Pupil import ScalarInput
+from Params import Params
 
 
 class Propagator(ABC):
-    def __init__(self, pupil, params):
+    def __init__(self, pupil, params: Params):
         self.pupil = pupil
         self.params = params
 
@@ -23,7 +24,7 @@ class FourierPropagator(Propagator):
         super().__init__(pupil, params)
 
         self.pupil = pupil
-        self.n_pix = params.n_pix
+        self.n_pix = params.get_num('n_pix_pupil')
         self.field = None
 
         if pupil is None:

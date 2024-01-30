@@ -2,6 +2,8 @@ import torch
 from abc import ABC, abstractmethod
 import matplotlib.pyplot as plt
 
+from Params import Params
+
 
 class FieldInput(ABC):
     def __init__(self, pupil_function, params):
@@ -18,14 +20,14 @@ class FieldInput(ABC):
 
 
 class ScalarInput(FieldInput):
-    def __init__(self, pupil_function, params):
+    def __init__(self, pupil_function, params: Params):
         super().__init__(pupil_function, params)
 
-        self.n_pix = params.n_pix
-        self.pupil_radius = params.pupil_radius
+        self._n_pix = params.get_num('n_pix_pupil')
+        self._pupil_radius = params.get_num('pupil_radius')
 
         if pupil_function is None:
-            self.create_pupil(self.n_pix, self.pupil_radius)
+            self.create_pupil(self._n_pix, self._pupil_radius)
 
     def create_pupil(self, n_pix, pupil_radius):
         x = torch.linspace(-1, 1, n_pix)
