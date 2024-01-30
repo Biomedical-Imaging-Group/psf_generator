@@ -39,7 +39,7 @@ class FourierPropagator(Propagator):
     def display_psf(self):
         if self.field is None:
             self.compute_focus_field()
-        intensity = torch.abs(self.field)**2
+        intensity = torch.abs(self.field) ** 2
         intensity = intensity / torch.max(intensity)
         plt.figure()
         plt.imshow(intensity)
