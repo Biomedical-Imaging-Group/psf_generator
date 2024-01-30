@@ -1,7 +1,7 @@
 import torch
 from abc import ABC, abstractmethod
 import matplotlib.pyplot as plt
-from Input import ScalarInput
+from Pupil import ScalarInput
 
 class Propagator(ABC):
     def __init__(self, input, params):
