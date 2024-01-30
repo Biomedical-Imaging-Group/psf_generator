@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 import matplotlib.pyplot as plt
 from Pupil import ScalarInput
 
+
 class Propagator(ABC):
     def __init__(self, input, params):
         self.input = input
@@ -15,6 +16,7 @@ class Propagator(ABC):
     @abstractmethod
     def display_psf(self):
         pass
+
 
 class FourierPropagator(Propagator):
     def __init__(self, input, params):

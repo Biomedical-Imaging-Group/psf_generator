@@ -2,6 +2,7 @@ import torch
 from abc import ABC, abstractmethod
 import matplotlib.pyplot as plt
 
+
 class FieldInput(ABC):
     def __init__(self, pupil_function, params):
         self.pupil_function = pupil_function
