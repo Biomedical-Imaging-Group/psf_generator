@@ -3,10 +3,11 @@ from abc import ABC, abstractmethod
 import matplotlib.pyplot as plt
 
 from params import Params
+from utils.meshgrid import meshgrid_pupil
 
 
 class FieldInput(ABC):
-    def __init__(self, pupil_function, params):
+    def __init__(self, pupil_function, params: Params):
         self.pupil_function = pupil_function
         self.params = params
 
@@ -23,18 +24,22 @@ class ScalarInput(FieldInput):
     def __init__(self, pupil_function, params: Params):
         super().__init__(pupil_function, params)
 
-        self._n_pix = params.get_num('n_pix_pupil')
-        self._pupil_radius = params.get_num('pupil_radius')
+        self.params = params
 
         if pupil_function is None:
-            self.create_pupil(self._n_pix, self._pupil_radius)
+            self.create_pupil(self.params)
 
-    def create_pupil(self, n_pix, pupil_radius):
-        x = torch.linspace(-1, 1, n_pix)
-        y = torch.linspace(-1, 1, n_pix)
-        xx, yy = torch.meshgrid(x, y)
-        disk_mask = torch.sqrt(xx ** 2 + yy ** 2) < pupil_radius
-        flat_field = torch.zeros(n_pix, n_pix, dtype=torch.complex64)
+    def create_pupil(self, params: Params):
+        """create a flat field on a disk as default pupil function
+        """
+        size = params.get_num('n_pix_pupil')
+
+        kx, ky = meshgrid_pupil(params)
+        kxy2 = kx ** 2 + ky ** 2
+        disk_mask = kxy2 < params.get_phy('cut_off_freq') ** 2
+
+        flat_field = torch.zeros(size, size, dtype=torch.complex64)
+
         self.pupil_function = torch.exp(1j * flat_field) * disk_mask
 
     def return_input(self):
