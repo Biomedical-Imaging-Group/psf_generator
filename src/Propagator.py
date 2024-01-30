@@ -5,8 +5,8 @@ from Pupil import ScalarInput
 
 
 class Propagator(ABC):
-    def __init__(self, input, params):
-        self.input = input
+    def __init__(self, pupil, params):
+        self.pupil = pupil
         self.params = params
 
     @abstractmethod
@@ -19,21 +19,21 @@ class Propagator(ABC):
 
 
 class FourierPropagator(Propagator):
-    def __init__(self, input, params):
-        super().__init__(input, params)
+    def __init__(self, pupil, params):
+        super().__init__(pupil, params)
 
-        self.input = input
+        self.pupil = pupil
         self.n_pix = params.n_pix
         self.field = None
 
-        if input is None:
-            self.input = ScalarInput(None, params)
+        if pupil is None:
+            self.pupil = ScalarInput(None, params)
 
     def compute_focus_field(self):
-        input = self.input.return_input()
-        input = input.type(torch.complex64)
-        input = torch.fft.fftshift(input)
-        field = torch.fft.fft2(input)
+        pupil = self.pupil.return_input()
+        pupil = pupil.type(torch.complex64)
+        pupil = torch.fft.fftshift(pupil)
+        field = torch.fft.fft2(pupil)
         self.field = torch.fft.fftshift(field)
 
     def display_psf(self):

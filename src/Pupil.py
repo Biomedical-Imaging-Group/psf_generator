@@ -25,9 +25,9 @@ class ScalarInput(FieldInput):
         self.pupil_radius = params.pupil_radius
 
         if pupil_function is None:
-            self.create_input(self.n_pix, self.pupil_radius)
+            self.create_pupil(self.n_pix, self.pupil_radius)
 
-    def create_input(self, n_pix, pupil_radius):
+    def create_pupil(self, n_pix, pupil_radius):
         x = torch.linspace(-1, 1, n_pix)
         y = torch.linspace(-1, 1, n_pix)
         xx, yy = torch.meshgrid(x, y)
