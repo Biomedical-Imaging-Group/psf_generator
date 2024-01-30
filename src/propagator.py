@@ -1,8 +1,8 @@
 import torch
 from abc import ABC, abstractmethod
 import matplotlib.pyplot as plt
-from Pupil import ScalarInput
-from Params import Params
+from pupil import ScalarInput
+from params import Params
 
 
 class Propagator(ABC):

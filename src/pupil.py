@@ -2,7 +2,7 @@ import torch
 from abc import ABC, abstractmethod
 import matplotlib.pyplot as plt
 
-from Params import Params
+from params import Params
 
 
 class FieldInput(ABC):
