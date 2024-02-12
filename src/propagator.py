@@ -21,7 +21,7 @@ class Propagator(ABC):
 
 
 class FourierPropagator(Propagator):
-    """Simple Fourier propagation model (scaler)
+    """Simple Fourier propagation model (scalar)
         psf = |F^{-1} (pupil)|^2
     """
     def __init__(self, pupil, params):
@@ -35,9 +35,9 @@ class FourierPropagator(Propagator):
             self.pupil = ScalarInput(None, params)
 
     def compute_focus_field(self):
-        """compute the scaler field at focus from the scaler pupil function
+        """compute the scalar field at focus from the scalar pupil function
         """
-        pupil = self.pupil.return_input()
+        pupil = self.pupil.return_pupil()
         self.field = torch.abs(zoom_ifft2(pupil, self.params)) ** 2
 
     def display_psf(self):
