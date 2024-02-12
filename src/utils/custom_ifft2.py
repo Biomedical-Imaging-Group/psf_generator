@@ -4,7 +4,7 @@ from params import Params
 from utils.czt import Czt1d
 
 
-def zoom_ifft2(pupil: torch.Tensor, params: Params):
+def custom_ifft2(pupil: torch.Tensor, params: Params):
     """ifft2 but with zooming
     This function generalizes torch.ifft2 in the sense that it allows
     1. the size of the input and output images are different
