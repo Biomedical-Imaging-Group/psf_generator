@@ -1,26 +1,10 @@
 import torch
-from abc import ABC, abstractmethod
 import matplotlib.pyplot as plt
 
 from params import Params
 from utils.meshgrid import meshgrid_pupil
 
-
-class FieldPupil(ABC):
-    def __init__(self, pupil_function, params: Params):
-        self.pupil_function = pupil_function
-        self.params = params
-
-    @abstractmethod
-    def return_pupil(self):
-        pass
-
-    @abstractmethod
-    def display_pupil(self):
-        pass
-
-
-class ScalarPupil(FieldPupil):
+class ScalarPupil():
     def __init__(self, params: Params):
         super().__init__(params)
 
@@ -43,8 +27,3 @@ class ScalarPupil(FieldPupil):
 
     def return_pupil(self):
         return self.pupil_function
-
-    def display_pupil(self):
-        plt.figure()
-        plt.imshow(torch.real(self.pupil_function))
-        plt.show()
