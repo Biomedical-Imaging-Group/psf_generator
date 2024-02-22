@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from pupil import ScalarPupil
 from params import Params
 from utils.custom_ifft2 import zoom_ifft2
+from utils.integrate import integrate_summation_rule
 from scipy.special import jv
 
 class Propagator(ABC):
@@ -14,11 +15,6 @@ class Propagator(ABC):
     @abstractmethod
     def compute_focus_field(self):
         pass
-
-    @abstractmethod
-    def display_psf(self):
-        pass
-
 
 class FourierPropagator(Propagator):
     """Simple Fourier propagation model (scaler)
@@ -39,15 +35,6 @@ class FourierPropagator(Propagator):
         """
         pupil = self.pupil.return_pupil()
         self.field = torch.abs(zoom_ifft2(pupil, self.params)) ** 2
-
-    def display_psf(self):
-        if self.field is None:
-            self.compute_focus_field()
-        intensity = torch.abs(self.field) ** 2
-        intensity = intensity / torch.max(intensity)
-        plt.figure()
-        plt.imshow(intensity)
-        plt.show()
 
 
 class SimpleVectorial(Propagator):
@@ -74,15 +61,6 @@ class SimpleVectorial(Propagator):
         self.field = integrate_summation_rule(lambda theta: self.integrand(theta, xx, yy, zz), 0, theta_max, size)
         return self.field
 
-    def display_psf(self):
-        if self.field is None:
-            self.compute_focus_field()
-        intensity = torch.abs(self.field) ** 2
-        intensity = intensity / torch.max(intensity)
-        plt.figure()
-        plt.imshow(intensity)
-        plt.show()
-
     def integrand(self, theta, xx, yy, zz):
         sin_t = torch.sin(theta)
         cos_t = torch.cos(theta)
@@ -95,23 +73,3 @@ class SimpleVectorial(Propagator):
         i *= torch.sqrt(cos_t) * sin_t * (1 + cos_t)
         return torch.multiply(i, j0)
 
-
-def integrate_summation_rule(f, a, b, num_points):
-    # Calculate the width of each interval
-    dx = (b - a) / num_points
-
-    # Initialize integral value
-    integral = 0
-
-    # Iterate over all sample points within the interval [a, b]
-    for i in range(num_points):
-        # Calculate the x-value for the current sample point
-        x = a + i * dx
-
-        # Evaluate the function at the current sample point
-        y = f(x)
-
-        # Add the area of the rectangle formed by the function value and the width of the interval
-        integral += y * dx
-
-    return integral
