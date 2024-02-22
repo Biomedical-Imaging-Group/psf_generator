@@ -1,9 +1,9 @@
 import torch
 from abc import ABC, abstractmethod
 import matplotlib.pyplot as plt
-from pupil import ScalarInput
+from pupil import ScalarPupil
 from params import Params
-from utils.zoom_ifft2 import zoom_ifft2
+from utils.custom_ifft2 import zoom_ifft2
 from scipy.special import jv
 
 class Propagator(ABC):
@@ -32,12 +32,12 @@ class FourierPropagator(Propagator):
         self.field = None
 
         if pupil is None:
-            self.pupil = ScalarInput(None, params)
+            self.pupil = ScalarPupil(None, params)
 
     def compute_focus_field(self):
         """compute the scaler field at focus from the scaler pupil function
         """
-        pupil = self.pupil.return_input()
+        pupil = self.pupil.return_pupil()
         self.field = torch.abs(zoom_ifft2(pupil, self.params)) ** 2
 
     def display_psf(self):

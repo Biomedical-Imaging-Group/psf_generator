@@ -41,7 +41,7 @@ def variable_check(N, M, w, a):
 
 def number_fft_points(n, m):
     """calculate the optimal number for the ffts in the Z-transform
-    The ffts in the CZT requires (n + m -1) points. For fastest performance of ffts, we need to find the closest number
+    The ffts in the CZT requires (n + m - 1) points. For fastest performance of ffts, we need to find the closest number
     in the shape of 2-power to n + m - 1.
 
     Parameters
