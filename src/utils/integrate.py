@@ -1,5 +1,22 @@
-
 def integrate_summation_rule(f, a, b, num_points):
+    """Compute the integral of a function using the summation rule.
+
+    Parameters
+    ----------
+    f : function
+        The function to integrate.
+    a : float
+        The lower bound of the interval.
+    b : float
+        The upper bound of the interval.
+    num_points : int
+        The number of sample points to use.
+    Returns
+    -------
+    float
+        The value of the integral of the function over the interval [a, b].
+    """
+
     # Calculate the width of each interval
     dx = (b - a) / num_points
 

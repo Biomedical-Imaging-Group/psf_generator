@@ -1,13 +1,10 @@
 import torch
-import matplotlib.pyplot as plt
 
 from params import Params
 from utils.meshgrid import meshgrid_pupil
 
 class ScalarPupil():
     def __init__(self, params: Params):
-        super().__init__(params)
-
         self.params = params
         self.create_pupil(self.params)
 

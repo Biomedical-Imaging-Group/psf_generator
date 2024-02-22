@@ -1,9 +1,8 @@
 import torch
 from abc import ABC, abstractmethod
-import matplotlib.pyplot as plt
 from pupil import ScalarPupil
 from params import Params
-from utils.custom_ifft2 import zoom_ifft2
+from utils.custom_ifft2 import custom_ifft2
 from utils.integrate import integrate_summation_rule
 from scipy.special import jv
 
@@ -28,13 +27,13 @@ class FourierPropagator(Propagator):
         self.field = None
 
         if pupil is None:
-            self.pupil = ScalarPupil(None, params)
+            self.pupil = ScalarPupil(params)
 
     def compute_focus_field(self):
         """compute the scaler field at focus from the scaler pupil function
         """
         pupil = self.pupil.return_pupil()
-        self.field = torch.abs(zoom_ifft2(pupil, self.params)) ** 2
+        self.field = torch.abs(custom_ifft2(pupil, self.params)) ** 2
 
 
 class SimpleVectorial(Propagator):
