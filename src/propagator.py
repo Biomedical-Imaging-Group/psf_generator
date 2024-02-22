@@ -1,10 +1,10 @@
 import torch
 from abc import ABC, abstractmethod
 import matplotlib.pyplot as plt
-from pupil import ScalarPupil
+from pupil import ScalarInput
 from params import Params
-from utils.custom_ifft2 import custom_ifft2
-
+from utils.zoom_ifft2 import zoom_ifft2
+from scipy.special import jv
 
 class Propagator(ABC):
     def __init__(self, pupil, params: Params):
@@ -21,7 +21,7 @@ class Propagator(ABC):
 
 
 class FourierPropagator(Propagator):
-    """Simple Fourier propagation model (scalar)
+    """Simple Fourier propagation model (scaler)
         psf = |F^{-1} (pupil)|^2
     """
     def __init__(self, pupil, params):
@@ -32,13 +32,13 @@ class FourierPropagator(Propagator):
         self.field = None
 
         if pupil is None:
-            self.pupil = ScalarPupil(None, params)
+            self.pupil = ScalarInput(None, params)
 
     def compute_focus_field(self):
-        """compute the scalar field at focus from the scalar pupil function
+        """compute the scaler field at focus from the scaler pupil function
         """
-        pupil = self.pupil.return_pupil()
-        self.field = torch.abs(custom_ifft2(pupil, self.params)) ** 2
+        pupil = self.pupil.return_input()
+        self.field = torch.abs(zoom_ifft2(pupil, self.params)) ** 2
 
     def display_psf(self):
         if self.field is None:
@@ -48,3 +48,70 @@ class FourierPropagator(Propagator):
         plt.figure()
         plt.imshow(intensity)
         plt.show()
+
+
+class SimpleVectorial(Propagator):
+    """Richards-Wolf model (vectorial) for x-polarized plane wave incident on
+    the lens. Here I keep only the first term of the x-component of the electric field.
+    """
+    def __init__(self, pupil, params):
+        super().__init__(pupil, params)
+
+        self.pupil = pupil
+        self.params = params
+        self.field = None
+
+    def compute_focus_field(self):
+        """Compute the vectorial field at focus.
+        Here, it doesn't take as input the pupil function.
+        """
+        size = self.params.get_num('n_pix_pupil')
+        x = torch.linspace(-2 * self.params.get_phy('wavelength'), 2 * self.params.get_phy('wavelength'), size)
+        y = torch.linspace(-2 * self.params.get_phy('wavelength'), 2 * self.params.get_phy('wavelength'), size)
+        xx, yy = torch.meshgrid(x, y)
+        zz = torch.zeros(1)
+        theta_max = torch.asin(self.params.get_phy('NA') * torch.ones(1) / self.params.get_phy('n_t'))
+        self.field = integrate_summation_rule(lambda theta: self.integrand(theta, xx, yy, zz), 0, theta_max, size)
+        return self.field
+
+    def display_psf(self):
+        if self.field is None:
+            self.compute_focus_field()
+        intensity = torch.abs(self.field) ** 2
+        intensity = intensity / torch.max(intensity)
+        plt.figure()
+        plt.imshow(intensity)
+        plt.show()
+
+    def integrand(self, theta, xx, yy, zz):
+        sin_t = torch.sin(theta)
+        cos_t = torch.cos(theta)
+        k = 2 * torch.pi * self.params.get_phy('n_t') / self.params.get_phy('wavelength')
+        r = k * torch.sqrt(xx**2 + yy**2) * sin_t
+        j0 = jv(0, r)
+
+        # make sure i is complex
+        i = torch.exp(1j * k * zz * cos_t)
+        i *= torch.sqrt(cos_t) * sin_t * (1 + cos_t)
+        return torch.multiply(i, j0)
+
+
+def integrate_summation_rule(f, a, b, num_points):
+    # Calculate the width of each interval
+    dx = (b - a) / num_points
+
+    # Initialize integral value
+    integral = 0
+
+    # Iterate over all sample points within the interval [a, b]
+    for i in range(num_points):
+        # Calculate the x-value for the current sample point
+        x = a + i * dx
+
+        # Evaluate the function at the current sample point
+        y = f(x)
+
+        # Add the area of the rectangle formed by the function value and the width of the interval
+        integral += y * dx
+
+    return integral
