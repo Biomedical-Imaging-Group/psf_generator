@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from pupil import ScalarPupil
 from params import Params
 from utils.custom_ifft2 import custom_ifft2
-from utils.integrate import integrate_summation_rule
+from utils.integrate import integrate_summation_rule, integrate_double_summation_rule
 from scipy.special import jv
 
 class Propagator(ABC):
@@ -37,6 +37,7 @@ class FourierPropagator(Propagator):
 
 
 class SimpleVectorial(Propagator):
+    # other name: AccurateVectorial (Simple-with a standard pupil function)
     """Richards-Wolf model (vectorial) for x-polarized plane wave incident on
     the lens. Here I keep only the first term of the x-component of the electric field.
     """
@@ -72,3 +73,31 @@ class SimpleVectorial(Propagator):
         i *= torch.sqrt(cos_t) * sin_t * (1 + cos_t)
         return torch.multiply(i, j0)
 
+class ComplexVectorial(Propagator):
+    # other name: AccurateVectorial (Complex-with a given pupil function)
+    """Richards-Wolf model (vectorial) for x-polarized plane wave incident on
+    the lens. Here I keep only the first term of the x-component of the electric field.
+    """
+    def __init__(self, pupil, params):
+        super().__init__(pupil, params)
+
+        self.pupil = pupil
+        self.params = params
+        self.field = None
+
+    def compute_focus_field(self):
+        """Compute the vectorial field at focus.
+        Here, it doesn't take as input the pupil function.
+        """
+        size = self.params.get_num('n_pix_pupil')
+        x = torch.linspace(-2 * self.params.get_phy('wavelength'), 2 * self.params.get_phy('wavelength'), size)
+        y = torch.linspace(-2 * self.params.get_phy('wavelength'), 2 * self.params.get_phy('wavelength'), size)
+        xx, yy = torch.meshgrid(x, y)
+        zz = torch.zeros(1)
+        theta_max = torch.asin(torch.tensor(self.params.get_phy('NA')/self.params.get_phy('n_t')))
+        self.field = integrate_double_summation_rule(lambda theta, phi: self.integrand2(theta, phi, xx, yy, zz), 0, theta_max, 0, 2 * torch.pi, size)
+
+        return self.field
+
+    def integrand2(self, theta, phi, xx, yy, zz):
+        pass
