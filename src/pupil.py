@@ -37,22 +37,20 @@ class VectorialPupil():
         """
         size = params.get_num('n_pix_pupil')
 
-        theta_max = torch.arcsin(params.get_phy('NA')*torch.ones(1)/params.get_phy('n_t'))
-        theta_0 = torch.linspace(0, int(theta_max), size)
-        phi_0 = torch.linspace(0, 2 * torch.pi, size)
-        theta, phi = torch.meshgrid(theta_0, phi_0)
+        theta_max = torch.asin(torch.tensor(params.get_phy('NA')/params.get_phy('n_t')))
+        theta, phi = torch.meshgrid(torch.linspace(0, int(theta_max), size), torch.linspace(0, 2 * torch.pi, size))
         f0 = params.get_num('filling_factor')
-        E0 = 1 # to be added in params
+        e0 = 1  # to be added in params
 
         fw = torch.exp(- torch.sin(theta)**2 / (f0**2 * torch.sin(theta_max)**2))
-        e_inc = E0 * fw
+        e_inc = e0 * fw
 
-        e_x = e_inc/2 * ((1 + torch.cos(theta)) - (1 - torch.cos(theta)) * torch.cos(2 * phi)) * torch.sqrt(params.get_phy('n_t')*torch.ones(1)) * torch.sqrt(torch.cos(theta))
-        e_y = e_inc/2 * (- (1 - torch.cos(theta)) * torch.sin(2 * phi)) * torch.sqrt(params.get_phy('n_t')*torch.ones(1)) * torch.sqrt(torch.cos(theta))
-        e_z = - e_inc * torch.sin(theta) * torch.cos(phi) * torch.sqrt(params.get_phy('n_t')*torch.ones(1)) * torch.sqrt(torch.cos(theta))
+        e_x = e_inc/2 * ((1 + torch.cos(theta)) - (1 - torch.cos(theta)) * torch.cos(2 * phi)) * torch.sqrt(torch.tensor(params.get_phy('n_t'))) * torch.sqrt(torch.cos(theta))
+        e_y = e_inc/2 * (- (1 - torch.cos(theta)) * torch.sin(2 * phi)) * torch.sqrt(torch.tensor(params.get_phy('n_t'))) * torch.sqrt(torch.cos(theta))
+        e_z = - e_inc * torch.sin(theta) * torch.cos(phi) * torch.sqrt(torch.tensor(params.get_phy('n_t'))) * torch.sqrt(torch.cos(theta))
 
-        # self.pupil_function = torch.stack((e_x, e_y, e_z), dim=0)
-        self.pupil_function = e_x
+        self.pupil_function = torch.stack((e_x, e_y, e_z), dim=0)
+        print(self.pupil_function.shape)
 
     def return_pupil(self):
         return self.pupil_function
