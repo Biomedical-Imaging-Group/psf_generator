@@ -10,10 +10,17 @@ class Propagator(ABC):
     def __init__(self, pupil, params: Params):
         self.pupil = pupil
         self.params = params
+        self.field = None
 
     @abstractmethod
     def compute_focus_field(self):
-        pass
+        raise NotImplementedError
+
+    def get_focus_field(self):
+        if self.field is None:
+            self.field = self.compute_focus_field()
+        return self.field
+
 
 class FourierPropagator(Propagator):
     """Simple Fourier propagation model (scaler)
@@ -34,6 +41,7 @@ class FourierPropagator(Propagator):
         """
         pupil = self.pupil.return_pupil()
         self.field = torch.abs(custom_ifft2(pupil, self.params)) ** 2
+        return self.field
 
 
 class SimpleVectorial(Propagator):
