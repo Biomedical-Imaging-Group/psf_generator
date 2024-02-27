@@ -22,8 +22,8 @@ def meshgrid_pupil(params: Params) -> typing.Tuple[torch.Tensor, torch.Tensor]:
     size = params.get_num('n_pix_pupil')
     radius = params.get_phy('pupil_fov') / 2
     device = params.device
-
-    x = torch.linspace(-radius, radius, size).to(device)
-    y = torch.linspace(-radius, radius, size).to(device)
+    # TODO: fix numerical vs physical quantity here
+    x = torch.linspace(-size/2, size/2, size).to(device)
+    y = torch.linspace(-size/2, size/2, size).to(device)
     xx, yy = torch.meshgrid(x, y, indexing='xy')
     return xx, yy

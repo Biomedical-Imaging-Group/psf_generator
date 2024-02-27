@@ -22,7 +22,11 @@ class Params:
             'n_pix_pupil': 128,
             'n_pix_psf': 256,
             'n_pix_z': 128,
-            'psf_zooming_factor': 0.025
+            'psf_zooming_factor': 0.025,
+            'number_of_zernike_modes': 15,
+            'initial_zernike_coeff_type': 'constant',
+            'initial_zernike_coeff_constant_value': 0.2,
+            'initial_coefficient_rand_factor': 0.5
         }
 
         # user input parameters
@@ -54,6 +58,19 @@ class Params:
         czt_a = torch.exp(torch.tensor(torch.pi * 1j * zooming * n_pix_psf / n_pix_pupil))
         self._num_params['czt_w'] = czt_w
         self._num_params['czt_a'] = czt_a
+        # Zernike coefficients
+        if self._num_params['initial_zernike_coeff_type'] == 'constant':
+            self._num_params['zernike_coefficients'] = (torch.ones(self._num_params['number_of_zernike_modes'],
+                                                                   dtype=torch.complex64) *
+                                                        self._num_params['initial_zernike_coeff_constant_value'])
+        elif self._num_params['initial_zernike_coeff_type'] == 'rand':
+            self._num_params['zernike_coefficients'] = (torch.rand(self._num_params['number_of_zernike_modes'],
+                                                                   dtype=torch.complex64) *
+                                                        self._num_params['initial_coefficient_rand_factor'])
+
+        else:
+            self._num_params['zernike_coefficients'] = torch.zeros(self._num_params['number_of_zernike_modes'],
+                                                                   dtype=torch.complex64)
 
         # GPU device
         device = torch.device('cpu')
