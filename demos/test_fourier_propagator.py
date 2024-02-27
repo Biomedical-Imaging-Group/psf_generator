@@ -10,7 +10,7 @@ if module_path not in sys.path:
 
 from params import Params
 from pupil import ScalarPupil
-from propagator import FourierPropagator, SimpleVectorial
+from propagator import FourierPropagator
 
 FIGSIZE = (8, 8)
 
