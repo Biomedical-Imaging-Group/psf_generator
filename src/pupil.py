@@ -6,7 +6,7 @@ from params import Params
 from utils.meshgrid import meshgrid_pupil
 
 
-class ScalarPupil():
+class ScalarPupil:
     def __init__(self, params: Params):
         self.params = params
         self.create_pupil(self.params)
@@ -30,7 +30,7 @@ class ScalarPupil():
         return self.pupil_function
 
 
-class VectorialPupil():
+class VectorialPupil:
     def __init__(self, params: Params):
         self.params = params
         self.create_pupil(self.params)
