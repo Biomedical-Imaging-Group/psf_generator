@@ -52,7 +52,7 @@ class Params:
         self._phy_params['pupil_fov'] = 2 * torch.pi * zooming / self._phy_params['psf_pixel_size']
         self._phy_params['pupil_pixel_size'] = self._phy_params['pupil_fov'] / n_pix_pupil
         self._num_params['pupil_radius'] = 0.4  # to remove
-        self._num_params['filling_factor'] = 1  # to be veified
+        self._num_params['filling_factor'] = torch.inf  # to be veified
         # 2. czt parameters w and a
         czt_w = torch.exp(torch.tensor(2 * torch.pi * 1j * zooming / n_pix_pupil))
         czt_a = torch.exp(torch.tensor(torch.pi * 1j * zooming * n_pix_psf / n_pix_pupil))

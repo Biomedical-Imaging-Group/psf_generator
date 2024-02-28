@@ -1,6 +1,6 @@
 import torch
 from abc import ABC, abstractmethod
-from pupil import ScalarPupil
+from pupil import ScalarPupil,VectorialPupil
 from params import Params
 from utils.custom_ifft2 import custom_ifft2
 from utils.integrate import integrate_summation_rule, integrate_double_summation_rule
@@ -26,6 +26,7 @@ class FourierPropagator(Propagator):
     """Simple Fourier propagation model (scaler)
         psf = |F^{-1} (pupil)|^2
     """
+
     def __init__(self, pupil, params):
         super().__init__(pupil, params)
 
@@ -45,14 +46,14 @@ class FourierPropagator(Propagator):
 
 
 class SimpleVectorial(Propagator):
-    # other name: AccurateVectorial (Simple-with a standard pupil function)
     """Richards-Wolf model (vectorial) for x-polarized plane wave incident on
     the lens. Here I keep only the first term of the x-component of the electric field.
     """
+
     def __init__(self, pupil, params):
         super().__init__(pupil, params)
 
-        self.pupil = pupil
+        self.pupil = pupil if pupil else VectorialPupil(params)
         self.params = params
         self.field = None
 
@@ -66,14 +67,22 @@ class SimpleVectorial(Propagator):
         xx, yy = torch.meshgrid(x, y)
         zz = torch.zeros(1)
         theta_max = torch.asin(self.params.get_phy('NA') * torch.ones(1) / self.params.get_phy('n_t'))
-        self.field = integrate_summation_rule(lambda theta: self.integrand(theta, xx, yy, zz), 0, theta_max, size)
-        return self.field
+        i0 = integrate_summation_rule(lambda theta: self.integrand00(theta, xx, yy, zz), 0, theta_max, size)
+        i2 = integrate_summation_rule(lambda theta: self.integrand02(theta, xx, yy, zz), 0, theta_max, size)
+        i1 = integrate_summation_rule(lambda theta: self.integrand01(theta, xx, yy, zz), 0, theta_max, size)
+        varphi = torch.atan2(yy, xx)
+        field_x = i0 + i2*torch.cos(2*varphi)
+        field_y = i2 * torch.sin(2 * varphi)
+        field_z = -2 * 1j * i1 * torch.cos(varphi)
+        self.field = torch.stack((field_x, field_y, field_z), dim=0)
 
-    def integrand(self, theta, xx, yy, zz):
+        return torch.abs(self.field) ** 2
+
+    def integrand00(self, theta, xx, yy, zz):
         sin_t = torch.sin(theta)
         cos_t = torch.cos(theta)
         k = 2 * torch.pi * self.params.get_phy('n_t') / self.params.get_phy('wavelength')
-        r = k * torch.sqrt(xx**2 + yy**2) * sin_t
+        r = k * torch.sqrt(xx ** 2 + yy ** 2) * sin_t
         j0 = jv(0, r)
 
         # make sure i is complex
@@ -81,15 +90,37 @@ class SimpleVectorial(Propagator):
         i *= torch.sqrt(cos_t) * sin_t * (1 + cos_t)
         return torch.multiply(i, j0)
 
+    def integrand02(self, theta, xx, yy, zz):
+        sin_t = torch.sin(theta)
+        cos_t = torch.cos(theta)
+        k = 2 * torch.pi * self.params.get_phy('n_t') / self.params.get_phy('wavelength')
+        r = k * torch.sqrt(xx ** 2 + yy ** 2) * sin_t
+        j2 = jv(2, r)
+
+        # make sure i is complex
+        i = torch.exp(1j * k * zz * cos_t)
+        i *= torch.sqrt(cos_t) * sin_t * (1 - cos_t)
+        return torch.multiply(i, j2)
+
+    def integrand01(self, theta, xx, yy, zz):
+        sin_t = torch.sin(theta)
+        cos_t = torch.cos(theta)
+        k = 2 * torch.pi * self.params.get_phy('n_t') / self.params.get_phy('wavelength')
+        r = k * torch.sqrt(xx ** 2 + yy ** 2) * sin_t
+        j1 = jv(1, r)
+
+        # make sure i is complex
+        i = torch.exp(1j * k * zz * cos_t)
+        i *= torch.sqrt(cos_t) * sin_t ** 2
+        return torch.multiply(i, j1)
+
+
 class ComplexVectorial(Propagator):
-    # other name: AccurateVectorial (Complex-with a given pupil function)
-    """Richards-Wolf model (vectorial) for x-polarized plane wave incident on
-    the lens. Here I keep only the first term of the x-component of the electric field.
-    """
+
     def __init__(self, pupil, params):
         super().__init__(pupil, params)
 
-        self.pupil = pupil
+        self.pupil = pupil if pupil else VectorialPupil(params)
         self.params = params
         self.field = None
 
@@ -98,14 +129,27 @@ class ComplexVectorial(Propagator):
         Here, it doesn't take as input the pupil function.
         """
         size = self.params.get_num('n_pix_pupil')
+
+        z = torch.ones(1)
+        p = torch.zeros(3)
         x = torch.linspace(-2 * self.params.get_phy('wavelength'), 2 * self.params.get_phy('wavelength'), size)
         y = torch.linspace(-2 * self.params.get_phy('wavelength'), 2 * self.params.get_phy('wavelength'), size)
-        xx, yy = torch.meshgrid(x, y)
-        zz = torch.zeros(1)
-        theta_max = torch.asin(torch.tensor(self.params.get_phy('NA')/self.params.get_phy('n_t')))
-        self.field = integrate_double_summation_rule(lambda theta, phi: self.integrand2(theta, phi, xx, yy, zz), 0, theta_max, 0, 2 * torch.pi, size)
+        zz, pp, xx, yy = torch.meshgrid(z, p, x, y)
 
-        return self.field
+        theta_max = torch.asin(torch.tensor(self.params.get_phy('NA') / self.params.get_phy('n_t')))
+        self.field = integrate_double_summation_rule(lambda theta, phi: self.integrand2(theta, phi, zz, xx, yy),
+                                                     0, theta_max, 0, 2 * torch.pi, size)
 
-    def integrand2(self, theta, phi, xx, yy, zz):
-        pass
+        return torch.abs(self.field).squeeze() ** 2
+
+    def integrand2(self, theta, phi, zz, xx, yy):
+        k = 2 * torch.pi * self.params.get_phy('n_t') / self.params.get_phy('wavelength')
+        r = torch.sqrt(xx ** 2 + yy ** 2)
+        psi = torch.atan2(yy, xx)
+
+        e = self.pupil.create_pupil_function(theta, phi, self.params)
+        e = e.unsqueeze(0).unsqueeze(2).unsqueeze(3)
+
+        i = e * torch.exp(1j * k * zz * torch.cos(theta)) * torch.exp(1j * k * r * torch.sin(theta) *
+                                                                      torch.cos(phi - psi)) * torch.sin(theta)
+        return i

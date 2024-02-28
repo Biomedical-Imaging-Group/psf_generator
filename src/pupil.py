@@ -55,7 +55,23 @@ class VectorialPupil:
         e_z = - e_inc * torch.sin(theta) * torch.cos(phi) * torch.sqrt(torch.tensor(params.get_phy('n_t'))) * torch.sqrt(torch.cos(theta))
 
         self.pupil_function = torch.stack((e_x, e_y, e_z), dim=0)
-        print(self.pupil_function.shape)
+
+    def create_pupil_function(self, theta, phi, params: Params):
+        """create a vector field as default pupil function
+        """
+        phi = torch.tensor(phi)
+        theta_max = torch.asin(torch.tensor(params.get_phy('NA')/params.get_phy('n_t')))
+        f0 = params.get_num('filling_factor')
+        e0 = 1  # to be added in params
+
+        fw = torch.exp(- torch.sin(theta)**2 / (f0**2 * torch.sin(theta_max)**2))
+        e_inc = e0 * fw
+
+        e_x = e_inc/2 * ((1 + torch.cos(theta)) - (1 - torch.cos(theta)) * torch.cos(2 * phi)) * torch.sqrt(torch.tensor(params.get_phy('n_t'))) * torch.sqrt(torch.cos(theta))
+        e_y = e_inc/2 * (- (1 - torch.cos(theta)) * torch.sin(2 * phi)) * torch.sqrt(torch.tensor(params.get_phy('n_t'))) * torch.sqrt(torch.cos(theta))
+        e_z = - e_inc * torch.sin(theta) * torch.cos(phi) * torch.sqrt(torch.tensor(params.get_phy('n_t'))) * torch.sqrt(torch.cos(theta))
+
+        return torch.stack((e_x, e_y, e_z), dim=0)
 
     def return_pupil(self):
         return self.pupil_function
