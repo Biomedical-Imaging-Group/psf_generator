@@ -41,37 +41,16 @@ class VectorialPupil:
         """create a vector field as default pupil function
         """
         size = params.get_num('n_pix_pupil')
-
         theta_max = torch.asin(torch.tensor(params.get_phy('NA')/params.get_phy('n_t')))
-        theta, phi = torch.meshgrid(torch.linspace(0, int(theta_max), size), torch.linspace(0, 2 * torch.pi, size))
-        f0 = params.get_num('filling_factor')
-        e0 = 1  # to be added in params
+        theta = torch.linspace(0, int(theta_max), size)
+        a_x = 1  # to be inserted in parameters
+        a_y = 0  # to be inserted in parameters
+        f0 = 1  # to be inserted in parameters
+        apod_funct = torch.exp(-torch.sin(theta)**2/f0**2/torch.sin(theta_max)**2)
+        e_x = a_x * apod_funct
+        e_y = a_y * apod_funct
 
-        fw = torch.exp(- torch.sin(theta)**2 / (f0**2 * torch.sin(theta_max)**2))
-        e_inc = e0 * fw
-
-        e_x = e_inc/2 * ((1 + torch.cos(theta)) - (1 - torch.cos(theta)) * torch.cos(2 * phi)) * torch.sqrt(torch.tensor(params.get_phy('n_t'))) * torch.sqrt(torch.cos(theta))
-        e_y = e_inc/2 * (- (1 - torch.cos(theta)) * torch.sin(2 * phi)) * torch.sqrt(torch.tensor(params.get_phy('n_t'))) * torch.sqrt(torch.cos(theta))
-        e_z = - e_inc * torch.sin(theta) * torch.cos(phi) * torch.sqrt(torch.tensor(params.get_phy('n_t'))) * torch.sqrt(torch.cos(theta))
-
-        self.pupil_function = torch.stack((e_x, e_y, e_z), dim=0)
-
-    def create_pupil_function(self, theta, phi, params: Params):
-        """create a vector field as default pupil function
-        """
-        phi = torch.tensor(phi)
-        theta_max = torch.asin(torch.tensor(params.get_phy('NA')/params.get_phy('n_t')))
-        f0 = params.get_num('filling_factor')
-        e0 = 1  # to be added in params
-
-        fw = torch.exp(- torch.sin(theta)**2 / (f0**2 * torch.sin(theta_max)**2))
-        e_inc = e0 * fw
-
-        e_x = e_inc/2 * ((1 + torch.cos(theta)) - (1 - torch.cos(theta)) * torch.cos(2 * phi)) * torch.sqrt(torch.tensor(params.get_phy('n_t'))) * torch.sqrt(torch.cos(theta))
-        e_y = e_inc/2 * (- (1 - torch.cos(theta)) * torch.sin(2 * phi)) * torch.sqrt(torch.tensor(params.get_phy('n_t'))) * torch.sqrt(torch.cos(theta))
-        e_z = - e_inc * torch.sin(theta) * torch.cos(phi) * torch.sqrt(torch.tensor(params.get_phy('n_t'))) * torch.sqrt(torch.cos(theta))
-
-        return torch.stack((e_x, e_y, e_z), dim=0)
+        self.pupil_function = torch.stack((e_x, e_y), dim=0)
 
     def return_pupil(self):
         return self.pupil_function

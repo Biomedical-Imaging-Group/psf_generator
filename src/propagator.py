@@ -5,6 +5,7 @@ from params import Params
 from utils.custom_ifft2 import custom_ifft2
 from utils.integrate import integrate_summation_rule, integrate_double_summation_rule
 from scipy.special import jv
+from torch import special as sp
 
 class Propagator(ABC):
     def __init__(self, pupil, params: Params):
@@ -83,7 +84,7 @@ class SimpleVectorial(Propagator):
         cos_t = torch.cos(theta)
         k = 2 * torch.pi * self.params.get_phy('n_t') / self.params.get_phy('wavelength')
         r = k * torch.sqrt(xx ** 2 + yy ** 2) * sin_t
-        j0 = jv(0, r)
+        j0 = sp.bessel_j0(r)
 
         # make sure i is complex
         i = torch.exp(1j * k * zz * cos_t)
@@ -95,7 +96,8 @@ class SimpleVectorial(Propagator):
         cos_t = torch.cos(theta)
         k = 2 * torch.pi * self.params.get_phy('n_t') / self.params.get_phy('wavelength')
         r = k * torch.sqrt(xx ** 2 + yy ** 2) * sin_t
-        j2 = jv(2, r)
+        eps = 1e-10
+        j2 = 2 * sp.bessel_j1(r) / (r+eps) - sp.bessel_j0(r)
 
         # make sure i is complex
         i = torch.exp(1j * k * zz * cos_t)
@@ -107,7 +109,7 @@ class SimpleVectorial(Propagator):
         cos_t = torch.cos(theta)
         k = 2 * torch.pi * self.params.get_phy('n_t') / self.params.get_phy('wavelength')
         r = k * torch.sqrt(xx ** 2 + yy ** 2) * sin_t
-        j1 = jv(1, r)
+        j1 = sp.bessel_j1(r)
 
         # make sure i is complex
         i = torch.exp(1j * k * zz * cos_t)
