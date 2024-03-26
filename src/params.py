@@ -20,9 +20,9 @@ class Params:
                         'n_pix_psf': 256,
                         'n_pix_z': 128,
                         'number_of_zernike_modes': 15,
-                        'initial_zernike_coeff_type': 'constant',
-                        'initial_zernike_coeff_constant_value': 0.2,
-                        'initial_coefficient_rand_factor': 0.5,
+                        'zernike_coeff_type': 'constant',
+                        'zernike_coeff_constant_value': 0.2,
+                        'zerinke_coeff_rand_factor': 0.5,
                         'wavelength': user_input['wavelength'] if user_input['wavelength'] is not None else 580,
                         'NA': user_input['NA'] if user_input['NA'] is not None else 1.2,
                         'n_t': user_input['refractive_index'] if user_input['refractive_index'] is not None else 1.1}
@@ -51,14 +51,14 @@ class Params:
         self._params['czt_w'] = czt_w
         self._params['czt_a'] = czt_a
         # Zernike coefficients
-        if self._params['initial_zernike_coeff_type'] == 'constant':
+        if self._params['zernike_coeff_type'] == 'constant':
             self._params['zernike_coefficients'] = (torch.ones(self._params['number_of_zernike_modes'],
                                                                    dtype=torch.complex64) *
-                                                        self._params['initial_zernike_coeff_constant_value'])
-        elif self._params['initial_zernike_coeff_type'] == 'rand':
+                                                        self._params['zernike_coeff_constant_value'])
+        elif self._params['zernike_coeff_type'] == 'rand':
             self._params['zernike_coefficients'] = (torch.rand(self._params['number_of_zernike_modes'],
                                                                    dtype=torch.complex64) *
-                                                        self._params['initial_coefficient_rand_factor'])
+                                                        self._params['coefficient_rand_factor'])
 
         else:
             self._params['zernike_coefficients'] = torch.zeros(self._params['number_of_zernike_modes'],
