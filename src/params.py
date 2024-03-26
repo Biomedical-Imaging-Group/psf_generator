@@ -14,26 +14,19 @@ class Params:
     """
     def __init__(self, user_input: dict):
         # basic parameters
-        self._params = {
-            'psf_fov': 1000,
-            'z_length': 500,
-            'n_pix_pupil': 128,
-            'n_pix_psf': 256,
-            'n_pix_z': 128,
-            'psf_zooming_factor': 0.025,
-            'number_of_zernike_modes': 15,
-            'initial_zernike_coeff_type': 'constant',
-            'initial_zernike_coeff_constant_value': 0.2,
-            'initial_coefficient_rand_factor': 0.5
-        }
-
-        # user input parameters
-        self._params['wavelength'] = user_input['wavelength'] \
-            if user_input['wavelength'] is not None else 580
-        self._params['NA'] = user_input['NA'] \
-            if user_input['NA'] is not None else 1.2
-        self._params['n_t'] = user_input['refractive_index'] \
-            if user_input['refractive_index'] is not None else 1.1
+        self._params = {'psf_fov': 1000,
+                        'z_length': 500,
+                        'n_pix_pupil': 128,
+                        'n_pix_psf': 256,
+                        'n_pix_z': 128,
+                        'psf_zooming_factor': 0.025,
+                        'number_of_zernike_modes': 15,
+                        'initial_zernike_coeff_type': 'constant',
+                        'initial_zernike_coeff_constant_value': 0.2,
+                        'initial_coefficient_rand_factor': 0.5,
+                        'wavelength': user_input['wavelength'] if user_input['wavelength'] is not None else 580,
+                        'NA': user_input['NA'] if user_input['NA'] is not None else 1.2,
+                        'n_t': user_input['refractive_index'] if user_input['refractive_index'] is not None else 1.1}
 
         # computed parameters
         # 1. discretization parameters
