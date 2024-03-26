@@ -24,8 +24,8 @@ class ScalarPupil:
         # creates a disk with radius cut_off_freq
         zernike_basis = zernike_polynomials(mode=params.get('number_of_zernike_modes')-1, size=size, select='all')
         pupil_phase = torch.sum(zernike_coefficients * torch.from_numpy(zernike_basis), dim=2)
-
-        self.pupil_function = torch.exp(1j * pupil_phase) #* pupil_amplitude
+        # pupil_phase = torch.atan2(kx, ky)
+        self.pupil_function = torch.exp(1j * pupil_phase) * pupil_amplitude
 
     def return_pupil(self):
         return self.pupil_function
