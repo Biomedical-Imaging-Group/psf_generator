@@ -24,12 +24,12 @@ def custom_ifft2(pupil: torch.Tensor, params: Params):
     psf: torch.Tensor
         transformed images of desired output size and zooming
     """
-    N = params.get_num('n_pix_pupil')
-    M = params.get_num('n_pix_psf')
-    w = params.get_num('czt_w')
-    a = params.get_num('czt_a')
+    N = params.get('n_pix_pupil')
+    M = params.get('n_pix_psf')
+    w = params.get('czt_w')
+    a = params.get('czt_a')
     k = torch.arange(M)
-    zoom = params.get_num('psf_zooming_factor')
+    zoom = params.get('psf_zooming_factor')
     device = params.device
     correction = torch.exp(-1j * torch.pi * zoom * (k - M / 2)).to(device)
 

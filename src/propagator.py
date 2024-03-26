@@ -62,12 +62,12 @@ class SimpleVectorial(Propagator):
         """Compute the vectorial field at focus.
         Here, it doesn't take as input the pupil function.
         """
-        size = self.params.get_num('n_pix_pupil')
-        x = torch.linspace(-2 * self.params.get_phy('wavelength'), 2 * self.params.get_phy('wavelength'), size)
-        y = torch.linspace(-2 * self.params.get_phy('wavelength'), 2 * self.params.get_phy('wavelength'), size)
+        size = self.params.get('n_pix_pupil')
+        x = torch.linspace(-2 * self.params.get('wavelength'), 2 * self.params.get('wavelength'), size)
+        y = torch.linspace(-2 * self.params.get('wavelength'), 2 * self.params.get('wavelength'), size)
         xx, yy = torch.meshgrid(x, y)
         zz = torch.zeros(1)
-        theta_max = torch.asin(self.params.get_phy('NA') * torch.ones(1) / self.params.get_phy('n_t'))
+        theta_max = torch.asin(self.params.get('NA') * torch.ones(1) / self.params.get('n_t'))
         i0 = integrate_summation_rule(lambda theta: self.integrand00(theta, xx, yy, zz), 0, theta_max, size)
         i2 = integrate_summation_rule(lambda theta: self.integrand02(theta, xx, yy, zz), 0, theta_max, size)
         i1 = integrate_summation_rule(lambda theta: self.integrand01(theta, xx, yy, zz), 0, theta_max, size)
@@ -82,7 +82,7 @@ class SimpleVectorial(Propagator):
     def integrand00(self, theta, xx, yy, zz):
         sin_t = torch.sin(theta)
         cos_t = torch.cos(theta)
-        k = 2 * torch.pi * self.params.get_phy('n_t') / self.params.get_phy('wavelength')
+        k = 2 * torch.pi * self.params.get('n_t') / self.params.get('wavelength')
         r = k * torch.sqrt(xx ** 2 + yy ** 2) * sin_t
         j0 = sp.bessel_j0(r)
 
@@ -94,7 +94,7 @@ class SimpleVectorial(Propagator):
     def integrand02(self, theta, xx, yy, zz):
         sin_t = torch.sin(theta)
         cos_t = torch.cos(theta)
-        k = 2 * torch.pi * self.params.get_phy('n_t') / self.params.get_phy('wavelength')
+        k = 2 * torch.pi * self.params.get('n_t') / self.params.get('wavelength')
         r = k * torch.sqrt(xx ** 2 + yy ** 2) * sin_t
         eps = 1e-10
         j2 = 2 * sp.bessel_j1(r) / (r+eps) - sp.bessel_j0(r)
@@ -107,7 +107,7 @@ class SimpleVectorial(Propagator):
     def integrand01(self, theta, xx, yy, zz):
         sin_t = torch.sin(theta)
         cos_t = torch.cos(theta)
-        k = 2 * torch.pi * self.params.get_phy('n_t') / self.params.get_phy('wavelength')
+        k = 2 * torch.pi * self.params.get('n_t') / self.params.get('wavelength')
         r = k * torch.sqrt(xx ** 2 + yy ** 2) * sin_t
         j1 = sp.bessel_j1(r)
 
@@ -130,22 +130,22 @@ class ComplexVectorial(Propagator):
         """Compute the vectorial field at focus.
         Here, it doesn't take as input the pupil function.
         """
-        size = self.params.get_num('n_pix_pupil')
+        size = self.params.get('n_pix_pupil')
 
         z = torch.ones(1)
         p = torch.zeros(3)
-        x = torch.linspace(-2 * self.params.get_phy('wavelength'), 2 * self.params.get_phy('wavelength'), size)
-        y = torch.linspace(-2 * self.params.get_phy('wavelength'), 2 * self.params.get_phy('wavelength'), size)
+        x = torch.linspace(-2 * self.params.get('wavelength'), 2 * self.params.get('wavelength'), size)
+        y = torch.linspace(-2 * self.params.get('wavelength'), 2 * self.params.get('wavelength'), size)
         zz, pp, xx, yy = torch.meshgrid(z, p, x, y)
 
-        theta_max = torch.asin(torch.tensor(self.params.get_phy('NA') / self.params.get_phy('n_t')))
+        theta_max = torch.asin(torch.tensor(self.params.get('NA') / self.params.get('n_t')))
         self.field = integrate_double_summation_rule(lambda theta, phi: self.integrand2(theta, phi, zz, xx, yy),
                                                      0, theta_max, 0, 2 * torch.pi, size)
 
         return torch.abs(self.field).squeeze() ** 2
 
     def integrand2(self, theta, phi, zz, xx, yy):
-        k = 2 * torch.pi * self.params.get_phy('n_t') / self.params.get_phy('wavelength')
+        k = 2 * torch.pi * self.params.get('n_t') / self.params.get('wavelength')
         r = torch.sqrt(xx ** 2 + yy ** 2)
         psi = torch.atan2(yy, xx)
 

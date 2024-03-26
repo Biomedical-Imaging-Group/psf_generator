@@ -19,8 +19,8 @@ def meshgrid_pupil(params: Params) -> typing.Tuple[torch.Tensor, torch.Tensor]:
     xx, yy
         coordinates in the Fourier domain (kx, ky)
     """
-    size = params.get_num('n_pix_pupil')
-    radius = params.get_phy('pupil_fov') / 2
+    size = params.get('n_pix_pupil')
+    radius = params.get('pupil_fov_phy') / 2
     device = params.device
     # TODO: fix numerical vs physical quantity here
     x = torch.linspace(-size/2, size/2, size).to(device)
