@@ -19,7 +19,6 @@ class Params:
                         'n_pix_pupil': 128,
                         'n_pix_psf': 256,
                         'n_pix_z': 128,
-                        'psf_zooming_factor': 0.025,
                         'number_of_zernike_modes': 15,
                         'initial_zernike_coeff_type': 'constant',
                         'initial_zernike_coeff_constant_value': 0.2,
@@ -34,15 +33,17 @@ class Params:
         na = self._params['NA']
         n_t = self._params['n_t']
         psf_fov = self._params['psf_fov']
-        zooming = self._params['psf_zooming_factor']
         n_pix_pupil = self._params['n_pix_pupil']
         n_pix_psf = self._params['n_pix_psf']
         self._params['cut_off_freq'] = 2 * torch.pi * na / lamda
         self._params['max_freq'] = 2 * torch.pi * n_t / lamda
         self._params['psf_pixel_size'] = psf_fov / n_pix_psf
-        self._params['pupil_fov_phy'] = 2 * torch.pi * zooming / self._params['psf_pixel_size']
+        self._params['pupil_fov_phy'] = 2 * self._params['cut_off_freq']
         self._params['pupil_pixel_size'] = self._params['pupil_fov_phy'] / n_pix_pupil
         self._params['pupil_radius_num'] = 0.4  # to remove
+        self._params['psf_zooming_factor'] = 2 * na / lamda * self._params['psf_pixel_size']
+        zooming = self._params['psf_zooming_factor']
+
         self._params['filling_factor'] = torch.inf  # to be veified
         # 2. czt parameters w and a
         czt_w = torch.exp(torch.tensor(2 * torch.pi * 1j * zooming / n_pix_pupil))
