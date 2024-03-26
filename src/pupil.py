@@ -15,14 +15,14 @@ class ScalarPupil:
     def create_pupil(self, params: Params):
         """create a flat field on a disk as default pupil function
         """
-        zernike_coefficients = params.get_num('zernike_coefficients')
-        size = params.get_num('n_pix_pupil')
+        zernike_coefficients = params.get('zernike_coefficients')
+        size = params.get('n_pix_pupil')
 
         kx, ky = meshgrid_pupil(params)
         kxy2 = kx ** 2 + ky ** 2
-        pupil_amplitude = kxy2 < params.get_phy('cut_off_freq') ** 2
+        pupil_amplitude = kxy2 < params.get('cut_off_freq') ** 2
         # creates a disk with radius cut_off_freq
-        zernike_basis = zernike_polynomials(mode=params.get_num('number_of_zernike_modes')-1, size=size, select='all')
+        zernike_basis = zernike_polynomials(mode=params.get('number_of_zernike_modes')-1, size=size, select='all')
         pupil_phase = torch.sum(zernike_coefficients * torch.from_numpy(zernike_basis), dim=2)
 
         self.pupil_function = torch.exp(1j * pupil_phase) #* pupil_amplitude
@@ -40,8 +40,8 @@ class VectorialPupil:
     def create_pupil(self, params: Params):
         """create a vector field as default pupil function
         """
-        size = params.get_num('n_pix_pupil')
-        theta_max = torch.asin(torch.tensor(params.get_phy('NA')/params.get_phy('n_t')))
+        size = params.get('n_pix_pupil')
+        theta_max = torch.asin(torch.tensor(params.get('NA')/params.get('n_t')))
         theta = torch.linspace(0, int(theta_max), size)
         a_x = 1  # to be inserted in parameters
         a_y = 0  # to be inserted in parameters
