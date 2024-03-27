@@ -10,7 +10,7 @@ if module_path not in sys.path:
 
 from params import Params
 from pupil import VectorialPupil
-from propagator import SimpleVectorial, ComplexVectorial
+from propagator import Vectorial
 
 FIGSIZE = (8, 8)
 
@@ -22,14 +22,14 @@ user_input = {
 
 params = Params(user_input)
 pupil = VectorialPupil(params)
-propagator_simple = SimpleVectorial(pupil, params)
-propagator_complex = ComplexVectorial(pupil, params)
+propagator = Vectorial(pupil, params)
 
 # display pupil
 fig1, ax = plt.subplots(1, 1, figsize=FIGSIZE)
-ax.imshow(propagator_simple.compute_focus_field()[0, :, :].detach().numpy())
+ax.plot(pupil.return_pupil().detach()[0, :])
 plt.show()
+
 # display psf
 fig2, ax = plt.subplots(1, 1, figsize=FIGSIZE)
-ax.imshow(propagator_complex.compute_focus_field()[0, :, :].detach().numpy())
+ax.imshow(propagator.compute_focus_field()[1, :, :].detach().numpy())
 plt.show()

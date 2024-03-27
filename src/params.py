@@ -63,6 +63,11 @@ class Params:
         else:
             self._params['zernike_coefficients'] = torch.zeros(self._params['number_of_zernike_modes'],
                                                                    dtype=torch.complex64)
+        # 3. parameters for incoming light - for the moment only Gaussian beam given as:
+        #    E = E0 * exp(- f0^{-2} * sin^2(theta) / sin^2(theta_max))
+        self._params['e0_x'] = 1
+        self._params['e0_y'] = 1
+        self._params['f0'] = 0.5
 
         # GPU device
         device = torch.device('cpu')

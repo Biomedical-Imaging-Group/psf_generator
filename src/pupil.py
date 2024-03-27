@@ -42,10 +42,10 @@ class VectorialPupil:
         """
         size = params.get('n_pix_pupil')
         theta_max = torch.asin(torch.tensor(params.get('NA')/params.get('n_t')))
-        theta = torch.linspace(0, int(theta_max), size)
-        a_x = 1  # to be inserted in parameters
-        a_y = 0  # to be inserted in parameters
-        f0 = 1  # to be inserted in parameters
+        theta = torch.arange(0, theta_max.item(), theta_max.item()/size)
+        a_x = params.get('e0_x')
+        a_y = params.get('e0_y')
+        f0 = params.get('f0')
         apod_funct = torch.exp(-torch.sin(theta)**2/f0**2/torch.sin(theta_max)**2)
         e_x = a_x * apod_funct
         e_y = a_y * apod_funct
