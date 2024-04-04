@@ -69,14 +69,19 @@ class Vectorial(Propagator):
         theta_max = torch.asin(self.params.get('NA') * torch.ones(1) / self.params.get('n_t'))
         pupil = self.pupil.return_pupil()
 
-        i0 = integrate_summation_rule(lambda theta: self.integrand00(theta, xx, yy, zz, pupil), 0, theta_max, size)
-        i2 = integrate_summation_rule(lambda theta: self.integrand02(theta, xx, yy, zz, pupil), 0, theta_max, size)
-        i1 = integrate_summation_rule(lambda theta: self.integrand01(theta, xx, yy, zz, pupil), 0, theta_max, size)
+        i0_x = integrate_summation_rule(lambda theta: self.integrand00(theta, xx, yy, zz, pupil[0]), 0, theta_max, size)
+        i2_x = integrate_summation_rule(lambda theta: self.integrand02(theta, xx, yy, zz, pupil[0]), 0, theta_max, size)
+        i1_x = integrate_summation_rule(lambda theta: self.integrand01(theta, xx, yy, zz, pupil[0]), 0, theta_max, size)
+
+        i0_y = integrate_summation_rule(lambda theta: self.integrand00(theta, xx, yy, zz, pupil[1]), 0, theta_max, size)
+        i2_y = integrate_summation_rule(lambda theta: self.integrand02(theta, xx, yy, zz, pupil[1]), 0, theta_max, size)
+        i1_y = integrate_summation_rule(lambda theta: self.integrand01(theta, xx, yy, zz, pupil[1]), 0, theta_max, size)
 
         varphi = torch.atan2(yy, xx)
-        field_x = i0 + i2*torch.cos(2*varphi)
-        field_y = i2 * torch.sin(2 * varphi)
-        field_z = -2 * 1j * i1 * torch.cos(varphi)
+        field_x = i0_x + i2_x * torch.cos(2 * varphi) + i2_y * torch.sin(2 * varphi)
+        field_y = i2_x * torch.sin(2 * varphi) + i0_y - i2_y * torch.cos(2 * varphi)
+        field_z = -2 * 1j * i1_x * torch.cos(varphi) - 2 * 1j * i1_y * torch.sin(varphi)
+
         self.field = torch.stack((field_x, field_y, field_z), dim=0)
 
         return torch.abs(self.field) ** 2
@@ -94,7 +99,7 @@ class Vectorial(Propagator):
 
         theta_max = torch.asin(self.params.get('NA') * torch.ones(1) / self.params.get('n_t'))
         theta_0 = theta_max/self.params.get('n_pix_pupil')
-        i *= pupil[0, int(theta/theta_0)]
+        i *= pupil[int(theta/theta_0)]
 
         return torch.multiply(i, j0)
 
@@ -112,7 +117,7 @@ class Vectorial(Propagator):
 
         theta_max = torch.asin(self.params.get('NA') * torch.ones(1) / self.params.get('n_t'))
         theta_0 = theta_max/self.params.get('n_pix_pupil')
-        i *= pupil[0, int(theta/theta_0)]
+        i *= pupil[int(theta/theta_0)]
 
         return torch.multiply(i, j2)
 
@@ -129,6 +134,6 @@ class Vectorial(Propagator):
 
         theta_max = torch.asin(self.params.get('NA') * torch.ones(1) / self.params.get('n_t'))
         theta_0 = theta_max/self.params.get('n_pix_pupil')
-        i *= pupil[0, int(theta/theta_0)]
+        i *= pupil[int(theta/theta_0)]
 
         return torch.multiply(i, j1)
