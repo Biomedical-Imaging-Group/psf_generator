@@ -1,10 +1,11 @@
 import torch
 from abc import ABC, abstractmethod
-from pupil import ScalarPupil,VectorialPupil
+from pupil import ScalarPupil, VectorialPupil
 from params import Params
 from utils.custom_ifft2 import custom_ifft2
 from utils.integrate import integrate_summation_rule
 from torch import special as sp
+
 
 class Propagator(ABC):
     def __init__(self, pupil, params: Params):
@@ -61,13 +62,14 @@ class Vectorial(Propagator):
     def compute_focus_field(self):
         """Compute the vectorial field at focus.
         """
+
+        pupil = self.pupil.return_pupil()
         size = self.params.get('n_pix_pupil')
         x = torch.linspace(-2 * self.params.get('wavelength'), 2 * self.params.get('wavelength'), size)
         y = torch.linspace(-2 * self.params.get('wavelength'), 2 * self.params.get('wavelength'), size)
-        xx, yy = torch.meshgrid(x, y)
-        zz = torch.zeros(1)
+        z =  torch.linspace(-2 * self.params.get('wavelength'), 2 * self.params.get('wavelength'), size)
+        xx, yy, zz  = torch.meshgrid(x, y, z,  indexing='ij')
         theta_max = torch.asin(self.params.get('NA') * torch.ones(1) / self.params.get('n_t'))
-        pupil = self.pupil.return_pupil()
 
         i0_x = integrate_summation_rule(lambda theta: self.integrand00(theta, xx, yy, zz, pupil[0]), 0, theta_max, size)
         i2_x = integrate_summation_rule(lambda theta: self.integrand02(theta, xx, yy, zz, pupil[0]), 0, theta_max, size)
@@ -82,7 +84,7 @@ class Vectorial(Propagator):
         field_y = i2_x * torch.sin(2 * varphi) + i0_y - i2_y * torch.cos(2 * varphi)
         field_z = -2 * 1j * i1_x * torch.cos(varphi) - 2 * 1j * i1_y * torch.sin(varphi)
 
-        self.field = torch.stack((field_x, field_y, field_z), dim=0)
+        self.field = torch.stack((field_x, field_y, field_z), dim=0).movedim(-1,0)
 
         return torch.abs(self.field) ** 2
 
@@ -137,3 +139,4 @@ class Vectorial(Propagator):
         i *= pupil[int(theta/theta_0)]
 
         return torch.multiply(i, j1)
+

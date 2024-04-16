@@ -31,5 +31,5 @@ plt.show()
 
 # display psf
 fig2, ax = plt.subplots(1, 1, figsize=FIGSIZE)
-ax.imshow(propagator.compute_focus_field()[1, :, :].detach().numpy())
+ax.imshow(propagator.compute_focus_field()[64, 0, :, :].detach().numpy())
 plt.show()
