@@ -45,6 +45,49 @@ class FourierPropagator(Propagator):
         self.field = torch.abs(custom_ifft2(pupil, self.params)) ** 2
         return self.field
 
+class KirchhoffPropagator(Propagator):
+    """Kirchhoff model (scaler). """
+
+    def __init__(self, pupil, params):
+        super().__init__(pupil, params)
+
+        self.pupil = pupil
+        self.params = params
+        self.field = None
+
+        if pupil is None:
+            self.pupil = ScalarPupil(params)
+
+    def compute_focus_field(self):
+        """Compute the scaler field at focus.
+        """
+
+        pupil = self.pupil.return_pupil()
+        size = self.params.get('n_pix_pupil')
+        x = torch.linspace(-2 * self.params.get('wavelength'), 2 * self.params.get('wavelength'), size)
+        y = torch.linspace(-2 * self.params.get('wavelength'), 2 * self.params.get('wavelength'), size)
+        z = torch.linspace(-2 * self.params.get('wavelength'), 2 * self.params.get('wavelength'), size)
+        xx, yy, zz = torch.meshgrid(x, y, z,  indexing='ij')
+        theta_max = torch.asin(self.params.get('NA') * torch.ones(1) / self.params.get('n_t'))
+        self.field = integrate_summation_rule(lambda theta: self.integrand00(theta, xx, yy, zz, pupil), 0, theta_max, size)
+        return torch.abs(self.field) ** 2
+
+    def integrand00(self, theta, xx, yy, zz, pupil):
+        sin_t = torch.sin(theta)
+        cos_t = torch.cos(theta)
+        k = 2 * torch.pi * self.params.get('n_t') / self.params.get('wavelength')
+        r = k * torch.sqrt(xx ** 2 + yy ** 2) * sin_t
+        j0 = sp.bessel_j0(r)
+
+        # make sure i is complex
+        i = torch.exp(1j * k * zz * cos_t)
+        i *= torch.sqrt(cos_t) * sin_t
+
+        theta_max = torch.asin(self.params.get('NA') * torch.ones(1) / self.params.get('n_t'))
+        theta_0 = theta_max/self.params.get('n_pix_pupil')
+        i *= pupil[int(theta/theta_0)]
+
+        return torch.multiply(i, j0)
 
 class Vectorial(Propagator):
     """Richards-Wolf model (vectorial). """
