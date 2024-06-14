@@ -88,6 +88,7 @@ class ScalarPolarPropagator(Propagator):
                          wavelength=wavelength, NA=NA, fov=fov, 
                          defocus_min=defocus_min, defocus_max=defocus_max, n_defocus=n_defocus)
         self.apod_factor = apod_factor
+        self.envelope = envelope
         
         # PSF coordinates
         x = torch.linspace(-self.fov/2, self.fov/2, self.n_pix_psf)
