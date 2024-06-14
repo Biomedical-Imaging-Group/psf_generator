@@ -5,7 +5,7 @@ from zernikepy import zernike_polynomials
 
 class Pupil(ABC):
     def __init__(self, n_pix_pupil=128, device='cpu',
-                 zernike_coefficients=(0,)):
+                 zernike_coefficients=[0,]):
         self.n_pix_pupil = n_pix_pupil
         self.device = device
         self.zernike_coefficients = zernike_coefficients
@@ -17,10 +17,10 @@ class Pupil(ABC):
 
 
 class ScalarCartesianPupil(Pupil):
-    def __init__(self, n_pix_pupil=128, device='cpu', zernike_coefficients=(0,)):
+    def __init__(self, n_pix_pupil=128, device='cpu', zernike_coefficients=[0,]):
         super().__init__(n_pix_pupil, device, zernike_coefficients)
         self.field = self.initialize_field()
-        # self.field *= self.zernike_aberrations()
+        self.field *= self.zernike_aberrations()
 
     def initialize_field(self):
         x = torch.linspace(-1, 1, self.n_pix_pupil).to(self.device)
@@ -31,12 +31,13 @@ class ScalarCartesianPupil(Pupil):
     def zernike_aberrations(self):
         n_zernike = len(self.zernike_coefficients)
         zernike_basis = zernike_polynomials(mode=n_zernike-1, size=self.n_pix_pupil, select='all')
-        zernike_phase = torch.sum(self.zernike_coefficients * torch.from_numpy(zernike_basis), dim=2)
+        zernike_coefficients = torch.tensor(self.zernike_coefficients).reshape(1, 1, n_zernike)
+        zernike_phase = torch.sum(zernike_coefficients * zernike_basis, dim=2)
         return torch.exp(1j * zernike_phase)
 
 
 class ScalarPolarPupil(Pupil):
-    def __init__(self, n_pix_pupil=128, device='cpu', zernike_coefficients=(0,)):
+    def __init__(self, n_pix_pupil=128, device='cpu', zernike_coefficients=[0,]):
         super().__init__(n_pix_pupil, device, zernike_coefficients)
         self.field = self.initialize_field()
 
