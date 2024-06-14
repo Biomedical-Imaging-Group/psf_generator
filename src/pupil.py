@@ -1,58 +1,83 @@
+from abc import ABC, abstractmethod
 import torch
-
-from params import Params
-from utils.meshgrid import meshgrid_pupil
+from zernikepy import zernike_polynomials
 
 
-class ScalarPupil():
-    def __init__(self, params: Params):
-        self.params = params
-        self.create_pupil(self.params)
+class Pupil(ABC):
+    def __init__(self, n_pix_pupil=128, device='cpu',
+                 zernike_coefficients=(0,)):
+        self.n_pix_pupil = n_pix_pupil
+        self.device = device
+        self.zernike_coefficients = zernike_coefficients
+        self.field = None
 
-    def create_pupil(self, params: Params):
-        """create a flat field on a disk as default pupil function
-        """
-        size = params.get_num('n_pix_pupil')
-
-        kx, ky = meshgrid_pupil(params)
-        kxy2 = kx ** 2 + ky ** 2
-        pupil_amplitude = kxy2 < params.get_phy('cut_off_freq') ** 2
-        # creates a disk with radius cut_off_freq
-
-        pupil_phase = torch.zeros(size, size, dtype=torch.complex64)
-
-        self.pupil_function = torch.exp(1j * pupil_phase) * pupil_amplitude
-
-    def return_pupil(self):
-        return self.pupil_function
+    @abstractmethod
+    def initialize_field(self):
+        raise NotImplementedError
 
 
-class VectorialPupil():
-    def __init__(self, params: Params):
-        self.params = params
-        self.create_pupil(self.params)
+class ScalarCartesianPupil(Pupil):
+    def __init__(self, n_pix_pupil=128, device='cpu', zernike_coefficients=(0,)):
+        super().__init__(n_pix_pupil, device, zernike_coefficients)
+        self.field = self.initialize_field()
+        # self.field *= self.zernike_aberrations()
 
-    def create_pupil(self, params: Params):
-        """create a vector field as default pupil function
-        """
-        size = params.get_num('n_pix_pupil')
+    def initialize_field(self):
+        x = torch.linspace(-1, 1, self.n_pix_pupil).to(self.device)
+        y = torch.linspace(-1, 1, self.n_pix_pupil).to(self.device)
+        kx, ky = torch.meshgrid(x, y, indexing='xy')
+        return (kx**2 + ky**2 < 1).to(torch.complex64).unsqueeze(0).unsqueeze(0)
 
-        theta_max = torch.arcsin(params.get_phy('NA')*torch.ones(1)/params.get_phy('n_t'))
-        theta_0 = torch.linspace(0, int(theta_max), size)
-        phi_0 = torch.linspace(0, 2 * torch.pi, size)
-        theta, phi = torch.meshgrid(theta_0, phi_0)
-        f0 = params.get_num('filling_factor')
-        E0 = 1 # to be added in params
+    def zernike_aberrations(self):
+        n_zernike = len(self.zernike_coefficients)
+        zernike_basis = zernike_polynomials(mode=n_zernike-1, size=self.n_pix_pupil, select='all')
+        zernike_phase = torch.sum(self.zernike_coefficients * torch.from_numpy(zernike_basis), dim=2)
+        return torch.exp(1j * zernike_phase)
 
-        fw = torch.exp(- torch.sin(theta)**2 / (f0**2 * torch.sin(theta_max)**2))
-        e_inc = E0 * fw
 
-        e_x = e_inc/2 * ((1 + torch.cos(theta)) - (1 - torch.cos(theta)) * torch.cos(2 * phi)) * torch.sqrt(params.get_phy('n_t')*torch.ones(1)) * torch.sqrt(torch.cos(theta))
-        e_y = e_inc/2 * (- (1 - torch.cos(theta)) * torch.sin(2 * phi)) * torch.sqrt(params.get_phy('n_t')*torch.ones(1)) * torch.sqrt(torch.cos(theta))
-        e_z = - e_inc * torch.sin(theta) * torch.cos(phi) * torch.sqrt(params.get_phy('n_t')*torch.ones(1)) * torch.sqrt(torch.cos(theta))
+class ScalarPolarPupil(Pupil):
+    def __init__(self, n_pix_pupil=128, device='cpu', zernike_coefficients=(0,)):
+        super().__init__(n_pix_pupil, device, zernike_coefficients)
+        self.field = self.initialize_field()
 
-        # self.pupil_function = torch.stack((e_x, e_y, e_z), dim=0)
-        self.pupil_function = e_x
+    def initialize_field(self):
+        return torch.ones(self.n_pix_pupil).to(self.device).unsqueeze(0).unsqueeze(0)
 
-    def return_pupil(self):
-        return self.pupil_function
+
+class VectorialCartesianPupil(Pupil):
+    def __init__(self, e0x=1, e0y=0, 
+                 n_pix_pupil=128, device='cpu', zernike_coefficients=(0,)):
+        super().__init__(n_pix_pupil, device, zernike_coefficients)
+        self.e0x = e0x
+        self.e0y = e0y
+
+        self.field = self.initialize_field()
+        # self.field *= self.zernike_aberrations()
+
+    def initialize_field(self):
+        x = torch.linspace(-1, 1, self.n_pix_pupil).to(self.device)
+        y = torch.linspace(-1, 1, self.n_pix_pupil).to(self.device)
+        kx, ky = torch.meshgrid(x, y, indexing='xy')
+        single_field = (kx**2 + ky**2 < 1).to(torch.complex64).unsqueeze(0)
+        return torch.stack((self.e0x * single_field, self.e0y * single_field), 
+                           dim=0).unsqueeze(0)
+
+    def zernike_aberrations(self):
+        n_zernike = len(self.zernike_coefficients)
+        zernike_basis = zernike_polynomials(mode=n_zernike-1, size=self.n_pix_pupil, select='all')
+        zernike_phase = torch.sum(self.zernike_coefficients * torch.from_numpy(zernike_basis), dim=2)
+        return torch.exp(1j * zernike_phase)
+
+
+class VectorialPolarPupil(Pupil):
+    def __init__(self, e0x=1, e0y=0, 
+                 n_pix_pupil=128, device='cpu', zernike_coefficients=(0,)):
+        super().__init__(n_pix_pupil, device, zernike_coefficients)
+        self.e0x = e0x
+        self.e0y = e0y
+        self.field = self.initialize_field()
+
+    def initialize_field(self):
+        single_field = torch.ones(self.n_pix_pupil).to(self.device).unsqueeze(0)
+        return torch.stack((self.e0x * single_field, self.e0y * single_field),
+                            dim=0).unsqueeze(0)
