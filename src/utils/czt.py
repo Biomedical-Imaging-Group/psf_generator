@@ -14,17 +14,17 @@ def custom_fft2(x, shape_out=None, k_start=0, k_end=2*np.pi,
         print('Warning: Output dimensions are different; enforcing squared output.')
         K, L = max(K,L), max(K,L)
 
-    w = np.exp(-1j * (k_end - k_start) / K)
-    a = np.exp(1j * k_start)
+    w_phase = - (k_end - k_start) / K
+    a_phase = k_start
 
     if fftshift_input:
         k = torch.arange(K)
         kx, ky = torch.meshgrid(k, k, indexing='ij')
         center_correction = torch.exp(1j * N / 2 * (k_start + (k_end - k_start) / K * 
                                                     (kx+ky))).to(x.device)
-        result = czt2d(x, shape_out, w, a) * center_correction
+        result = czt2d(x, shape_out, w_phase, a_phase) * center_correction
     else:
-        result = czt2d(x, shape_out, w, a)
+        result = czt2d(x, shape_out, w_phase, a_phase)
     if norm =='ortho':
         return result / K
     elif norm == 'forward':
@@ -44,17 +44,17 @@ def custom_ifft2(x, shape_out=None, k_start=0, k_end=2*np.pi,
         print('Warning: Output dimensions are different; enforcing squared output.')
         K, L = max(K,L), max(K,L)
 
-    w = np.exp(1j * (k_end - k_start) / K)
-    a = np.exp(-1j * k_start)
+    w_phase = (k_end - k_start) / K
+    a_phase = - k_start
 
     if fftshift_input:
         k = torch.arange(K)
         kx, ky = torch.meshgrid(k, k, indexing='ij')
         center_correction = torch.exp(- 1j * N / 2 * (k_start + (k_end - k_start) / K * 
                                                     (kx+ky))).to(x.device)
-        result = czt2d(x, shape_out, w, a) * center_correction
+        result = czt2d(x, shape_out, w_phase, a_phase) * center_correction
     else:
-        result = czt2d(x, shape_out, w, a)
+        result = czt2d(x, shape_out, w_phase, a_phase)
     if norm =='ortho':
         return result / K
     elif norm == 'forward':
@@ -63,19 +63,19 @@ def custom_ifft2(x, shape_out=None, k_start=0, k_end=2*np.pi,
         return result
 
 
-def czt1d(x, shape_out=None, w=None, a=1):
+def czt1d(x, shape_out=None, w_phase=None, a_phase=0):
     shape_in = x.shape[-1]
     if shape_out is None:
         shape_out = shape_in
-    if w is None:
-        w = np.exp(-1j * 2 * np.pi / shape_out)
+    if w_phase is None:
+        w_phase = - 2 * np.pi / shape_out
     max_dim = max(shape_in, shape_out)
     fft_dim = int(2 ** torch.ceil(torch.log2(torch.tensor(shape_in + shape_out - 1))))
     device = x.device
 
     k = torch.arange(max_dim, device=device)
-    wk2 = (w ** (k ** 2 / 2)).to(device)
-    aw_factor = (a ** (-k[:shape_in])).to(device) * wk2[:shape_in]
+    wk2 = torch.exp(1j * w_phase * k ** 2 / 2).to(device)
+    aw_factor = torch.exp(- 1j * a_phase * k[:shape_in]).to(device) * wk2[:shape_in]
     second_factor = fft(
         1 / torch.hstack((torch.flip(wk2[1:shape_in], dims=(0,)), wk2[:shape_out])), fft_dim)
     idx = slice(shape_in - 1, shape_in + shape_out - 1)
@@ -86,7 +86,7 @@ def czt1d(x, shape_out=None, w=None, a=1):
     return output
 
 
-def czt2d(x, shape_out=None, w=None, a=1):
+def czt2d(x, shape_out=None, w_phase=None, a_phase=0):
     shape_in = x.shape
     if shape_out is None:
         shape_out = shape_in
@@ -99,8 +99,8 @@ def czt2d(x, shape_out=None, w=None, a=1):
         print('Warning: Output dimensions are different; enforcing squared output.')
         K, L = max(K,L), max(K,L)
 
-    if w is None:
-        w = np.exp(-1j * 2 * np.pi / K)
+    if w_phase is None:
+        w_phase = - 2 * np.pi / K
     max_dim = max(N, K)
     fft_dim = int(2 ** torch.ceil(torch.log2(torch.tensor(N + K - 1))))
     device = x.device
@@ -108,8 +108,8 @@ def czt2d(x, shape_out=None, w=None, a=1):
     k = torch.arange(max_dim).to(device)
     kx, ky = torch.meshgrid(k, k, indexing='ij')
 
-    wk2 = (w ** ((kx**2+ky**2) / 2)).to(device)
-    aw_factor = (a ** (-kx[:N, :N]-ky[:N, :N])).to(device) * wk2[:N, :N]
+    wk2 = torch.exp(1j * w_phase * (kx**2+ky**2) / 2).to(device)
+    aw_factor = torch.exp(- 1j * a_phase * (kx[:N, :N]+ky[:N, :N])).to(device) * wk2[:N, :N]
     second_factor = fft2(1 / torch.hstack(
         (torch.vstack(
             (torch.flip(wk2[1:N, 1:N], dims=(0,1)),
