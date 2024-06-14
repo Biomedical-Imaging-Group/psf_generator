@@ -39,10 +39,14 @@ class Propagator(ABC):
 class ScalarCartesianPropagator(Propagator):
     def __init__(self, pupil, n_pix_psf=128, device='cpu',
                  wavelength=632, NA=0.9, fov=1000, 
-                 defocus_min=0, defocus_max=0, n_defocus=1):
+                 defocus_min=0, defocus_max=0, n_defocus=1,
+                 sz_correction=True, apod_factor=True, envelope=None):
         super().__init__(pupil=pupil, n_pix_psf=n_pix_psf, device=device,
                          wavelength=wavelength, NA=NA, fov=fov, 
                          defocus_min=defocus_min, defocus_max=defocus_max, n_defocus=n_defocus)
+        self.sz_correction = sz_correction
+        self.apod_factor = apod_factor  # we may want to add more options, sometimes we need to divide by sqrt(s_z)
+        self.envelope = envelope  # for Gaussian envelope
         
          # Zoom factor to determine pixel size with custom FFT
         self.zoom_factor = 2 * self.NA * self.fov / self.wavelength / self.n_pix_pupil
@@ -54,13 +58,20 @@ class ScalarCartesianPropagator(Propagator):
         s_z = torch.sqrt((1 - self.NA**2 * (s_x**2 + s_y**2)).clamp(min=0.001)).reshape(1, 1, n_pix_pupil, n_pix_pupil)
 
         # Precompute additional factors
-        self.inv_s_z = (1 / s_z).to(self.device)
+        correction_factor = 1
+        if self.sz_correction:
+            correction_factor *= 1 / s_z
+        if self.apod_factor:
+            correction_factor *= torch.sqrt(s_z)
+        if self.envelope is not None:
+            correction_factor *= torch.exp(- (1-s_z**2) / self.envelope**2)
+        self.correction_factor = correction_factor.to(self.device)
         self.k = 2 * np.pi / self.wavelength
         defocus_range = torch.linspace(self.defocus_min, self.defocus_max, self.n_defocus).reshape(-1, 1, 1, 1) 
         self.defocus_filters = torch.exp(1j * self.k * s_z * defocus_range).to(self.device)
 
     def compute_focus_field(self):
-        self.field = custom_ifft2(self.pupil.field * self.inv_s_z * self.defocus_filters, 
+        self.field = custom_ifft2(self.pupil.field * self.correction_factor * self.defocus_filters, 
                                   shape_out=(self.n_pix_psf, self.n_pix_psf), 
                                   k_start=-self.zoom_factor*np.pi, 
                                   k_end=self.zoom_factor*np.pi, 
@@ -71,10 +82,13 @@ class ScalarCartesianPropagator(Propagator):
 class ScalarPolarPropagator(Propagator):
     def __init__(self, pupil, n_pix_psf=128, device='cpu',
                  wavelength=632, NA=0.9, fov=1000, 
-                 defocus_min=0, defocus_max=0, n_defocus=1):
+                 defocus_min=0, defocus_max=0, n_defocus=1,
+                 apod_factor=True, envelope=None):
         super().__init__(pupil=pupil, n_pix_psf=n_pix_psf, device=device,
                          wavelength=wavelength, NA=NA, fov=fov, 
                          defocus_min=defocus_min, defocus_max=defocus_max, n_defocus=n_defocus)
+        self.apod_factor = apod_factor
+        
         # PSF coordinates
         x = torch.linspace(-self.fov/2, self.fov/2, self.n_pix_psf)
         xx, yy = torch.meshgrid(x, x, indexing='ij')
@@ -84,18 +98,24 @@ class ScalarPolarPropagator(Propagator):
         theta_max = np.arcsin(self.NA)
         theta = torch.linspace(0, theta_max, self.n_pix_pupil).to(self.device)
 
-        # Compute the field at focus
+        # Precompute additional factors
         self.k = 2 * np.pi / self.wavelength
         self.sin_t = torch.reshape(torch.sin(theta), (1, 1, 1, 1, -1)).to(self.device)
         cos_t = torch.reshape(torch.cos(theta), (1, 1, 1, 1, -1))
         defocus_range = torch.linspace(self.defocus_min, self.defocus_max, self.n_defocus).reshape(-1, 1, 1, 1, 1) 
         self.defocus_filters = torch.exp(1j * self.k * defocus_range * cos_t).to(self.device)
+        correction_factor = 1
+        if self.apod_factor:
+            correction_factor *= torch.sqrt(cos_t)
+        if self.envelope is not None:
+            correction_factor *= torch.exp(- self.sin_t**2 / self.envelope**2)
+        self.correction_factor = correction_factor.to(self.device)
 
     def compute_focus_field(self):
         self.field = torch.sum(
             self.pupil.field.unsqueeze(-2).unsqueeze(-2) *
             bessel_j0(self.k * self.r * self.sin_t) *
-            self.sin_t * self.defocus_filters
+            self.sin_t * self.defocus_filters * self.correction_factor
             , dim=-1)
         return self.field
 
@@ -143,8 +163,6 @@ class Vectorial(Propagator):
         return torch.abs(self.field) ** 2
 
     def integrand00(self, theta, xx, yy, zz, pupil):
-        """
-
         pupil = self.pupil.return_pupil()
         size = self.params.get('n_pix_pupil')
         x = torch.linspace(-2 * self.params.get('wavelength'), 2 * self.params.get('wavelength'), size)
