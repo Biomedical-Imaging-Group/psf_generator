@@ -60,14 +60,13 @@ class ScalarCartesianPropagator(Propagator):
         s_z = torch.sqrt((1 - self.NA**2 * (s_x**2 + s_y**2)).clamp(min=0.001)).reshape(1, 1, n_pix_pupil, n_pix_pupil)
 
         # Precompute additional factors
-        correction_factor = torch.ones(1, 1, n_pix_pupil, n_pix_pupil)
+        self.correction_factor = torch.ones(1, 1, n_pix_pupil, n_pix_pupil).to(self.device)
         if self.sz_correction:
-            correction_factor *= 1 / s_z
+            self.correction_factor *= 1 / s_z
         if self.apod_factor:
-            correction_factor *= torch.sqrt(s_z)
+            self.correction_factor *= torch.sqrt(s_z)
         if self.envelope is not None:
-            correction_factor *= torch.exp(- (1-s_z**2) / self.envelope**2)
-        self.correction_factor = torch.Tensor(correction_factor).to(self.device)
+            self.correction_factor *= torch.exp(- (1-s_z**2) / self.envelope**2)
         self.k = 2 * np.pi / self.wavelength
         defocus_range = torch.linspace(self.defocus_min, self.defocus_max, self.n_defocus
                                        ).reshape(-1, 1, 1, 1).to(self.device)
@@ -78,7 +77,7 @@ class ScalarCartesianPropagator(Propagator):
                                   shape_out=(self.n_pix_psf, self.n_pix_psf), 
                                   k_start=-self.zoom_factor*np.pi, 
                                   k_end=self.zoom_factor*np.pi, 
-                                  norm='backward', fftshift_input=True) * \
+                                  norm='backward', fftshift_input=True, include_end=True) * \
                                     (2 * self.NA / self.n_pix_pupil)**2
         return self.field / (2 * np.pi)
 

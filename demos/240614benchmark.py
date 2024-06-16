@@ -13,7 +13,6 @@ from propagator import ScalarCartesianPropagator, ScalarPolarPropagator
 ## Scalar benchmark
 
 # Parameters
-n_pix_pupil = 8192
 n_pix_psf = 128
 NA = 0.9
 wavelength = 632
@@ -22,15 +21,25 @@ defocus = 1500
 n_defocus = 1
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
-# Cartesian
-pupil1 = ScalarCartesianPupil(n_pix_pupil, device=device)
-propagator1 = ScalarCartesianPropagator(pupil1, n_pix_psf=n_pix_psf, wavelength=wavelength, NA=NA, fov=fov,
-                                        defocus_min=0, defocus_max=defocus, n_defocus=n_defocus, device=device)
-field1 = propagator1.compute_focus_field()
+# Load the limit
+limit = -1
 
-# Polar
-pupil2 = ScalarPolarPupil(n_pix_pupil, device=device)
-propagator2 = ScalarPolarPropagator(pupil2, n_pix_psf=n_pix_psf, wavelength=wavelength, NA=NA, fov=fov,
-                                    defocus_min=0, defocus_max=defocus, n_defocus=n_defocus, device=device)
-field2 = propagator2.compute_focus_field()
+# Loop over n_pix_pupil
+n_pix_pupils = [1024, 2048, 4096, 8192]
+
+for n_pix_pupil in n_pix_pupils:
+    # Cartesian
+    pupil1 = ScalarCartesianPupil(n_pix_pupil, device=device)
+    propagator1 = ScalarCartesianPropagator(pupil1, n_pix_psf=n_pix_psf, wavelength=wavelength, NA=NA, fov=fov,
+                                            defocus_min=0, defocus_max=defocus, n_defocus=n_defocus, device=device)
+    field1 = propagator1.compute_focus_field()
+
+    # Polar
+    pupil2 = ScalarPolarPupil(n_pix_pupil, device=device)
+    propagator2 = ScalarPolarPropagator(pupil2, n_pix_psf=n_pix_psf, wavelength=wavelength, NA=NA, fov=fov,
+                                        defocus_min=0, defocus_max=defocus, n_defocus=n_defocus, device=device)
+    field2 = propagator2.compute_focus_field()
+
+    cartesian_err = (torch.abs(field1.squeeze())**2 - limit)**2
+    polar_err = (torch.abs(field2.squeeze())**2 - limit)**2
 

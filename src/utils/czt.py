@@ -4,7 +4,7 @@ import numpy as np
 
 
 def custom_fft2(x, shape_out=None, k_start=0, k_end=2*np.pi, 
-                norm='ortho', fftshift_input=False):
+                norm='ortho', fftshift_input=False, include_end=False):
     shape_in = x.shape
     N, M = shape_in[-2:]
     if shape_out is None:
@@ -14,7 +14,11 @@ def custom_fft2(x, shape_out=None, k_start=0, k_end=2*np.pi,
         print('Warning: Output dimensions are different; enforcing squared output.')
         K, L = max(K,L), max(K,L)
 
-    w_phase = - (k_end - k_start) / K
+
+    if include_end:
+        w_phase = - (k_end - k_start) / (K-1)
+    else:
+        w_phase = - (k_end - k_start) / K
     a_phase = k_start
 
     if fftshift_input:
@@ -34,7 +38,7 @@ def custom_fft2(x, shape_out=None, k_start=0, k_end=2*np.pi,
 
 
 def custom_ifft2(x, shape_out=None, k_start=0, k_end=2*np.pi, 
-                 norm='ortho', fftshift_input=False):
+                 norm='ortho', fftshift_input=False, include_end=False):
     shape_in = x.shape
     N, M = shape_in[-2:]
     if shape_out is None:
@@ -44,7 +48,10 @@ def custom_ifft2(x, shape_out=None, k_start=0, k_end=2*np.pi,
         print('Warning: Output dimensions are different; enforcing squared output.')
         K, L = max(K,L), max(K,L)
 
-    w_phase = (k_end - k_start) / K
+    if include_end:
+        w_phase = (k_end - k_start) / (K-1)
+    else:
+        w_phase = (k_end - k_start) / K
     a_phase = - k_start
 
     if fftshift_input:
