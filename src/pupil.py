@@ -120,7 +120,7 @@ class VectorialPolarPupil(Pupil):
         self.field *= self.zernike_aberrations()
 
     def initialize_field(self):
-        single_field = torch.ones(self.n_pix_pupil).to(self.device).unsqueeze(0)
+        single_field = torch.ones(self.n_pix_pupil).to(self.device)
         return torch.stack((self.e0x * single_field, self.e0y * single_field),
                             dim=0).to(torch.complex64).unsqueeze(0)
 

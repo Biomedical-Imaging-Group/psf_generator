@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from utils.czt import custom_ifft2
 
 from utils.integrate import integrate_summation_rule
-from torch.special import bessel_j0
+from torch.special import bessel_j0, bessel_j1
 
 
 class Propagator(ABC):
@@ -176,166 +176,73 @@ class ScalarPolarPropagator(Propagator):
         return self.field
 
 
-class Vectorial(Propagator):
-    """Richards-Wolf model (vectorial). """
+class VectorialPolarPropagator(Propagator):
+    def __init__(self, pupil, n_pix_psf=128, device='cpu',
+                 wavelength=632, NA=0.9, fov=1000, refractive_index=1.5,
+                 defocus_min=0, defocus_max=0, n_defocus=1,
+                 apod_factor=False, envelope=None,
+                 gibson_lanni=False, z_p=1e3, n_s=1.3,
+                 n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3,
+                 n_i=1.5, n_i0=1.5, t_i0=100e3):
+        super().__init__(pupil=pupil, n_pix_psf=n_pix_psf, device=device,
+                         wavelength=wavelength, NA=NA, fov=fov, refractive_index=refractive_index,
+                         defocus_min=defocus_min, defocus_max=defocus_max, n_defocus=n_defocus,
+                         apod_factor=apod_factor, envelope=envelope,
+                         gibson_lanni=gibson_lanni, z_p=z_p, n_s=n_s,
+                         n_g=n_g, n_g0=n_g0, t_g=t_g, t_g0=t_g0,
+                         n_i=n_i, n_i0=n_i0, t_i0=t_i0)
 
-    def __init__(self, pupil, params):
-        super().__init__(pupil, params)
+        # PSF coordinates
+        x = torch.linspace(-self.fov / 2, self.fov / 2, self.n_pix_psf)
+        xx, yy = torch.meshgrid(x, x, indexing='ij')
+        self.r = torch.sqrt(xx ** 2 + yy ** 2).unsqueeze(0).unsqueeze(0).unsqueeze(-1).to(self.device)
+        self.varphi = torch.atan2(yy, xx)
 
-        self.pupil = pupil
-        self.params = params
-        self.field = None
+        # Pupil coordinates
+        self.theta_max = np.arcsin(self.NA / self.refractive_index)
+        theta = torch.linspace(0, self.theta_max, self.n_pix_pupil).to(self.device)
 
-        if pupil is None:
-            self.pupil = VectorialPupil(params)
+        # Precompute additional factors
+        self.k = 2 * np.pi / self.wavelength
+        self.sin_t = torch.reshape(torch.sin(theta), (1, 1, 1, 1, -1))
+        self.cos_t = torch.reshape(torch.cos(theta), (1, 1, 1, 1, -1))
+        defocus_range = torch.linspace(self.defocus_min, self.defocus_max, self.n_defocus
+                                       ).reshape(-1, 1, 1, 1, 1).to(self.device)
+        self.defocus_filters = torch.exp(1j * self.k * defocus_range * self.cos_t)
+        correction_factor = torch.ones(1, 1, 1, 1, self.n_pix_pupil).to(torch.complex64)
+        if self.apod_factor:
+            correction_factor *= torch.sqrt(self.cos_t)
+        # to be verified for the vectorial case
+        if self.envelope is not None:
+            correction_factor *= torch.exp(- self.sin_t ** 2 / self.envelope ** 2)
+        self.correction_factor = correction_factor.to(self.device)
 
     def compute_focus_field(self):
-        """Compute the vectorial field at focus.
-        """
+        # multiplicative scalar factor to be verified for the vectorial case
 
-        pupil = self.pupil.return_pupil()
-        size = self.params.get('n_pix_pupil')
-        x = torch.linspace(-2 * self.params.get('wavelength'), 2 * self.params.get('wavelength'), size)
-        y = torch.linspace(-2 * self.params.get('wavelength'), 2 * self.params.get('wavelength'), size)
-        z =  torch.linspace(-2 * self.params.get('wavelength'), 2 * self.params.get('wavelength'), size)
-        xx, yy, zz  = torch.meshgrid(x, y, z,  indexing='ij')
-        theta_max = torch.asin(self.params.get('NA') * torch.ones(1) / self.params.get('n_t'))
+        i0 = torch.sum(
+            self.pupil.field.unsqueeze(-2).unsqueeze(-2) *
+            bessel_j0(self.k * self.r * self.sin_t) *
+            self.sin_t * (self.cos_t + 1) * self.defocus_filters
+            , dim=-1) * self.theta_max / self.n_pix_pupil / np.sqrt(self.refractive_index)
+        i1 = torch.sum(
+            self.pupil.field.unsqueeze(-2).unsqueeze(-2) *
+            bessel_j1(self.k * self.r * self.sin_t) *
+            self.sin_t ** 2 * self.defocus_filters
+            , dim=-1) * self.theta_max / self.n_pix_pupil / np.sqrt(self.refractive_index)
+        i2 = torch.sum(
+            self.pupil.field.unsqueeze(-2).unsqueeze(-2) *
+            self.bessel_j2(self.k * self.r * self.sin_t) *
+            self.sin_t * (self.cos_t - 1) * self.defocus_filters
+            , dim=-1) * self.theta_max / self.n_pix_pupil / np.sqrt(self.refractive_index)
 
-        i0_x = integrate_summation_rule(lambda theta: self.integrand00(theta, xx, yy, zz, pupil[0]), 0, theta_max, size)
-        i2_x = integrate_summation_rule(lambda theta: self.integrand02(theta, xx, yy, zz, pupil[0]), 0, theta_max, size)
-        i1_x = integrate_summation_rule(lambda theta: self.integrand01(theta, xx, yy, zz, pupil[0]), 0, theta_max, size)
+        self.field = torch.stack((i0[:, 0, :, :] + i2[:, 0, :, :] * torch.cos(2 * self.varphi) + i2[:, 1, :, :] * torch.sin(2 * self.varphi),
+                                 i2[:, 0, :, :] * torch.sin(2 * self.varphi) + i0[:, 1, :, :] - i2[:, 1, :, :] * torch.cos(2 * self.varphi),
+                                 -2 * 1j * i1[:, 0, :, :] * torch.cos(self.varphi) - 2 * 1j * i1[:, 1, :, :] * torch.sin(self.varphi)), dim=1)
 
-        i0_y = integrate_summation_rule(lambda theta: self.integrand00(theta, xx, yy, zz, pupil[1]), 0, theta_max, size)
-        i2_y = integrate_summation_rule(lambda theta: self.integrand02(theta, xx, yy, zz, pupil[1]), 0, theta_max, size)
-        i1_y = integrate_summation_rule(lambda theta: self.integrand01(theta, xx, yy, zz, pupil[1]), 0, theta_max, size)
+        return self.field
 
-        varphi = torch.atan2(yy, xx)
-        field_x = i0_x + i2_x * torch.cos(2 * varphi) + i2_y * torch.sin(2 * varphi)
-        field_y = i2_x * torch.sin(2 * varphi) + i0_y - i2_y * torch.cos(2 * varphi)
-        field_z = -2 * 1j * i1_x * torch.cos(varphi) - 2 * 1j * i1_y * torch.sin(varphi)
-
-        self.field = torch.stack((field_x, field_y, field_z), dim=0).movedim(-1,0)
-
-        return torch.abs(self.field) ** 2
-
-    def integrand00(self, theta, xx, yy, zz, pupil):
-        pupil = self.pupil.return_pupil()
-        size = self.params.get('n_pix_pupil')
-        x = torch.linspace(-2 * self.params.get('wavelength'), 2 * self.params.get('wavelength'), size)
-        y = torch.linspace(-2 * self.params.get('wavelength'), 2 * self.params.get('wavelength'), size)
-        z =  torch.linspace(-2 * self.params.get('wavelength'), 2 * self.params.get('wavelength'), size)
-        xx, yy, zz  = torch.meshgrid(x, y, z,  indexing='ij')
-        theta_max = torch.asin(self.params.get('NA') * torch.ones(1) / self.params.get('n_t'))
-
-        i0_x = integrate_summation_rule(lambda theta: self.integrand00(theta, xx, yy, zz, pupil[0]), 0, theta_max, size)
-        i2_x = integrate_summation_rule(lambda theta: self.integrand02(theta, xx, yy, zz, pupil[0]), 0, theta_max, size)
-        i1_x = integrate_summation_rule(lambda theta: self.integrand01(theta, xx, yy, zz, pupil[0]), 0, theta_max, size)
-
-        i0_y = integrate_summation_rule(lambda theta: self.integrand00(theta, xx, yy, zz, pupil[1]), 0, theta_max, size)
-        i2_y = integrate_summation_rule(lambda theta: self.integrand02(theta, xx, yy, zz, pupil[1]), 0, theta_max, size)
-        i1_y = integrate_summation_rule(lambda theta: self.integrand01(theta, xx, yy, zz, pupil[1]), 0, theta_max, size)
-
-        varphi = torch.atan2(yy, xx)
-        field_x = i0_x + i2_x * torch.cos(2 * varphi) + i2_y * torch.sin(2 * varphi)
-        field_y = i2_x * torch.sin(2 * varphi) + i0_y - i2_y * torch.cos(2 * varphi)
-        field_z = -2 * 1j * i1_x * torch.cos(varphi) - 2 * 1j * i1_y * torch.sin(varphi)
-
-        self.field = torch.stack((field_x, field_y, field_z), dim=0).movedim(-1,0)
-
-        return torch.abs(self.field) ** 2
-
-    def integrand00(self, theta, xx, yy, zz, pupil):
-        sin_t = torch.sin(theta)
-        cos_t = torch.cos(theta)
-        k = 2 * torch.pi * self.params.get('n_t') / self.params.get('wavelength')
-        r = k * torch.sqrt(xx ** 2 + yy ** 2) * sin_t
-        j0 = sp.bessel_j0(r)
-        k = 2 * torch.pi * self.params.get('n_t') / self.params.get('wavelength')
-        r = k * torch.sqrt(xx ** 2 + yy ** 2) * sin_t
-        j0 = sp.bessel_j0(r)
-
-        # make sure i is complex
-        i = torch.exp(1j * k * zz * cos_t)
-        i *= torch.sqrt(cos_t) * sin_t * (1 + cos_t)
-
-        theta_max = torch.asin(self.params.get('NA') * torch.ones(1) / self.params.get('n_t'))
-        theta_0 = theta_max/self.params.get('n_pix_pupil')
-        i *= pupil[int(theta/theta_0)]
-
-
-        theta_max = torch.asin(self.params.get('NA') * torch.ones(1) / self.params.get('n_t'))
-        theta_0 = theta_max/self.params.get('n_pix_pupil')
-        i *= pupil[int(theta/theta_0)]
-
-        return torch.multiply(i, j0)
-
-    def integrand02(self, theta, xx, yy, zz, pupil):
-        sin_t = torch.sin(theta)
-        cos_t = torch.cos(theta)
-        k = 2 * torch.pi * self.params.get('n_t') / self.params.get('wavelength')
-        r = k * torch.sqrt(xx ** 2 + yy ** 2) * sin_t
+    @staticmethod
+    def bessel_j2(r):
         eps = 1e-10
-        j2 = 2 * sp.bessel_j1(r) / (r+eps) - sp.bessel_j0(r)
-
-        # make sure i is complex
-        i = torch.exp(1j * k * zz * cos_t)
-        i *= torch.sqrt(cos_t) * sin_t * (1 - cos_t)
-
-        theta_max = torch.asin(self.params.get('NA') * torch.ones(1) / self.params.get('n_t'))
-        theta_0 = theta_max/self.params.get('n_pix_pupil')
-        i *= pupil[int(theta/theta_0)]
-
-        return torch.multiply(i, j2)
-
-    def integrand01(self, theta, xx, yy, zz, pupil):
-        sin_t = torch.sin(theta)
-        cos_t = torch.cos(theta)
-        k = 2 * torch.pi * self.params.get('n_t') / self.params.get('wavelength')
-        r = k * torch.sqrt(xx ** 2 + yy ** 2) * sin_t
-        j1 = sp.bessel_j1(r)
-
-        # make sure i is complex
-        i = torch.exp(1j * k * zz * cos_t)
-        i *= torch.sqrt(cos_t) * sin_t ** 2
-
-        theta_max = torch.asin(self.params.get('NA') * torch.ones(1) / self.params.get('n_t'))
-        theta_0 = theta_max/self.params.get('n_pix_pupil')
-        i *= pupil[int(theta/theta_0)]
-
-        return torch.multiply(i, j1)
-
-    def integrand02(self, theta, xx, yy, zz, pupil):
-        sin_t = torch.sin(theta)
-        cos_t = torch.cos(theta)
-        k = 2 * torch.pi * self.params.get('n_t') / self.params.get('wavelength')
-        r = k * torch.sqrt(xx ** 2 + yy ** 2) * sin_t
-        eps = 1e-10
-        j2 = 2 * sp.bessel_j1(r) / (r+eps) - sp.bessel_j0(r)
-
-        # make sure i is complex
-        i = torch.exp(1j * k * zz * cos_t)
-        i *= torch.sqrt(cos_t) * sin_t * (1 - cos_t)
-
-        theta_max = torch.asin(self.params.get('NA') * torch.ones(1) / self.params.get('n_t'))
-        theta_0 = theta_max/self.params.get('n_pix_pupil')
-        i *= pupil[int(theta/theta_0)]
-
-        return torch.multiply(i, j2)
-
-    def integrand01(self, theta, xx, yy, zz, pupil):
-        sin_t = torch.sin(theta)
-        cos_t = torch.cos(theta)
-        k = 2 * torch.pi * self.params.get('n_t') / self.params.get('wavelength')
-        r = k * torch.sqrt(xx ** 2 + yy ** 2) * sin_t
-        j1 = sp.bessel_j1(r)
-
-        # make sure i is complex
-        i = torch.exp(1j * k * zz * cos_t)
-        i *= torch.sqrt(cos_t) * sin_t ** 2
-
-        theta_max = torch.asin(self.params.get('NA') * torch.ones(1) / self.params.get('n_t'))
-        theta_0 = theta_max/self.params.get('n_pix_pupil')
-        i *= pupil[int(theta/theta_0)]
-
-        return torch.multiply(i, j1)
-
+        return 2 * bessel_j1(r) / (r+eps) - bessel_j0(r)
