@@ -8,6 +8,7 @@ from torch.special import bessel_j0, bessel_j1
 from scipy.special import itj0y0
 
 from integrators import trapezoid_rule, simpsons_rule, richard2_rule
+from functorch import vmap
 # # re-enable if gradients wrt Bessel term are required
 # from bessel_ad import BesselJ0
 # bessel_j0_ad = BesselJ0.apply
@@ -87,8 +88,6 @@ class ScalarCartesianPropagator(Propagator):
                                     (2 * self.NA / self.n_pix_pupil)**2
         return self.field / (2 * np.pi)
 
-from functorch import vmap
-
 class ScalarPolarPropagator(Propagator):
     def __init__(self, pupil, n_pix_psf=128, device='cpu',
                  wavelength=632, NA=0.9, fov=1000, 
@@ -115,7 +114,7 @@ class ScalarPolarPropagator(Propagator):
         # value at any value of `theta`
         theta_max = np.arcsin(self.NA)
         num_thetas = self.n_pix_pupil
-        thetas = torch.linspace(0, theta_max, num_thetas)#.to(self.device)
+        thetas = torch.linspace(0, theta_max, num_thetas)
         dtheta = theta_max / (num_thetas - 1)
         self.thetas = thetas.to(self.device)
         self.dtheta = dtheta
