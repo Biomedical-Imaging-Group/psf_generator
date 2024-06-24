@@ -87,6 +87,7 @@ class ScalarCartesianPropagator(Propagator):
                                     (2 * self.NA / self.n_pix_pupil)**2
         return self.field / (2 * np.pi)
 
+from functorch import vmap
 
 class ScalarPolarPropagator(Propagator):
     def __init__(self, pupil, n_pix_psf=128, device='cpu',
@@ -105,7 +106,7 @@ class ScalarPolarPropagator(Propagator):
         rr = torch.sqrt(xx ** 2 + yy ** 2).unsqueeze(0).unsqueeze(0).to(self.device)
         r_unique, rr_indices = torch.unique(rr, return_inverse=True)
         self.rs = r_unique.to(self.device)
-        self.rr_indices = rr_indices.to(self.device)
+        self.rr_indices = rr_indices.squeeze().to(self.device)
 
         # Pupil coordinates
         # TODO: number of pixels in pupil (== gridsize of integration domain) should be driven
@@ -114,7 +115,7 @@ class ScalarPolarPropagator(Propagator):
         # value at any value of `theta`
         theta_max = np.arcsin(self.NA)
         num_thetas = self.n_pix_pupil
-        thetas = torch.linspace(0, theta_max, num_thetas).to(self.device)
+        thetas = torch.linspace(0, theta_max, num_thetas)#.to(self.device)
         dtheta = theta_max / (num_thetas - 1)
         self.thetas = thetas.to(self.device)
         self.dtheta = dtheta
@@ -146,22 +147,19 @@ class ScalarPolarPropagator(Propagator):
         # bessel function evaluations are expensive and can be computed independently from defocus
         J_evals = bessel_j0(self.k * self.rs[None,:] * sin_t[:,None])    # [n_theta, n_radii]
 
-        # compute PSF field; handle defocus with an outer loop (not parallelized)
-        fields = torch.zeros_like(self.rr_indices, dtype=torch.complex64)   # [n_defocus, channels, size_x, size_y]
-        # TODO: replace loop with vmap()?
-        for i in range(len(self.defocus_filters)):
-            defocus_term = self.defocus_filters[i]  #[n_thetas, ]
-            # compute E(r) for a list of unique radii values
-            integrand = J_evals * (far_fields * defocus_term * self.correction_factor * sin_t)[:,None]  # [n_theta, n_radii]
-            field = self.quadrature_rule(integrand, self.dtheta)
-            # field = riemann_rule(integrand, self.dtheta)
-            # scatter the radial evaluations of E(r) onto the xy image grid
-            fields[i,:] = field[self.rr_indices]
-
-        # shape: [`n_defocus` x `channels` x `size_x` x `size_y`]
+        # compute PSF field; handle defocus via batching with vmap()
+        batched_compute_field_at_defocus = vmap(self.compute_field_at_defocus, in_dims=(0, None, None, None))
+        fields = batched_compute_field_at_defocus(self.defocus_filters, J_evals, far_fields, sin_t)
         return fields
 
-
+    def compute_field_at_defocus(self, defocus_term, J_evals, far_fields, sin_t):
+        # compute E(r) for a list of unique radii values
+        integrand = J_evals * (far_fields * defocus_term * self.correction_factor * sin_t)[:,None]  # [n_theta, n_radii]
+        field = self.quadrature_rule(integrand, self.dtheta)
+        # scatter the radial evaluations of E(r) onto the xy image grid
+        field = field[self.rr_indices].unsqueeze(0)       # [n_channels=1, size_x, size_y]
+        return field
+    
     def test_compute_field_tc1(self):
         sin_t = torch.sin(self.thetas)
         J_evals = bessel_j0(self.k * self.rs[None,:] * sin_t[:,None])
