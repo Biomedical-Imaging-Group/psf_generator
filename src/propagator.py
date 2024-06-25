@@ -308,9 +308,16 @@ class VectorialPolarPropagator(Propagator):
         correction_factor = torch.ones(1, 1, 1, 1, self.n_pix_pupil).to(torch.complex64)
         if self.apod_factor:
             correction_factor *= torch.sqrt(self.cos_t)
-        # to be verified for the vectorial case
         if self.envelope is not None:
             correction_factor *= torch.exp(- self.sin_t ** 2 / self.envelope ** 2)
+        if self.gibson_lanni:
+            # computed following Eq. (3.45) of François Aguet's thesis
+            optical_path = self.z_p * torch.sqrt(self.n_s ** 2 - self.n_i ** 2 * self.sin_t ** 2) \
+                           + self.t_i * torch.sqrt(self.n_i ** 2 - self.n_i ** 2 * self.sin_t ** 2) \
+                           - self.t_i0 * torch.sqrt(self.n_i0 ** 2 - self.n_i ** 2 * self.sin_t ** 2) \
+                           + self.t_g * torch.sqrt(self.n_g ** 2 - self.n_i ** 2 * self.sin_t ** 2) \
+                           - self.t_g0 * torch.sqrt(self.n_g0 ** 2 - self.n_i ** 2 * self.sin_t ** 2)
+            correction_factor *= torch.exp(1j * self.k * optical_path)
         self.correction_factor = correction_factor.to(self.device)
 
     def compute_focus_field(self):
