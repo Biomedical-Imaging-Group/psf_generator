@@ -83,7 +83,6 @@ class ScalarPolarPupil(Pupil):
         Z *= np.cos(m * phi) if l >= 0 else np.sin(m * phi)
         return Z
 
-
 class VectorialCartesianPupil(Pupil):
     def __init__(self, e0x=1, e0y=0, 
                  n_pix_pupil=128, device='cpu', zernike_coefficients=(0,)):
