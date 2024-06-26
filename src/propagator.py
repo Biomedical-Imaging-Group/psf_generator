@@ -3,7 +3,6 @@ import numpy as np
 from abc import ABC, abstractmethod
 from utils.czt import custom_ifft2
 
-from utils.integrate import integrate_summation_rule
 from torch.special import bessel_j0, bessel_j1
 from scipy.special import itj0y0
 
@@ -21,7 +20,7 @@ class Propagator(ABC):
                  apod_factor=False, envelope=None, 
                  gibson_lanni=False, z_p=1e3, n_s=1.3,
                  n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3, 
-                 n_i=1.5, n_i0=1.5, t_i0=100e3):
+                 n_i=1.5, t_i0=100e3):
         self.pupil = pupil
         
         self.n_pix_psf = n_pix_psf
@@ -55,9 +54,9 @@ class Propagator(ABC):
         self.t_g = t_g
         self.t_g0 = t_g0
         self.n_i = n_i
-        self.n_i0 = n_i0
+        self.n_i0 = refractive_index
         self.t_i0 = t_i0
-        self.t_i = n_i * (t_g0/n_g0 + t_i0/n_i0 - t_g/n_g - z_p/n_s)
+        self.t_i = n_i * (t_g0/n_g0 + t_i0/self.n_i0 - t_g/n_g - z_p/n_s)
 
         self.field = None
 
@@ -65,7 +64,7 @@ class Propagator(ABC):
     def compute_focus_field(self):
         raise NotImplementedError
 
-    
+
 class ScalarCartesianPropagator(Propagator):
     def __init__(self, pupil, n_pix_psf=128, device='cpu',
                  wavelength=632, NA=0.9, fov=1000, refractive_index=1.5, 
@@ -78,9 +77,9 @@ class ScalarCartesianPropagator(Propagator):
                          wavelength=wavelength, NA=NA, fov=fov, refractive_index=refractive_index, 
                          defocus_min=defocus_min, defocus_max=defocus_max, n_defocus=n_defocus,
                          apod_factor=apod_factor, envelope=envelope, 
-                         gibson_lanni=gibson_lanni, z_p=z_p, n_s=1.3,
+                         gibson_lanni=gibson_lanni, z_p=z_p, n_s=n_s,
                          n_g=n_g, n_g0=n_g0, t_g=t_g, t_g0=t_g0,
-                         n_i=n_i, n_i0=n_i0, t_i0=t_i0)
+                         n_i=n_i, t_i0=t_i0)
         self.sz_correction = sz_correction
         
          # Zoom factor to determine pixel size with custom FFT
@@ -134,7 +133,7 @@ class ScalarPolarPropagator(Propagator):
                  apod_factor=False, envelope=None,  
                  gibson_lanni=False, z_p=1e3, n_s=1.3, 
                  n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3,
-                 n_i=1.5, n_i0=1.5, t_i0=100e3, 
+                 n_i=1.5, t_i0=100e3, 
                  quadrature_rule=simpsons_rule):
         super().__init__(pupil=pupil, n_pix_psf=n_pix_psf, device=device,
                          wavelength=wavelength, NA=NA, fov=fov, refractive_index=refractive_index,
@@ -142,35 +141,28 @@ class ScalarPolarPropagator(Propagator):
                          apod_factor=apod_factor, envelope=envelope, 
                          gibson_lanni=gibson_lanni, z_p=z_p, n_s=n_s,
                          n_g=n_g, n_g0=n_g0, t_g=t_g, t_g0=t_g0,
-                         n_i=n_i, n_i0=n_i0, t_i0=t_i0)
+                         n_i=n_i, t_i0=t_i0)
         
         # PSF coordinates
         x = torch.linspace(-self.fov/2, self.fov/2, self.n_pix_psf)
         xx, yy = torch.meshgrid(x, x, indexing='ij')
-        rr = torch.sqrt(xx ** 2 + yy ** 2).unsqueeze(0).unsqueeze(0).to(self.device)
+        rr = torch.sqrt(xx ** 2 + yy ** 2)
         r_unique, rr_indices = torch.unique(rr, return_inverse=True)
-        self.rs = r_unique.to(self.device)
-        self.rr_indices = rr_indices.squeeze().to(self.device)
+        self.rs = r_unique.to(self.device)  # compute minimal number of points
+        self.rr_indices = rr_indices.to(self.device)  # to invert
 
         # Pupil coordinates
-        # TODO: number of pixels in pupil (== gridsize of integration domain) should be driven
-        # by the integration method and its required accuracy, not set a-priori
-        # TODO: ideally, pupil should be described by a *continuous function* that allows us to query its
-        # value at any value of `theta`
         theta_max = np.arcsin(self.NA / self.refractive_index)
-        num_thetas = self.n_pix_pupil
-        thetas = torch.linspace(0, theta_max, num_thetas)
-        dtheta = theta_max / (num_thetas - 1)
-        self.thetas = thetas.to(self.device)
-        self.dtheta = dtheta
+        self.thetas = torch.linspace(0, theta_max, self.n_pix_pupil).to(self.device)
+        self.dtheta = theta_max / (self.n_pix_pupil - 1)
 
         # Precompute additional factors
         self.k = 2.0 * np.pi / self.wavelength
-        sin_t, cos_t = torch.sin(thetas), torch.cos(thetas)
+        sin_t, cos_t = torch.sin(self.thetas), torch.cos(self.thetas)
         defocus_range = torch.linspace(self.defocus_min, self.defocus_max, self.n_defocus)
         self.defocus_filters = torch.exp(1j * self.k * defocus_range[:,None] * cos_t[None,:]).to(self.device)   # [n_defocus, n_thetas]
 
-        correction_factor = torch.ones(num_thetas)
+        correction_factor = torch.ones(self.n_pix_pupil)
         if self.apod_factor:
             correction_factor *= torch.sqrt(cos_t)
         if self.envelope is not None:
@@ -185,26 +177,30 @@ class ScalarPolarPropagator(Propagator):
             correction_factor *= torch.exp(1j * self.k * optical_path)
         self.correction_factor = correction_factor.to(self.device)
         self.quadrature_rule = quadrature_rule
-
-    def compute_focus_field(self):
-        # argument shapes:
-        # self.thetas,            [n_thetas, ]
-        # self.dtheta,            float
-        # self.rs,                [n_radii, ]
-        # self.correction_factor  [n_thetas, ]
-
-        sin_t = torch.sin(self.thetas) # [n_thetas, ]
-        far_fields = self.pupil.field.squeeze()   # [n_defocus=1, channels=1, n_thetas] ==> [n_thetas, ]
         
         # bessel function evaluations are expensive and can be computed independently from defocus
-        J_evals = bessel_j0(self.k * self.rs[None,:] * sin_t[:,None])    # [n_theta, n_radii]
+        self.J_evals = bessel_j0(self.k * self.rs[None,:] * sin_t[:,None])    # [n_theta, n_radii]
 
+
+    def compute_focus_field(self):
+        sin_t = torch.sin(self.thetas)  # [n_thetas, ]
+        far_fields = self.pupil.field.squeeze()   # [n_defocus=1, channels=1, n_thetas] ==> [n_thetas, ]
+        
         # compute PSF field; handle defocus via batching with vmap()
         batched_compute_field_at_defocus = vmap(self.compute_field_at_defocus, in_dims=(0, None, None, None))
-        fields = batched_compute_field_at_defocus(self.defocus_filters, J_evals, far_fields, sin_t)
+        fields = batched_compute_field_at_defocus(
+            self.defocus_filters, self.J_evals, far_fields, sin_t)
         return fields
 
     def compute_field_at_defocus(self, defocus_term, J_evals, far_fields, sin_t):
+        # argument shapes:
+        # far_fields              [n_thetas, ]
+        # defocus_term            [n_thetas, ]
+        # correction_factor       [n_thetas, ]
+        # sin_t                   [n_thetas, ]
+        # J_evals                 [n_theta, n_radii]
+        # self.dtheta,            float
+
         # compute E(r) for a list of unique radii values
         integrand = J_evals * (far_fields * defocus_term * self.correction_factor * sin_t)[:,None]  # [n_theta, n_radii]
         field = self.quadrature_rule(integrand, self.dtheta)
@@ -258,10 +254,6 @@ class ScalarPolarPropagator(Propagator):
         return fields, fields_sol
 
 
-
-
-
-
 class VectorialPolarPropagator(Propagator):
     def __init__(self, pupil, n_pix_psf=128, device='cpu',
                  wavelength=632, NA=0.9, fov=1000, refractive_index=1.5,
@@ -285,13 +277,14 @@ class VectorialPolarPropagator(Propagator):
         self.varphi = torch.atan2(yy, xx)
 
         # Pupil coordinates
+        # Thetas are defined twice here, to be cleaned when working on VectPolarProp
         self.theta_max = np.arcsin(self.NA / self.refractive_index)
         theta = torch.linspace(0, self.theta_max, self.n_pix_pupil).to(self.device)
         # TODO: number of pixels in pupil (== gridsize of integration domain) should be driven
         # by the integration method and its required accuracy, not set a-priori
         # TODO: ideally, pupil should be described by a *continuous function* that allows us to query its
         # value at any value of `theta`
-        theta_max = np.arcsin(self.NA)
+        theta_max = np.arcsin(self.NA / self.refractive_index)
         num_thetas = self.n_pix_pupil
         thetas = torch.linspace(0, theta_max, num_thetas)
         dtheta = theta_max / (num_thetas - 1)
