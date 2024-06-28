@@ -72,7 +72,7 @@ class ScalarCartesianPropagator(Propagator):
                  sz_correction=True, apod_factor=False, envelope=None, 
                  gibson_lanni=False, z_p=1e3, n_s=1.3,
                  n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3,
-                 n_i=1.5, n_i0=1.5, t_i0=100e3):
+                 n_i=1.5, t_i0=100e3):
         super().__init__(pupil=pupil, n_pix_psf=n_pix_psf, device=device,
                          wavelength=wavelength, NA=NA, fov=fov, refractive_index=refractive_index, 
                          defocus_min=defocus_min, defocus_max=defocus_max, n_defocus=n_defocus,
