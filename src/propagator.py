@@ -65,6 +65,9 @@ class Propagator(ABC):
     def compute_focus_field(self):
         raise NotImplementedError
 
+
+from torch.fft import fftfreq, fftshift
+
     
 class ScalarCartesianPropagator(Propagator):
     def __init__(self, pupil, n_pix_psf=128, device='cpu',
@@ -85,13 +88,13 @@ class ScalarCartesianPropagator(Propagator):
         
          # Zoom factor to determine pixel size with custom FFT
         self.zoom_factor = 2 * self.NA * self.fov / self.wavelength \
-             / self.refractive_index / self.n_pix_pupil
+             / self.refractive_index / (self.n_pix_pupil - 1)           # CHANGE: DIVIDE BY N-1 INSTEAD OF N
 
         # Compute coordinates s_x, s_y, s_z
         n_pix_pupil = self.pupil.n_pix_pupil
-        x = torch.linspace(-1, 1, n_pix_pupil).to(self.device)
-        s_x, s_y = torch.meshgrid(x, x, indexing='ij')
-        s_z = torch.sqrt((1 - (self.NA/self.refractive_index)**2 * (s_x**2 + s_y**2)
+        s_x = torch.linspace(-1, 1, n_pix_pupil).to(self.device)
+        s_xx, s_yy = torch.meshgrid(s_x, s_x, indexing='ij')
+        s_zz = torch.sqrt((1 - (self.NA/self.refractive_index)**2 * (s_xx**2 + s_yy**2)
                           ).clamp(min=0.001)).reshape(1, 1, n_pix_pupil, n_pix_pupil)
 
         # Precompute additional factors
@@ -99,14 +102,14 @@ class ScalarCartesianPropagator(Propagator):
         self.correction_factor = torch.ones(1, 1, n_pix_pupil, n_pix_pupil
                                             ).to(torch.complex64).to(self.device)
         if self.sz_correction:
-            self.correction_factor *= 1 / s_z
+            self.correction_factor *= 1 / s_zz
         if self.apod_factor:
-            self.correction_factor *= torch.sqrt(s_z)
+            self.correction_factor *= torch.sqrt(s_zz)
         if self.envelope is not None:
-            self.correction_factor *= torch.exp(- (1-s_z**2) / self.envelope**2)
+            self.correction_factor *= torch.exp(- (1-s_zz**2) / self.envelope**2)
         if self.gibson_lanni:
             # computed following Eq. (3.45) of François Aguet's thesis
-            sin_t = (self.NA / self.refractive_index * torch.sqrt(s_x**2 + s_y**2)).clamp(max=1)
+            sin_t = (self.NA / self.refractive_index * torch.sqrt(s_xx**2 + s_yy**2)).clamp(max=1)
             optical_path = self.z_p * torch.sqrt(self.n_s**2 - self.n_i**2 * sin_t**2) \
                             + self.t_i * torch.sqrt(self.n_i**2 - self.n_i**2 * sin_t**2) \
                             - self.t_i0 * torch.sqrt(self.n_i0**2 - self.n_i**2 * sin_t**2) \
@@ -115,7 +118,20 @@ class ScalarCartesianPropagator(Propagator):
             self.correction_factor *= torch.exp(1j * self.k * optical_path)
         defocus_range = torch.linspace(self.defocus_min, self.defocus_max, self.n_defocus
                                        ).reshape(-1, 1, 1, 1).to(self.device)
-        self.defocus_filters = torch.exp(1j * self.k * s_z * defocus_range)
+        self.defocus_filters = torch.exp(1j * self.k * s_zz * defocus_range)
+
+        self.s_x = s_x
+        self.s_max = torch.tensor(self.NA / self.refractive_index)
+
+        ds = s_x[1] - s_x[0]
+        self.ds = ds
+        
+        k_range_fft = 1.0 / ds
+        k_start = -self.zoom_factor * np.pi
+        k_end   =  self.zoom_factor * np.pi
+        x = torch.linspace(k_start, k_end, self.n_pix_pupil) / (2.0 * torch.pi) * k_range_fft
+        self.x = x
+
 
     def compute_focus_field(self):
         self.field = custom_ifft2(self.pupil.field * self.correction_factor * self.defocus_filters, 
@@ -125,6 +141,83 @@ class ScalarCartesianPropagator(Propagator):
                                   norm='backward', fftshift_input=True, include_end=True) * \
                                     (2 * self.NA / self.n_pix_pupil)**2
         return self.field / (2 * np.pi)
+
+
+    def _compute_PSF_for_far_field(self, far_fields):
+        self.field = custom_ifft2(far_fields * self.correction_factor * self.defocus_filters, 
+                                  shape_out=(self.n_pix_psf, self.n_pix_psf), 
+                                  k_start  = -self.zoom_factor * np.pi, 
+                                  k_end    =  self.zoom_factor * np.pi, 
+                                  norm='backward', 
+                                  fftshift_input=True, 
+                                  include_end=True) \
+                                      * self.ds ** 2    # CHANGE: different scale factor
+        
+        return self.field / (2 * np.pi)
+
+    def compute_focus_field_tc1(self):
+        '''
+        Test case using analytic 2D FFT/Hankel transform solution. If the pupil-domain function f(sx,sy) is:
+        
+            f(sx,sy) = (sx ** 2 + sy ** 2 < s_max ** 2) ? 1.0 : 0.0
+        
+        The resulting Fourier Transform, F(x, y), should be:
+
+            F(x, y) = s_max / (2 * pi * ||rho||) * J1(2 * pi * ||rho|| * s_max)
+
+        This requires setting e_inf(x,y) such that:
+
+            e_inf(sx, sy) / sz * exp(i * k * sz * z) == step(||s|| - s_max)
+
+        '''
+        s_xx, s_yy = torch.meshgrid(self.s_x, self.s_x, indexing='ij')
+        R = 0.5
+        e_inf = torch.where((s_xx ** 2 + s_yy ** 2) <= R ** 2, 1.0, 0.0)
+
+        xx, yy = torch.meshgrid(self.x, self.x, indexing='ij')
+        rr = torch.sqrt(xx ** 2 + yy ** 2)
+        field_sol = R / (2.0 * np.pi * rr) * bessel_j1(2.0 * np.pi * rr * R)
+
+        # self.field = custom_ifft2(e_inf, #  * self.correction_factor * self.defocus_filters, 
+        #                           shape_out=(self.n_pix_psf, self.n_pix_psf), 
+        #                           k_start  = -self.zoom_factor * np.pi, 
+        #                           k_end    =  self.zoom_factor * np.pi, 
+        #                           norm='backward', 
+        #                           fftshift_input=True, 
+        #                           include_end=True) \
+        #                               * self.ds ** 2    # CHANGE: different scale factor
+        # return self.field / (2 * np.pi), field_sol
+
+        field = self._compute_PSF_for_far_field(e_inf).squeeze()
+        
+        return field, field_sol
+
+    def compute_focus_field_tc2(self):
+        s_xx, s_yy = torch.meshgrid(self.s_x, self.s_x, indexing='ij')
+        alpha = 10.0
+        e_inf = torch.exp(-alpha * torch.sqrt(s_xx ** 2 + s_yy ** 2))
+
+        N = self.n_pix_pupil
+
+        ds = self.s_x[1] - self.s_x[0]
+        k_range_fft = 1.0 / ds
+        k_start = -self.zoom_factor * np.pi
+        k_end   =  self.zoom_factor * np.pi
+        xs = torch.linspace(k_start, k_end, N) / (2.0 * torch.pi) * k_range_fft
+        xx, yy = torch.meshgrid(xs, xs, indexing='ij')
+        rr = torch.sqrt(xx ** 2 + yy ** 2)
+        field_sol = 1.0 / (1.0 + (2 * torch.pi * rr / alpha) ** 2) ** 1.5 / alpha ** 2
+
+        self.field = custom_ifft2(e_inf, #  * self.correction_factor * self.defocus_filters, 
+                                  shape_out=(self.n_pix_psf, self.n_pix_psf), 
+                                  k_start  = k_start, 
+                                  k_end    = k_end, 
+                                  norm='backward', 
+                                  fftshift_input=True, 
+                                  include_end=True) \
+                                      * ds ** 2    # CHANGE: different scale factor
+        
+        return self.field / (2 * np.pi), field_sol
 
 
 class ScalarPolarPropagator(Propagator):
@@ -187,30 +280,43 @@ class ScalarPolarPropagator(Propagator):
         self.quadrature_rule = quadrature_rule
 
     def compute_focus_field(self):
+        far_fields = self.pupil.field.squeeze()   # [n_defocus=1, channels=1, n_thetas] ==> [n_thetas, ]
+        return self._compute_PSF_for_far_field(far_fields)
+
+    def _compute_PSF_for_far_field(self, far_fields, sine_factor_in_far_field=False):
         # argument shapes:
         # self.thetas,            [n_thetas, ]
         # self.dtheta,            float
         # self.rs,                [n_radii, ]
         # self.correction_factor  [n_thetas, ]
+        # far_fields              [n_thetas, ]
 
         sin_t = torch.sin(self.thetas) # [n_thetas, ]
-        far_fields = self.pupil.field.squeeze()   # [n_defocus=1, channels=1, n_thetas] ==> [n_thetas, ]
-        
+
         # bessel function evaluations are expensive and can be computed independently from defocus
         J_evals = bessel_j0(self.k * self.rs[None,:] * sin_t[:,None])    # [n_theta, n_radii]
 
         # compute PSF field; handle defocus via batching with vmap()
-        batched_compute_field_at_defocus = vmap(self.compute_field_at_defocus, in_dims=(0, None, None, None))
-        fields = batched_compute_field_at_defocus(self.defocus_filters, J_evals, far_fields, sin_t)
-        return fields
+        batched_compute_field_at_defocus = vmap(self._compute_PSF_at_defocus, in_dims=(0, None, None, None))
 
-    def compute_field_at_defocus(self, defocus_term, J_evals, far_fields, sin_t):
+        if not(sine_factor_in_far_field):
+            fields = batched_compute_field_at_defocus(self.defocus_filters, J_evals, far_fields, sin_t)
+            return fields
+        
+        fields = batched_compute_field_at_defocus(self.defocus_filters, J_evals, far_fields, torch.ones_like(sin_t))
+        return fields
+        
+
+    def _compute_PSF_at_defocus(self, defocus_term, J_evals, far_fields, sin_t):
         # compute E(r) for a list of unique radii values
         integrand = J_evals * (far_fields * defocus_term * self.correction_factor * sin_t)[:,None]  # [n_theta, n_radii]
         field = self.quadrature_rule(integrand, self.dtheta)
         # scatter the radial evaluations of E(r) onto the xy image grid
         field = field[self.rr_indices].unsqueeze(0)       # [n_channels=1, size_x, size_y]
         return field
+    
+
+
     
     def test_compute_field_tc1(self):
         sin_t = torch.sin(self.thetas)
@@ -220,20 +326,20 @@ class ScalarPolarPropagator(Propagator):
         # MODIFICATION FOR TEST CASE: far field corresponding to analytic solution
         far_fields = self.k ** 2 * torch.cos(self.thetas)
 
-        fields = torch.zeros_like(self.rr_indices, dtype=torch.complex64)
+        fields = torch.zeros_like(self.rr_indices, dtype=torch.complex64).unsqueeze(0).unsqueeze(0)
         fields_sol = torch.zeros_like(fields, dtype=torch.complex64)
         # for i in range(len(self.defocus_filters)):
         #     defocus_term = self.defocus_filters[i]
         # MODIFICATION FOR TEST CASE: drop defocus and correction (apod + envelope) terms
         integrand = J_evals * (far_fields * sin_t)[:,None]
         field = self.quadrature_rule(integrand, self.dtheta)
-        fields[0] = field[self.rr_indices]
+        fields[0,0,:] = field[self.rr_indices]
 
-        sol_arg = self.k * self.rs * self.NA    # NA == torch.sin(self.theta_max)
+        sol_arg = self.k * self.rs * self.NA / self.refractive_index    # NA == torch.sin(self.theta_max / self.refractive_index)
         field_sol = sol_arg * bessel_j1(sol_arg)
-        fields_sol[0] = field_sol[self.rr_indices]
+        fields_sol[0,0,:] = field_sol[self.rr_indices]
 
-        return fields, fields_sol
+        return fields.squeeze(), fields_sol.squeeze()
 
     def test_compute_field_tc2(self):
         sin_t = torch.sin(self.thetas)
@@ -243,7 +349,7 @@ class ScalarPolarPropagator(Propagator):
         # MODIFICATION FOR TEST CASE: far field corresponding to analytic solution
         far_fields = self.k * torch.cos(self.thetas)
 
-        fields = torch.zeros_like(self.rr_indices, dtype=torch.complex64)
+        fields = torch.zeros_like(self.rr_indices, dtype=torch.complex64).unsqueeze(0).unsqueeze(0)
         fields_sol = torch.zeros_like(fields, dtype=torch.complex64)
         # MODIFICATION FOR TEST CASE: drop defocus and correction (apod + envelope) terms
         # MODIFICATION FOR TEST CASE: far field cancels the `sin(t)` term in the integrand
@@ -251,11 +357,11 @@ class ScalarPolarPropagator(Propagator):
         field = self.quadrature_rule(integrand, self.dtheta)
         fields[0] = field[self.rr_indices]
 
-        sol_arg = self.k * self.rs * self.NA    # NA == torch.sin(self.theta_max)
+        sol_arg = self.k * self.rs * self.NA / self.refractive_index    # NA == torch.sin(self.theta_max)
         field_sol = torch.tensor(itj0y0(sol_arg.numpy())[0], dtype=torch.complex64).to(self.device)
         fields_sol[0] = field_sol[self.rr_indices]
 
-        return fields, fields_sol
+        return fields.squeeze(), fields_sol.squeeze()
 
 
 
