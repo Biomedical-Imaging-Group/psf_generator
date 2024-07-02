@@ -38,7 +38,12 @@ def trapezoid_rule(fs, dx):
 def simpsons_rule(fs, dx):
     '''
     Riemann quadrature rule, O(h ** 4).
+
+    Warning: simpson's rule only works correctly with odd-sized grids (i.e. N == 2*K + 1)!
     '''
+    if fs.shape[0] % 2 == 0:
+        warnings.warn("Pupil size is not an odd number! The computed \
+                      integral will not have high-order accuracy.")
     return (fs[0] + 2 * torch.sum(fs[1:-1], dim=0) + 2 * torch.sum(fs[1:-1:2], dim=0) + fs[-1]) * dx / 3.0
 
 def richard1_rule(fs, dx):
@@ -50,7 +55,7 @@ def richard1_rule(fs, dx):
     points is N == 2**K + 1.
     '''
     if not(is_power_of_two(fs.shape[0] - 1)):
-        warnings.warn("Warning: pupil shape is not of the form (2 ** K + 1)! The computed \
+        warnings.warn("Pupil shape is not of the form (2 ** K + 1)! The computed \
                       integral will not have high-order accuracy.")
 
     I0 = trapezoid_rule(fs, dx)
@@ -66,7 +71,7 @@ def richard2_rule(fs, dx):
     points is N == 2**K + 1.
     '''
     if not(is_power_of_two(fs.shape[0] - 1)):
-        warnings.warn("Warning: pupil shape is not of the form (2 ** K + 1)! The computed \
+        warnings.warn("Pupil shape is not of the form (2 ** K + 1)! The computed \
                       integral will not have high-order accuracy.")
 
     I0 = trapezoid_rule(fs, dx)
@@ -85,7 +90,7 @@ def richard3_rule(fs, dx):
     points is N == 2**K + 1.
     '''
     if not(is_power_of_two(fs.shape[0] - 1)):
-        warnings.warn("Warning: pupil shape is not of the form (2 ** K + 1)! The computed \
+        warnings.warn("Pupil shape is not of the form (2 ** K + 1)! The computed \
                       integral will not have high-order accuracy.")
 
     I0 = trapezoid_rule(fs, dx)
