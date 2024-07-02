@@ -4,13 +4,13 @@ This file contains several classes for measuring the accuracy and convergence of
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-from pupil import ScalarPolarPupil, ScalarCartesianPupil
-from propagator import ScalarPolarPropagator, ScalarCartesianPropagator
 from typing import Callable, Tuple, List
 from tqdm import tqdm
 from torch.special import bessel_j0, bessel_j1
 from scipy.special import j0 as sp_j0
 from scipy.integrate import quad
+from .pupil import ScalarPolarPupil, ScalarCartesianPupil
+from .propagator import ScalarPolarPropagator, ScalarCartesianPropagator
 
 
 def eval_as_cartesian(func: Callable, 
@@ -48,14 +48,14 @@ def eval_as_cartesian(func: Callable,
     assert (x.shape == y.shape)
     assert (s_x.shape == x.shape)
 
-    s_xx, s_yy = torch.meshgrid(s_x, s_y)
+    s_xx, s_yy = torch.meshgrid(s_x, s_y, indexing='ij')
 
     sin_t_sq = s_xx ** 2 + s_yy ** 2
     s_valid = sin_t_sq <= s_max ** 2
     s_z = torch.where(s_valid, torch.sqrt(1.0 - sin_t_sq), 0.0)
     pupil_coord = torch.where(s_valid, torch.sqrt(sin_t_sq) / Rmax, 0.0)
 
-    xx, yy = torch.meshgrid(x, y)
+    xx, yy = torch.meshgrid(x, y, indexing='ij')
     rr = torch.sqrt(xx ** 2 + yy ** 2)
 
     rho, rho_indices = torch.unique(rr, return_inverse=True)
@@ -363,8 +363,8 @@ class ScalarCartesianTester:
         E_num = prop_._compute_PSF_for_far_field(far_fields).squeeze() * prop_.s_max ** 2
         
         # TODO: error metric
-        # err = (E_ref - E_num).abs()
-        err = (E_ref.abs() - E_num.abs()).abs()
+        err = (E_ref - E_num).abs()
+        # err = (E_ref.abs() - E_num.abs()).abs()
 
         if plot:
             plt.figure(figsize=(8,6.4))

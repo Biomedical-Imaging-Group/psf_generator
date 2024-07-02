@@ -1,13 +1,12 @@
 import torch
 import numpy as np
 from abc import ABC, abstractmethod
-from utils.czt import custom_ifft2
-
 from torch.special import bessel_j0, bessel_j1
 from scipy.special import itj0y0
-
-from integrators import trapezoid_rule, simpsons_rule, richard2_rule
 from functorch import vmap
+from .utils.czt import custom_ifft2
+from .integrators import trapezoid_rule, simpsons_rule, richard2_rule
+
 # # re-enable if gradients wrt Bessel term are required
 # from bessel_ad import BesselJ0
 # bessel_j0_ad = BesselJ0.apply
