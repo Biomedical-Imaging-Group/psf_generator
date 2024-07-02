@@ -1,13 +1,11 @@
 import torch
 import numpy as np
 from abc import ABC, abstractmethod
-from utils.czt import custom_ifft2
-
 from torch.special import bessel_j0, bessel_j1
-from scipy.special import itj0y0
-
-from integrators import trapezoid_rule, simpsons_rule, richard2_rule
 from functorch import vmap
+from .utils.czt import custom_ifft2
+from .integrators import trapezoid_rule, simpsons_rule, richard2_rule
+from .bessel_ad import bessel_j2
 # # re-enable if gradients wrt Bessel term are required
 # from bessel_ad import BesselJ0
 # bessel_j0_ad = BesselJ0.apply
@@ -244,8 +242,6 @@ class ScalarPolarPropagator(Propagator):
         # scatter the radial evaluations of E(r) onto the xy image grid
         field = field[self.rr_indices].unsqueeze(0)       # [n_channels=1, size_x, size_y]
         return field
-
-from bessel_ad import bessel_j2
 
 class VectorialPolarPropagator(Propagator):
     def __init__(self, pupil, n_pix_psf=128, device='cpu',
