@@ -56,8 +56,7 @@ def custom_ifft2(x, shape_out=None, k_start=0, k_end=2*np.pi,
     if fftshift_input:
         k = torch.arange(K)
         kx, ky = torch.meshgrid(k, k, indexing='ij')
-        center_correction = torch.exp(- 1j * N / 2 * (k_start + (k_end - k_start) / K * 
-                                                    (kx+ky))).to(x.device)
+        center_correction = torch.exp(1j * (N - 1) / 2 * (k_start - w_phase * (kx+ky))).to(x.device)
         result = czt2d(x, shape_out, w_phase, a_phase) * center_correction
     else:
         result = czt2d(x, shape_out, w_phase, a_phase)
