@@ -150,7 +150,7 @@ class VectorialCartesianPupil(Pupil):
         x = torch.linspace(-1, 1, self.n_pix_pupil)
         y = torch.linspace(-1, 1, self.n_pix_pupil)
         kx, ky = torch.meshgrid(x, y, indexing='xy')
-        single_field = (kx**2 + ky**2 < 1).to(torch.complex64).unsqueeze(0)
+        single_field = (kx**2 + ky**2 < 1).to(torch.complex64)
         return torch.stack((self.e0x * single_field, self.e0y * single_field), 
                            dim=0).unsqueeze(0).to(self.device)
 
