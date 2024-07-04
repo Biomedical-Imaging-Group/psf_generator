@@ -80,20 +80,30 @@ class ScalarCartesianPropagator(Propagator):
                          n_g=n_g, n_g0=n_g0, t_g=t_g, t_g0=t_g0,
                          n_i=n_i, t_i0=t_i0)
         self.sz_correction = sz_correction
+
+        # Physical parameters
+        self.k = 2 * np.pi / self.wavelength
+        self.s_max = torch.tensor(self.NA / self.refractive_index)
         
          # Zoom factor to determine pixel size with custom FFT
         self.zoom_factor = 2 * self.NA * self.fov / self.wavelength \
-             / self.refractive_index / (self.n_pix_pupil - 1)           # CHANGE: DIVIDE BY N-1 INSTEAD OF N
+             / self.refractive_index / (self.n_pix_pupil - 1)
 
-        # Compute coordinates s_x, s_y, s_z
+        # Coordinates in pupil space s_x, s_y, s_z
         n_pix_pupil = self.pupil.n_pix_pupil
-        s_x = torch.linspace(-1, 1, n_pix_pupil).to(self.device)
-        s_xx, s_yy = torch.meshgrid(s_x, s_x, indexing='ij')
+        self.s_x = torch.linspace(-1, 1, n_pix_pupil).to(self.device)
+        self.ds = self.s_x[1] - self.s_x[0]
+        s_xx, s_yy = torch.meshgrid(self.s_x, self.s_x, indexing='ij')
         s_zz = torch.sqrt((1 - (self.NA/self.refractive_index)**2 * (s_xx**2 + s_yy**2)
                           ).clamp(min=0.001)).reshape(1, 1, n_pix_pupil, n_pix_pupil)
 
-        # Precompute additional factors
-        self.k = 2 * np.pi / self.wavelength
+        # Coordinates in object space
+        total_fft_range = 1.0 / self.ds
+        k_start = -self.zoom_factor * np.pi
+        k_end   =  self.zoom_factor * np.pi
+        self.x = torch.linspace(k_start, k_end, self.n_pix_pupil) / (2.0 * torch.pi) * total_fft_range
+
+        # Correction factors
         self.correction_factor = torch.ones(1, 1, n_pix_pupil, n_pix_pupil
                                             ).to(torch.complex64).to(self.device)
         if self.sz_correction:
@@ -115,41 +125,24 @@ class ScalarCartesianPropagator(Propagator):
                                        ).reshape(-1, 1, 1, 1).to(self.device)
         self.defocus_filters = torch.exp(1j * self.k * s_zz * defocus_range)
 
-        self.s_x = s_x
-        self.s_max = torch.tensor(self.NA / self.refractive_index)
-
-        ds = s_x[1] - s_x[0]
-        self.ds = ds
-        
-        k_range_fft = 1.0 / ds
-        k_start = -self.zoom_factor * np.pi
-        k_end   =  self.zoom_factor * np.pi
-        x = torch.linspace(k_start, k_end, self.n_pix_pupil) / (2.0 * torch.pi) * k_range_fft
-        self.x = x
-
-
     def compute_focus_field(self):
         self.field = custom_ifft2(self.pupil.field * self.correction_factor * self.defocus_filters, 
                                   shape_out=(self.n_pix_psf, self.n_pix_psf), 
                                   k_start=-self.zoom_factor*np.pi, 
                                   k_end=self.zoom_factor*np.pi, 
                                   norm='backward', fftshift_input=True, include_end=True) * \
-                                    (2 * self.NA / self.n_pix_pupil)**2
+                                    (2 * self.NA / self.n_pix_pupil / self.refractive_index)**2 * 1j
         return self.field / (2 * np.pi)
 
-
-    def _compute_PSF_for_far_field(self, far_fields):
+    def _compute_PSF_for_far_field(self, far_fields):  # to remove later?
         self.field = custom_ifft2(far_fields * self.correction_factor * self.defocus_filters, 
                                   shape_out=(self.n_pix_psf, self.n_pix_psf), 
-                                  k_start  = -self.zoom_factor * np.pi, 
-                                  k_end    =  self.zoom_factor * np.pi, 
-                                  norm='backward', 
-                                  fftshift_input=True, 
-                                  include_end=True) \
-                                      * (self.ds * self.s_max) ** 2 * 1j    # CHANGE: different scale factor and 1j phase
-        
+                                  k_start=-self.zoom_factor*np.pi, 
+                                  k_end=self.zoom_factor*np.pi, 
+                                  norm='backward', fftshift_input=True, include_end=True) \
+                                      * (self.ds * self.s_max) ** 2 * 1j
         return self.field / (2 * np.pi)
-
+    
 
 class ScalarPolarPropagator(Propagator):
     def __init__(self, pupil, n_pix_psf=128, device='cpu',
@@ -208,19 +201,14 @@ class ScalarPolarPropagator(Propagator):
 
 
     def compute_focus_field(self):
-        far_fields = self.pupil.field.squeeze()   # [n_defocus=1, channels=1, n_thetas] ==> [n_thetas, ]
-        return self._compute_PSF_for_far_field(far_fields)
-
-    def _compute_PSF_for_far_field(self, far_fields):
         # argument shapes:
         # self.thetas,            [n_thetas, ]
         # self.dtheta,            float
         # self.rs,                [n_radii, ]
         # self.correction_factor  [n_thetas, ]
         # far_fields              [n_thetas, ]
-
+        far_fields = self.pupil.field.squeeze()   # [n_defocus=1, channels=1, n_thetas] ==> [n_thetas, ]
         sin_t = torch.sin(self.thetas) # [n_thetas, ]
-
         # bessel function evaluations are expensive and can be computed independently from defocus
         J_evals = bessel_j0(self.k * self.rs[None,:] * sin_t[:,None])    # [n_theta, n_radii]
 
@@ -228,7 +216,7 @@ class ScalarPolarPropagator(Propagator):
         batched_compute_field_at_defocus = vmap(self._compute_PSF_at_defocus, in_dims=(0, None, None, None))
 
         fields = batched_compute_field_at_defocus(self.defocus_filters, J_evals, far_fields, sin_t)
-        return fields        
+        return fields
 
     def _compute_PSF_at_defocus(self, defocus_term, J_evals, far_fields, sin_t):
         # compute E(r) for a list of unique radii values
@@ -246,7 +234,7 @@ class VectorialPolarPropagator(Propagator):
                  apod_factor=False, envelope=None,
                  gibson_lanni=False, z_p=1e3, n_s=1.3,
                  n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3,
-                 n_i=1.5, n_i0=1.5, t_i0=100e3):
+                 n_i=1.5, t_i0=100e3):
         super().__init__(pupil=pupil, n_pix_psf=n_pix_psf, device=device,
                          wavelength=wavelength, NA=NA, fov=fov, refractive_index=refractive_index,
                          defocus_min=defocus_min, defocus_max=defocus_max, n_defocus=n_defocus,
