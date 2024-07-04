@@ -125,8 +125,9 @@ class ScalarCartesianPropagator(Propagator):
                                        ).reshape(-1, 1, 1, 1).to(self.device)
         self.defocus_filters = torch.exp(1j * self.k * s_zz * defocus_range)
 
+
     def compute_focus_field(self):
-        self.field = custom_ifft2(self.pupil.field * self.correction_factor * self.defocus_filters, 
+        self.field = custom_ifft2(self.pupil.field * self.correction_factor * self.defocus_filters,
                                   shape_out=(self.n_pix_psf, self.n_pix_psf), 
                                   k_start=-self.zoom_factor*np.pi, 
                                   k_end=self.zoom_factor*np.pi, 
@@ -351,9 +352,11 @@ class VectorialCartesianPropagator(Propagator):
         self.s_x = torch.linspace(-1, 1, n_pix_pupil).to(self.device)
         self.ds = self.s_x[1] - self.s_x[0]
         s_xx, s_yy = torch.meshgrid(self.s_x, self.s_x, indexing='ij')
-
         s_zz = torch.sqrt((1 - (self.NA / self.refractive_index) ** 2 * (s_xx ** 2 + s_yy ** 2)
                            ).clamp(min=0.001)).reshape(1, 1, n_pix_pupil, n_pix_pupil)
+
+        # if s_xx**2 + s_yy**2 > 1, s_xx and s_yy are 0
+        s_xx, s_yy = s_xx * (s_xx ** 2 + s_yy ** 2 <= 1), s_yy * (s_xx ** 2 + s_yy ** 2 <= 1)
 
         # Coordinates in object space
         total_fft_range = 1.0 / self.ds
@@ -373,14 +376,13 @@ class VectorialCartesianPropagator(Propagator):
         # cos_2phi = (s_xx-s_yy).reshape(1, 1, n_pix_pupil, n_pix_pupil) / a
         # cos_phi = 1/torch.sqrt(s_yy**2/s_xx**2+1)
         # sin_phi = torch.sqrt(1-cos_phi**2)
-
         # Field after basis change
+        print(self.pupil.field.shape)
         self.e_inf_x = ((cos_theta+1) + (cos_theta-1) * cos_2phi)*self.pupil.field[:, 0, :, :] \
                         + (cos_theta-1) * sin_2phi * self.pupil.field[:, 1, :, :]
         self.e_inf_y = ((cos_theta+1) - (cos_theta-1) * cos_2phi)*self.pupil.field[:, 1, :, :] \
                         + (cos_theta-1) * sin_2phi * self.pupil.field[:, 0, :, :]
         self.e_inf_z = -2 * cos_phi * sin_theta * self.pupil.field[:, 0, :, :] - 2 * sin_phi * sin_theta * self.pupil.field[:, 1, :, :]
-        
         # Correction factors
         self.correction_factor = torch.ones(1, 1, n_pix_pupil, n_pix_pupil
                                             ).to(torch.complex64).to(self.device)
@@ -404,8 +406,9 @@ class VectorialCartesianPropagator(Propagator):
         self.defocus_filters = torch.exp(1j * self.k * s_zz * defocus_range)
 
     def compute_focus_field(self):
-        print(self.e_inf_x.shape)
-        self.field = custom_ifft2(torch.stack((self.e_inf_x,self.e_inf_y),dim=1) * self.correction_factor * self.defocus_filters,
+        print(torch.stack((self.e_inf_x,self.e_inf_y),dim=1).shape)
+
+        self.field = custom_ifft2(torch.cat((self.e_inf_x,self.e_inf_y,self.e_inf_z),dim=1) * self.correction_factor * self.defocus_filters,
                                   shape_out=(self.n_pix_psf, self.n_pix_psf),
                                   k_start=-self.zoom_factor * np.pi,
                                   k_end=self.zoom_factor * np.pi,
