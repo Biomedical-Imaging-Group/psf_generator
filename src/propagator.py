@@ -348,7 +348,7 @@ class VectorialCartesianPropagator(Propagator):
 
         # Coordinates in pupil space s_x, s_y, s_z
         n_pix_pupil = self.pupil.n_pix_pupil
-        self.s_x = torch.linspace(-0.5, 0.5, n_pix_pupil).to(self.device)
+        self.s_x = torch.linspace(-1, 1, n_pix_pupil).to(self.device)
         self.ds = self.s_x[1] - self.s_x[0]
         s_xx, s_yy = torch.meshgrid(self.s_x, self.s_x, indexing='ij')
 
@@ -361,17 +361,26 @@ class VectorialCartesianPropagator(Propagator):
         k_end = self.zoom_factor * np.pi
         self.x = torch.linspace(k_start, k_end, self.n_pix_pupil) / (2.0 * torch.pi) * total_fft_range
 
-        a = (s_xx+s_yy).reshape(1, 1, n_pix_pupil, n_pix_pupil)+1e-10
+        # Angles theta and phi
+        a = (s_xx**2+s_yy**2).reshape(1, 1, n_pix_pupil, n_pix_pupil)+1e-10
         sin_theta = torch.sqrt(a)
         cos_theta = torch.sqrt(1-a)
-        sin_2phi = 2 * s_xx * s_yy / a
-        cos_2phi = (s_xx-s_yy).reshape(1, 1, n_pix_pupil, n_pix_pupil) / a
-        cos_phi = 1/torch.sqrt(s_yy**2/s_xx**2+1)
-        sin_phi = torch.sqrt(1-cos_phi**2)
+        cos_phi = s_xx / sin_theta
+        sin_phi = s_yy / sin_theta
+        sin_2phi = 2 * sin_phi * cos_phi
+        cos_2phi = cos_phi**2 - sin_phi**2
+        # sin_2phi = 2 * s_xx * s_yy / a
+        # cos_2phi = (s_xx-s_yy).reshape(1, 1, n_pix_pupil, n_pix_pupil) / a
+        # cos_phi = 1/torch.sqrt(s_yy**2/s_xx**2+1)
+        # sin_phi = torch.sqrt(1-cos_phi**2)
+
+        # Field after basis change
         self.e_inf_x = ((cos_theta+1) + (cos_theta-1) * cos_2phi)*self.pupil.field[:, 0, :, :] \
                         + (cos_theta-1) * sin_2phi * self.pupil.field[:, 1, :, :]
         self.e_inf_y = ((cos_theta+1) - (cos_theta-1) * cos_2phi)*self.pupil.field[:, 1, :, :] \
                         + (cos_theta-1) * sin_2phi * self.pupil.field[:, 0, :, :]
+        self.e_inf_z = -2 * cos_phi * sin_theta * self.pupil.field[:, 0, :, :] - 2 * sin_phi * sin_theta * self.pupil.field[:, 1, :, :]
+        
         # Correction factors
         self.correction_factor = torch.ones(1, 1, n_pix_pupil, n_pix_pupil
                                             ).to(torch.complex64).to(self.device)
