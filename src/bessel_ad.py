@@ -69,6 +69,9 @@ class BesselJ1(Function):
         return jac * grad_input
 
 
+def bessel_j2(x):
+    return 2.0 * torch.where(x > 1e-6, bessel_j1(x) / x, 0.5 - x ** 2 / 16) - bessel_j0(x)
+
 if __name__ == 'main':
     input = (torch.randn(20,20,dtype=torch.double,requires_grad=True))
 
