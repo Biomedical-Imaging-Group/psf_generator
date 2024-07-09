@@ -6,7 +6,7 @@ from scipy.special import itj0y0
 from functorch import vmap
 from utils.czt import custom_ifft2
 from integrators import trapezoid_rule, simpsons_rule, richard2_rule
-from bessel_ad import bessel_j2
+# from bessel_ad import bessel_j2
 # # re-enable if gradients wrt Bessel term are required
 # from bessel_ad import BesselJ0
 # bessel_j0_ad = BesselJ0.apply
@@ -83,18 +83,19 @@ class ScalarCartesianPropagator(Propagator):
 
         # Physical parameters
         self.k = 2 * np.pi / self.wavelength
-        self.s_max = torch.tensor(self.NA / self.refractive_index)
+        s_max = self.NA / self.refractive_index
+        self.s_max = torch.tensor(s_max)
         
          # Zoom factor to determine pixel size with custom FFT
-        self.zoom_factor = 2 * self.NA * self.fov / self.wavelength \
-             / self.refractive_index / (self.n_pix_pupil - 1)
+        self.zoom_factor = 2 * s_max * self.fov / self.wavelength \
+             / (self.n_pix_pupil - 1)
 
         # Coordinates in pupil space s_x, s_y, s_z
         n_pix_pupil = self.pupil.n_pix_pupil
         self.s_x = torch.linspace(-1, 1, n_pix_pupil).to(self.device)
         self.ds = self.s_x[1] - self.s_x[0]
         s_xx, s_yy = torch.meshgrid(self.s_x, self.s_x, indexing='ij')
-        s_zz = torch.sqrt((1 - (self.NA/self.refractive_index)**2 * (s_xx**2 + s_yy**2)
+        s_zz = torch.sqrt((1 - s_max ** 2 * (s_xx ** 2 + s_yy ** 2)
                           ).clamp(min=0.001)).reshape(1, 1, n_pix_pupil, n_pix_pupil)
 
         # Coordinates in object space
@@ -136,7 +137,7 @@ class ScalarCartesianPropagator(Propagator):
         return self.field / (2 * np.pi)
 
     def _compute_PSF_for_far_field(self, far_fields):
-        self.field = 1j * custom_ifft2(far_fields * self.correction_factor * self.defocus_filters, 
+        self.field = custom_ifft2(far_fields * self.correction_factor * self.defocus_filters, 
                                   shape_out=(self.n_pix_psf, self.n_pix_psf), 
                                   k_start=-self.zoom_factor*np.pi, 
                                   k_end=self.zoom_factor*np.pi, 
@@ -240,7 +241,8 @@ class VectorialPolarPropagator(Propagator):
                  apod_factor=False, envelope=None,
                  gibson_lanni=False, z_p=1e3, n_s=1.3,
                  n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3,
-                 n_i=1.5, t_i0=100e3):
+                 n_i=1.5, t_i0=100e3, 
+                 quadrature_rule=simpsons_rule):
         super().__init__(pupil=pupil, n_pix_psf=n_pix_psf, device=device,
                          wavelength=wavelength, NA=NA, fov=fov, refractive_index=refractive_index,
                          defocus_min=defocus_min, defocus_max=defocus_max, n_defocus=n_defocus,
@@ -269,10 +271,6 @@ class VectorialPolarPropagator(Propagator):
         # self.varphi = varphi.to(self.device)
 
         # Pupil coordinates
-        # TODO: number of pixels in pupil (== gridsize of integration domain) should be driven
-        # by the integration method and its required accuracy, not set a-priori
-        # TODO: ideally, pupil should be described by a *continuous function* that allows us to query its
-        # value at any value of `theta`
         theta_max = np.arcsin(self.NA / self.refractive_index)
         num_thetas = self.n_pix_pupil
         thetas = torch.linspace(0, theta_max, num_thetas)
@@ -327,6 +325,7 @@ class VectorialPolarPropagator(Propagator):
 
         # compute E(r) for a list of unique radii values
         # shape(Ix0) == shape(Iy0) == ... == [n_radii,]
+        # TODO: extend `quadrature_rule` to act on vector-valued functions?
         I_term = sin_t * (cos_t + 1.0) * defocus_term * self.correction_factor
         Ix0 = self.quadrature_rule(dx=self.dtheta,
             fs=J0s * (field_x * I_term)[:,None])
@@ -437,9 +436,16 @@ class VectorialCartesianPropagator(Propagator):
         s_xx, s_yy = torch.meshgrid(self.s_x, self.s_x, indexing='ij')
         s_zz = torch.sqrt((1 - (self.NA / self.refractive_index) ** 2 * (s_xx ** 2 + s_yy ** 2)
                            ).clamp(min=0.001)).reshape(1, 1, n_pix_pupil, n_pix_pupil)
+        # tmp = s_xx ** 2 + s_yy ** 2
+        # is_valid = tmp <= 1.0
+        # s_zz = torch.where(is_valid, 
+        #                    torch.sqrt(1.0 - tmp * self.s_max ** 2),
+        #                    0.0).reshape(1, 1, n_pix_pupil, n_pix_pupil)
 
         # if s_xx**2 + s_yy**2 > 1, s_xx and s_yy are 0
         s_xx, s_yy = s_xx * (s_xx ** 2 + s_yy ** 2 <= 1), s_yy * (s_xx ** 2 + s_yy ** 2 <= 1)
+
+        # TODO: does getting rid of the clamp() fix the phase error issue???
 
         # Coordinates in object space
         total_fft_range = 1.0 / self.ds
@@ -456,7 +462,7 @@ class VectorialCartesianPropagator(Propagator):
         sin_2phi = 2 * sin_phi * cos_phi
         cos_2phi = cos_phi**2 - sin_phi**2
         # Field after basis change
-        print(self.pupil.field.shape)
+        # print(self.pupil.field.shape)
         self.e_inf_x = ((cos_theta+1) + (cos_theta-1) * cos_2phi)*self.pupil.field[:, 0, :, :] \
                         + (cos_theta-1) * sin_2phi * self.pupil.field[:, 1, :, :]
         self.e_inf_y = ((cos_theta+1) - (cos_theta-1) * cos_2phi)*self.pupil.field[:, 1, :, :] \
@@ -485,7 +491,7 @@ class VectorialCartesianPropagator(Propagator):
         self.defocus_filters = torch.exp(1j * self.k * s_zz * defocus_range)
 
     def compute_focus_field(self):
-        print(torch.stack((self.e_inf_x,self.e_inf_y),dim=1).shape)
+        # print(torch.stack((self.e_inf_x,self.e_inf_y),dim=1).shape)
 
         self.field = custom_ifft2(torch.cat((self.e_inf_x,self.e_inf_y,self.e_inf_z),dim=1) * self.correction_factor * self.defocus_filters,
                                   shape_out=(self.n_pix_psf, self.n_pix_psf),
@@ -496,10 +502,39 @@ class VectorialCartesianPropagator(Propagator):
         return self.field / (2 * np.pi)
 
     def _compute_PSF_for_far_field(self, far_fields):  # to remove later?
-        self.field = custom_ifft2(far_fields * self.correction_factor * self.defocus_filters,
+        s_xx, s_yy = torch.meshgrid(self.s_x * self.s_max, self.s_x * self.s_max, indexing='ij')
+        sin_t_sq = s_xx ** 2 + s_yy ** 2
+        s_valid = sin_t_sq <= self.s_max ** 2
+        sin_theta = torch.sqrt(sin_t_sq)
+        cos_theta = torch.sqrt(1.0 - sin_t_sq)
+
+        # this is varphi in the pupil domain (i.e. the azimuthal coordinate)
+        # cos_phi = s_xx / sin_theta
+        # sin_phi = s_yy / sin_theta
+        # # properly handles pole at sin_theta == 0.0
+        phi = torch.atan2(s_yy, s_xx)
+        cos_phi = torch.cos(phi)
+        sin_phi = torch.sin(phi)
+        sin_2phi = 2.0 * sin_phi * cos_phi
+        cos_2phi = cos_phi ** 2 - sin_phi ** 2
+
+        far_fields_x = far_fields[:, 0, :, :] 
+        far_fields_y = far_fields[:, 1, :, :]
+        e_inf_x = ((cos_theta + 1.0) + (cos_theta - 1.0) * cos_2phi) * far_fields_x \
+                        + (cos_theta - 1.0) * sin_2phi * far_fields_y
+        e_inf_y = ((cos_theta + 1.0) - (cos_theta - 1.0) * cos_2phi) * far_fields_y \
+                        + (cos_theta - 1.0) * sin_2phi * far_fields_x
+        e_inf_z = -2.0 * sin_theta * (cos_phi * far_fields_x + sin_phi * far_fields_y)
+
+        e_inf_x = torch.where(s_valid, e_inf_x, 0.0).unsqueeze(0)
+        e_inf_y = torch.where(s_valid, e_inf_y, 0.0).unsqueeze(0)
+        e_inf_z = torch.where(s_valid, e_inf_z, 0.0).unsqueeze(0)
+
+        PSF_field = custom_ifft2(torch.cat((e_inf_x, e_inf_y, e_inf_z), dim=1) * self.correction_factor * self.defocus_filters,
                                   shape_out=(self.n_pix_psf, self.n_pix_psf),
                                   k_start=-self.zoom_factor * np.pi,
                                   k_end=self.zoom_factor * np.pi,
                                   norm='backward', fftshift_input=True, include_end=True) \
                      * (self.ds * self.s_max) ** 2 * 1j
-        return self.field / (2 * np.pi)
+                    #  * (2 * self.NA / self.n_pix_pupil / self.refractive_index) ** 2 * 1j
+        return PSF_field / (2 * np.pi) / np.sqrt(self.refractive_index)
