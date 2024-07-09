@@ -301,10 +301,11 @@ class VectorPupilCase(TestCase):
         cos_phi, cos_twophi = torch.cos(varphi), torch.cos(2.0 * varphi)
         sin_phi, sin_twophi = torch.sin(varphi), torch.sin(2.0 * varphi)
 
+        # updated expression with correct 1j factors
         psf_field = torch.stack(
-            [I0x + I2x * cos_twophi + I2y * sin_twophi,
-             I0y + I2x * sin_twophi - I2y * cos_twophi,
-             -2j * (I1x * cos_phi + I1y * sin_phi)]
+            [I0x + (-1.0) * I2x * cos_twophi + (-1.0) * I2y * sin_twophi,
+             I0y + (-1.0) * I2x * sin_twophi - (-1.0) * I2y * cos_twophi,
+             -2j * 1j * (I1x * cos_phi + I1y * sin_phi)]
         )
         
         return pupil_field, psf_field
@@ -503,6 +504,7 @@ class ScalarPolarTester:
             Ns, 
             ord,
             label="Polar",
+            method_order=4,
             )
         plt.title(f"Error convergence plot: {test_case.get_name()}")
 
@@ -580,6 +582,7 @@ class ScalarCartesianTester:
             Ns, 
             ord,
             label="Cartesian",
+            method_order=2,
             )
         plt.title(f"Error convergence plot: {test_case.get_name()}")
 
@@ -665,6 +668,7 @@ class VectorPolarTester:
             Ns, 
             ord,
             label="Polar",
+            method_order=4,
             )
         plt.title(f"Error convergence plot: Vector Zernike aberrations")
 
@@ -763,7 +767,8 @@ class VectorCartesianTester:
             lambda N: VectorCartesianTester.eval_error(N, pupil)[0], 
             Ns, 
             ord,
-            label="Polar",
+            label="Cartesian",
+            method_order=2,
             )
         plt.title(f"Error convergence plot: Vector Zernike aberrations")
 
@@ -809,7 +814,7 @@ def _plot_field_comparison(E: torch.Tensor, E_ref: torch.Tensor, E_err: torch.Te
         plt.title(f"Avg. magnitude error: {(y - y_ref).abs().mean().item():.3e}")
         plt.tight_layout()
 
-def _plot_convergence(error_vector_getter: Callable, Ns: List[int]=None, ord: int=1, label: str=None) -> None:
+def _plot_convergence(error_vector_getter: Callable, Ns: List[int]=None, ord: int=1, label: str=None, method_order: int=2) -> None:
     if Ns is None:
         Ns = torch.unique(torch.logspace(2, 8, steps=20, base=2).to(torch.int32))
         Ns = 2 * (Ns // 2) + 1
@@ -826,7 +831,7 @@ def _plot_convergence(error_vector_getter: Callable, Ns: List[int]=None, ord: in
         errs.append(err)
     
     plt.loglog(Ns, errs, label=label, linewidth=2.0, zorder=3)
-    plt.loglog(Ns, errs[0] * (Ns / Ns[0]) ** (-4), 'k--', linewidth=0.75, label=rf"$O(h^{4})$")
+    plt.loglog(Ns, errs[0] * (Ns / Ns[0]) ** (-method_order), 'k--', linewidth=0.75, label=rf"$O(h^{method_order})$")
     plt.legend()
     plt.xlabel("Grid size")
     plt.ylabel("Mean abs. error")

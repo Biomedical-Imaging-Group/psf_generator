@@ -364,10 +364,11 @@ class VectorialPolarPropagator(Propagator):
         #     -2j * (Ix1 * cos_phi + Iy1 * sin_phi)],
         #     dim=0)
         
+        # updated expression with correct 1j factors
         PSF_field = torch.stack([                                   # [n_channels=3, size_x, size_y]
-            Ix0 + Ix2 * self.cos_twophi + Iy2 * self.sin_twophi,
-            Iy0 + Ix2 * self.sin_twophi - Iy2 * self.cos_twophi,
-            -2j * (Ix1 * self.cos_phi + Iy1 * self.sin_phi)],
+            Ix0 - Ix2 * self.cos_twophi - Iy2 * self.sin_twophi,
+            Iy0 - Ix2 * self.sin_twophi + Iy2 * self.cos_twophi,
+            2.0 * (Ix1 * self.cos_phi + Iy1 * self.sin_phi)],
             dim=0)
         
         # TODO: why divide by an extra factor of sqrt(eta)?
@@ -509,9 +510,8 @@ class VectorialCartesianPropagator(Propagator):
         cos_theta = torch.sqrt(1.0 - sin_t_sq)
 
         # this is varphi in the pupil domain (i.e. the azimuthal coordinate)
-        # cos_phi = s_xx / sin_theta
-        # sin_phi = s_yy / sin_theta
         # # properly handles pole at sin_theta == 0.0
+        # TODO: move to class constructor and update `compute_fields()`
         phi = torch.atan2(s_yy, s_xx)
         cos_phi = torch.cos(phi)
         sin_phi = torch.sin(phi)
