@@ -14,7 +14,6 @@ def custom_fft2(x, shape_out=None, k_start=0, k_end=2*np.pi,
         print('Warning: Output dimensions are different; enforcing squared output.')
         K, L = max(K,L), max(K,L)
 
-
     if include_end:
         w_phase = - (k_end - k_start) / (K-1)
     else:
@@ -24,16 +23,16 @@ def custom_fft2(x, shape_out=None, k_start=0, k_end=2*np.pi,
     if fftshift_input:
         k = torch.arange(K)
         kx, ky = torch.meshgrid(k, k, indexing='ij')
-        center_correction = torch.exp(1j * (N - 1) / 2 * (k_start - w_phase * (kx+ky))).to(x.device)
+        center_correction = torch.exp(1j * (N - 1) / 2 * (2*k_start - w_phase * (kx+ky))).to(x.device)
         result = czt2d(x, shape_out, w_phase, a_phase) * center_correction
     else:
         result = czt2d(x, shape_out, w_phase, a_phase)
     if norm =='ortho':
         return result / K
     elif norm == 'forward':
-        return result
-    elif norm == 'backward':
         return result / K**2
+    elif norm == 'backward':
+        return result
 
 
 def custom_ifft2(x, shape_out=None, k_start=0, k_end=2*np.pi, 
@@ -56,16 +55,16 @@ def custom_ifft2(x, shape_out=None, k_start=0, k_end=2*np.pi,
     if fftshift_input:
         k = torch.arange(K)
         kx, ky = torch.meshgrid(k, k, indexing='ij')
-        center_correction = torch.exp(1j * (N - 1) / 2 * (k_start - w_phase * (kx+ky))).to(x.device)
+        center_correction = torch.exp(1j * (N - 1) / 2 * (2*k_start - w_phase * (kx+ky))).to(x.device)
         result = czt2d(x, shape_out, w_phase, a_phase) * center_correction
     else:
         result = czt2d(x, shape_out, w_phase, a_phase)
     if norm =='ortho':
         return result / K
     elif norm == 'forward':
-        return result / K**2
-    elif norm == 'backward':
         return result
+    elif norm == 'backward':
+        return result / K**2
 
 
 def czt1d(x, shape_out=None, w_phase=None, a_phase=0):
