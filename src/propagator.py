@@ -136,13 +136,18 @@ class ScalarCartesianPropagator(Propagator):
         return self.field / (2 * np.pi)
 
     def _compute_PSF_for_far_field(self, far_fields):
-        self.field = 1j * custom_ifft2(far_fields * self.correction_factor * self.defocus_filters, 
+        k = self.zoom_factor * np.pi
+        field = custom_ifft2(far_fields * self.correction_factor * self.defocus_filters, 
                                   shape_out=(self.n_pix_psf, self.n_pix_psf), 
-                                  k_start=-self.zoom_factor*np.pi, 
-                                  k_end=self.zoom_factor*np.pi, 
+                                  k_start=-k, 
+                                  k_end=k, 
                                   norm='backward', fftshift_input=True, include_end=True) \
-                                      * (self.ds * self.s_max) ** 2 * 1j
-        return self.field / (2 * np.pi)
+                                      * (self.ds * self.s_max) ** 2 * (self.n_pix_pupil) ** 2
+
+        # angle = 2 * (self.n_pix_psf - 1) * k
+        # field *= torch.exp(1j*torch.tensor(angle))
+
+        return field / (2 * np.pi)
     
 
 class ScalarPolarPropagator(Propagator):

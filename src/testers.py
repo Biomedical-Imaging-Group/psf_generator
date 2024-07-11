@@ -400,7 +400,6 @@ class ScalarCartesianTester:
         
         E_num = prop._compute_PSF_for_far_field(far_fields).squeeze()
         err = (E_ref - E_num).abs()
-        # err = (E_ref.abs() - E_num.abs()).abs()
 
         if plot:
             _plot_field_comparison(E_num, E_ref, err)

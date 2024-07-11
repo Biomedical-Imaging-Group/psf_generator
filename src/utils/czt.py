@@ -57,6 +57,8 @@ def custom_ifft2(x, shape_out=None, k_start=0, k_end=2*np.pi,
         kx, ky = torch.meshgrid(k, k, indexing='ij')
         center_correction = torch.exp(1j * (N - 1) / 2 * (2*k_start - w_phase * (kx+ky))).to(x.device)
         result = czt2d(x, shape_out, w_phase, a_phase) * center_correction
+        angle = 2 * (N - 1) * k_end
+        result *= torch.exp(1j*torch.tensor(angle))
     else:
         result = czt2d(x, shape_out, w_phase, a_phase)
     if norm =='ortho':
