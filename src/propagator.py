@@ -128,22 +128,17 @@ class ScalarCartesianPropagator(Propagator):
 
 
     def compute_focus_field(self):
-        self.field = custom_ifft2(self.pupil.field * self.correction_factor * self.defocus_filters,
-                                  shape_out=(self.n_pix_psf, self.n_pix_psf), 
-                                  k_start=-self.zoom_factor*np.pi, 
-                                  k_end=self.zoom_factor*np.pi, 
-                                  norm='backward', fftshift_input=True, include_end=True) * \
-                                    (2 * self.NA / self.n_pix_pupil / self.refractive_index)**2 * 1j
-        return self.field / (2 * np.pi)
+        self.field = self._compute_PSF_for_far_field(self.pupil.field)
+        return self.field
 
     def _compute_PSF_for_far_field(self, far_fields):
-        self.field = custom_ifft2(far_fields * self.correction_factor * self.defocus_filters, 
+        field = custom_ifft2(far_fields * self.correction_factor * self.defocus_filters, 
                                   shape_out=(self.n_pix_psf, self.n_pix_psf), 
                                   k_start=-self.zoom_factor*np.pi, 
                                   k_end=self.zoom_factor*np.pi, 
                                   norm='backward', fftshift_input=True, include_end=True) \
                                       * (self.ds * self.s_max) ** 2 * 1j
-        return self.field / (2 * np.pi)
+        return field / (2 * np.pi)
     
 
 class ScalarPolarPropagator(Propagator):
@@ -268,7 +263,6 @@ class VectorialPolarPropagator(Propagator):
         self.cos_phi = cos_phi.to(self.device)
         self.sin_twophi = sin_twophi.to(self.device)
         self.cos_twophi = cos_twophi.to(self.device)
-        # self.varphi = varphi.to(self.device)
 
         # Pupil coordinates
         theta_max = np.arcsin(self.NA / self.refractive_index)
@@ -301,6 +295,12 @@ class VectorialPolarPropagator(Propagator):
         self.quadrature_rule = quadrature_rule
 
 
+    def compute_focus_field(self):
+        # multiplicative scalar factor to be verified for the vectorial case
+        self.field = self._compute_PSF_for_far_field(self.pupil.field)
+        return self.field
+
+
     def _compute_PSF_for_far_field(self, far_fields):
         sin_t = torch.sin(self.thetas) # [n_thetas, ]
         cos_t = torch.cos(self.thetas) # [n_thetas, ]
@@ -309,7 +309,7 @@ class VectorialPolarPropagator(Propagator):
         bessel_arg = self.k * self.rs[None,:] * sin_t[:,None]
         J0s = bessel_j0(bessel_arg)    # [n_theta, n_radii]
         J1s = bessel_j1(bessel_arg)    # [n_theta, n_radii]
-        # J2s = bessel_j2(bessel_arg)    # [n_theta, n_radii]
+        # bessel_j2() evaluations expressed in terms of j0(), j1()
         J2s = 2.0 * torch.where(bessel_arg > 1e-6, 
                                 J1s / bessel_arg, 
                                 0.5 - bessel_arg ** 2 / 16) - J0s
@@ -318,7 +318,7 @@ class VectorialPolarPropagator(Propagator):
         batched_compute_field_at_defocus = vmap(self._compute_PSF_at_defocus, in_dims=(0, None, None, None, None, None, None))
         fields = batched_compute_field_at_defocus(self.defocus_filters, J0s, J1s, J2s, far_fields, sin_t, cos_t)
         return fields
-        
+
 
     def _compute_PSF_at_defocus(self, defocus_term, J0s, J1s, J2s, far_fields, sin_t, cos_t):
         field_x, field_y = far_fields[0], far_fields[1]
@@ -353,17 +353,6 @@ class VectorialPolarPropagator(Propagator):
         Ix2 = Ix2[self.rr_indices]
         Iy2 = Iy2[self.rr_indices]
 
-        # assemble PSF field
-        # sin_phi = torch.sin(self.varphi)
-        # cos_phi = torch.cos(self.varphi)
-        # sin_twophi = 2.0 * sin_phi * cos_phi
-        # cos_twophi = (cos_phi + sin_phi) * (cos_phi - sin_phi)
-        # PSF_field = torch.stack([                                   # [n_channels=3, size_x, size_y]
-        #     Ix0 + Ix2 * cos_twophi + Iy2 * sin_twophi,
-        #     Iy0 + Ix2 * sin_twophi - Iy2 * cos_twophi,
-        #     -2j * (Ix1 * cos_phi + Iy1 * sin_phi)],
-        #     dim=0)
-        
         # updated expression with correct 1j factors
         PSF_field = torch.stack([                                   # [n_channels=3, size_x, size_y]
             Ix0 - Ix2 * self.cos_twophi - Iy2 * self.sin_twophi,
@@ -373,36 +362,6 @@ class VectorialPolarPropagator(Propagator):
         
         # TODO: why divide by an extra factor of sqrt(eta)?
         return PSF_field / np.sqrt(self.refractive_index)
-
-    def compute_focus_field(self):
-        # multiplicative scalar factor to be verified for the vectorial case
-
-        i0 = torch.sum(
-            self.pupil.field.unsqueeze(-2).unsqueeze(-2) *
-            bessel_j0(self.k * self.r * self.sin_t) *
-            self.sin_t * (self.cos_t + 1) * self.defocus_filters
-            , dim=-1) * self.theta_max / self.n_pix_pupil / np.sqrt(self.refractive_index)
-        i1 = torch.sum(
-            self.pupil.field.unsqueeze(-2).unsqueeze(-2) *
-            bessel_j1(self.k * self.r * self.sin_t) *
-            self.sin_t ** 2 * self.defocus_filters
-            , dim=-1) * self.theta_max / self.n_pix_pupil / np.sqrt(self.refractive_index)
-        i2 = torch.sum(
-            self.pupil.field.unsqueeze(-2).unsqueeze(-2) *
-            self.bessel_j2(self.k * self.r * self.sin_t) *
-            self.sin_t * (self.cos_t - 1) * self.defocus_filters
-            , dim=-1) * self.theta_max / self.n_pix_pupil / np.sqrt(self.refractive_index)
-
-        self.field = torch.stack((i0[:, 0, :, :] + i2[:, 0, :, :] * torch.cos(2 * self.varphi) + i2[:, 1, :, :] * torch.sin(2 * self.varphi),
-                                 i2[:, 0, :, :] * torch.sin(2 * self.varphi) + i0[:, 1, :, :] - i2[:, 1, :, :] * torch.cos(2 * self.varphi),
-                                 -2 * 1j * i1[:, 0, :, :] * torch.cos(self.varphi) - 2 * 1j * i1[:, 1, :, :] * torch.sin(self.varphi)), dim=1)
-
-        return self.field
-
-    @staticmethod
-    def bessel_j2(r):
-        eps = 1e-10
-        return 2 * bessel_j1(r) / (r+eps) - bessel_j0(r)
 
 
 class VectorialCartesianPropagator(Propagator):
@@ -437,16 +396,9 @@ class VectorialCartesianPropagator(Propagator):
         s_xx, s_yy = torch.meshgrid(self.s_x, self.s_x, indexing='ij')
         s_zz = torch.sqrt((1 - (self.NA / self.refractive_index) ** 2 * (s_xx ** 2 + s_yy ** 2)
                            ).clamp(min=0.001)).reshape(1, 1, n_pix_pupil, n_pix_pupil)
-        # tmp = s_xx ** 2 + s_yy ** 2
-        # is_valid = tmp <= 1.0
-        # s_zz = torch.where(is_valid, 
-        #                    torch.sqrt(1.0 - tmp * self.s_max ** 2),
-        #                    0.0).reshape(1, 1, n_pix_pupil, n_pix_pupil)
 
         # if s_xx**2 + s_yy**2 > 1, s_xx and s_yy are 0
         s_xx, s_yy = s_xx * (s_xx ** 2 + s_yy ** 2 <= 1), s_yy * (s_xx ** 2 + s_yy ** 2 <= 1)
-
-        # TODO: does getting rid of the clamp() fix the phase error issue???
 
         # Coordinates in object space
         total_fft_range = 1.0 / self.ds
@@ -455,20 +407,28 @@ class VectorialCartesianPropagator(Propagator):
         self.x = torch.linspace(k_start, k_end, self.n_pix_pupil) / (2.0 * torch.pi) * total_fft_range
 
         # Angles theta and phi
-        a = (s_xx**2+s_yy**2).reshape(1, 1, n_pix_pupil, n_pix_pupil)+1e-10
-        sin_theta = torch.sqrt(a)
-        cos_theta = torch.sqrt(1-a)
-        cos_phi = s_xx / sin_theta
-        sin_phi = s_yy / sin_theta
-        sin_2phi = 2 * sin_phi * cos_phi
-        cos_2phi = cos_phi**2 - sin_phi**2
+        s_xx, s_yy = torch.meshgrid(self.s_x * self.s_max, self.s_x * self.s_max, indexing='ij')
+        sin_t_sq = s_xx ** 2 + s_yy ** 2
+        s_valid = sin_t_sq <= self.s_max ** 2
+        sin_theta = torch.sqrt(sin_t_sq)
+        cos_theta = torch.sqrt(1.0 - sin_t_sq)
+        phi = torch.atan2(s_yy, s_xx)
+        cos_phi = torch.cos(phi)
+        sin_phi = torch.sin(phi)
+        sin_2phi = 2.0 * sin_phi * cos_phi
+        cos_2phi = cos_phi ** 2 - sin_phi ** 2
+
         # Field after basis change
-        # print(self.pupil.field.shape)
-        self.e_inf_x = ((cos_theta+1) + (cos_theta-1) * cos_2phi)*self.pupil.field[:, 0, :, :] \
-                        + (cos_theta-1) * sin_2phi * self.pupil.field[:, 1, :, :]
-        self.e_inf_y = ((cos_theta+1) - (cos_theta-1) * cos_2phi)*self.pupil.field[:, 1, :, :] \
-                        + (cos_theta-1) * sin_2phi * self.pupil.field[:, 0, :, :]
-        self.e_inf_z = -2 * cos_phi * sin_theta * self.pupil.field[:, 0, :, :] - 2 * sin_phi * sin_theta * self.pupil.field[:, 1, :, :]
+        e_inf_x = ((cos_theta + 1.0) + (cos_theta - 1.0) * cos_2phi) * self.pupil.field[:, 0, :, :] \
+                        + (cos_theta - 1.0) * sin_2phi * self.pupil.field[:, 1, :, :]
+        e_inf_y = ((cos_theta + 1.0) - (cos_theta - 1.0) * cos_2phi) * self.pupil.field[:, 1, :, :] \
+                        + (cos_theta - 1.0) * sin_2phi * self.pupil.field[:, 0, :, :]
+        e_inf_z = -2.0 * sin_theta * (cos_phi * self.pupil.field[:, 0, :, :] + sin_phi * self.pupil.field[:, 1, :, :])
+        e_inf_x = torch.where(s_valid, e_inf_x, 0.0).unsqueeze(0)
+        e_inf_y = torch.where(s_valid, e_inf_y, 0.0).unsqueeze(0)
+        e_inf_z = torch.where(s_valid, e_inf_z, 0.0).unsqueeze(0)
+        self.e_inf_field = torch.cat((e_inf_x, e_inf_y, e_inf_z), dim=1)
+
         # Correction factors
         self.correction_factor = torch.ones(1, 1, n_pix_pupil, n_pix_pupil
                                             ).to(torch.complex64).to(self.device)
@@ -492,15 +452,12 @@ class VectorialCartesianPropagator(Propagator):
         self.defocus_filters = torch.exp(1j * self.k * s_zz * defocus_range)
 
     def compute_focus_field(self):
-        # print(torch.stack((self.e_inf_x,self.e_inf_y),dim=1).shape)
-
-        self.field = custom_ifft2(torch.cat((self.e_inf_x,self.e_inf_y,self.e_inf_z),dim=1) * self.correction_factor * self.defocus_filters,
+        self.field = custom_ifft2(self.e_inf_field * self.correction_factor * self.defocus_filters,
                                   shape_out=(self.n_pix_psf, self.n_pix_psf),
                                   k_start=-self.zoom_factor * np.pi,
                                   k_end=self.zoom_factor * np.pi,
-                                  norm='backward', fftshift_input=True, include_end=True) * \
-                     (2 * self.NA / self.n_pix_pupil / self.refractive_index) ** 2 * 1j
-        return self.field / (2 * np.pi)
+                                  norm='backward', fftshift_input=True, include_end=True) * (self.ds * self.s_max) ** 2 * 1j
+        return self.field / (2 * np.pi * np.sqrt(self.refractive_index))
 
     def _compute_PSF_for_far_field(self, far_fields):  # to remove later?
         s_xx, s_yy = torch.meshgrid(self.s_x * self.s_max, self.s_x * self.s_max, indexing='ij')
@@ -508,11 +465,7 @@ class VectorialCartesianPropagator(Propagator):
         s_valid = sin_t_sq <= self.s_max ** 2
         sin_theta = torch.sqrt(sin_t_sq)
         cos_theta = torch.sqrt(1.0 - sin_t_sq)
-
-        # this is varphi in the pupil domain (i.e. the azimuthal coordinate)
-        # # properly handles pole at sin_theta == 0.0
-        # TODO: move to class constructor and update `compute_fields()`
-        phi = torch.atan2(s_yy, s_xx)
+        phi = torch.atan2(s_yy, s_xx)   # properly handles pole at sin_theta == 0.0
         cos_phi = torch.cos(phi)
         sin_phi = torch.sin(phi)
         sin_2phi = 2.0 * sin_phi * cos_phi
@@ -536,5 +489,6 @@ class VectorialCartesianPropagator(Propagator):
                                   k_end=self.zoom_factor * np.pi,
                                   norm='backward', fftshift_input=True, include_end=True) \
                      * (self.ds * self.s_max) ** 2 * 1j
-                    #  * (2 * self.NA / self.n_pix_pupil / self.refractive_index) ** 2 * 1j
-        return PSF_field / (2 * np.pi) / np.sqrt(self.refractive_index)
+        PSF_field /= (2 * np.pi * np.sqrt(self.refractive_index))
+
+        return PSF_field

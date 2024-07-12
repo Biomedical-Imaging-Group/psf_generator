@@ -485,7 +485,6 @@ class ScalarPolarTester:
 
         return err, E_ref, E_num
 
-
     @staticmethod
     def plot_convergence(test_case: TestCase, ord: int=1, Ns: List[int]=None) -> None:
         '''
@@ -587,8 +586,6 @@ class ScalarCartesianTester:
         plt.title(f"Error convergence plot: {test_case.get_name()}")
 
 
-
-
 class VectorPolarTester:
     @staticmethod
     def eval_error(
@@ -596,15 +593,11 @@ class VectorPolarTester:
         pupil: VectorialPolarPupil, 
         plot: bool=False) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         '''
-        # TODO: update doc
-        Evaluate the approximation error of the computed PSF field using an input test case. This 
-        method can be called on one of the analytic test cases implemented in this module 
-        (`HankelCase`) or an aberrated pupil (`ScalarPupilCase`).
+        Evaluate the approximation error of the computed PSF field using an aberrated pupil.
 
         Inputs:
         - N: int. Grid size for the propagator.
-        - test_case: TestCase. One of the implemented test cases in this module, 
-            e.g. `polar_step`, `polar_gaussian`.
+        - pupil: VectorialPolarPupil. A vectorial pupil (possibly with aberrations).
         - plot: bool. Visualize approximation errors with plots. Default: False
 
         Outputs:
@@ -649,15 +642,13 @@ class VectorPolarTester:
 
         return err, E_ref, E_num
 
-
     @staticmethod
     def plot_convergence(pupil: VectorialPolarPupil, ord: int=1, Ns: List[int]=None) -> None:
         '''
-        Generate the error convergence plot for a given test case.
+        Generate the error convergence plot for an aberrated pupil.
 
         Inputs:
-        - test_case_data: Callable function. One of the implemented test cases in this module, 
-            e.g. `polar_step`, `polar_gaussian`.
+        - pupil: VectorialPolarPupil. A vectorial pupil (possibly with aberrations).
         - ord: int. Error norm order. For example, `ord == 2` calculates the L2 error (root-mean
             -squared) between the numeric and exact field values. Default: 1
         - Ns: List[int]. List of grid sizes to query for the propagator. If no value is specified,
@@ -673,8 +664,6 @@ class VectorPolarTester:
         plt.title(f"Error convergence plot: Vector Zernike aberrations")
 
 
-
-
 class VectorCartesianTester:
     @staticmethod
     def eval_error(
@@ -682,15 +671,11 @@ class VectorCartesianTester:
         pupil: VectorialCartesianPupil, 
         plot: bool=False) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         '''
-        # TODO: update doc
-        Evaluate the approximation error of the computed PSF field using an input test case. This 
-        method can be called on one of the analytic test cases implemented in this module 
-        (`HankelCase`) or an aberrated pupil (`ScalarPupilCase`).
+        Evaluate the approximation error of the computed PSF field using an aberrated pupil.
 
         Inputs:
         - N: int. Grid size for the propagator.
-        - test_case: TestCase. One of the implemented test cases in this module, 
-            e.g. `polar_step`, `polar_gaussian`.
+        - pupil: VectorialCartesianPupil. A vectorial pupil (possibly with aberrations).
         - plot: bool. Visualize approximation errors with plots. Default: False
 
         Outputs:
@@ -708,7 +693,7 @@ class VectorCartesianTester:
         
         prop  = VectorialCartesianPropagator(
             pupil=pupil_,
-            n_pix_psf=Ngrid, #2 * (N - 1) + 1,
+            n_pix_psf=Ngrid,
             n_defocus=1, 
             defocus_min=0,
             defocus_max=0, 
@@ -749,15 +734,13 @@ class VectorCartesianTester:
 
         return err, E_ref, E_num
 
-
     @staticmethod
     def plot_convergence(pupil: VectorialCartesianPupil, ord: int=1, Ns: List[int]=None) -> None:
         '''
-        Generate the error convergence plot for a given test case.
+        Generate the error convergence plot for an aberrated pupil.
 
         Inputs:
-        - test_case_data: Callable function. One of the implemented test cases in this module, 
-            e.g. `polar_step`, `polar_gaussian`.
+        - pupil: VectorialCartesianPupil. A vectorial pupil (possibly with aberrations).
         - ord: int. Error norm order. For example, `ord == 2` calculates the L2 error (root-mean
             -squared) between the numeric and exact field values. Default: 1
         - Ns: List[int]. List of grid sizes to query for the propagator. If no value is specified,
@@ -773,7 +756,6 @@ class VectorCartesianTester:
         plt.title(f"Error convergence plot: Vector Zernike aberrations")
 
 
-
 def _error_norm(err: torch.Tensor, ord: int=1) -> torch.Tensor:
     '''
     Compute the length/norm of an error vector.
@@ -787,34 +769,41 @@ def _error_norm(err: torch.Tensor, ord: int=1) -> torch.Tensor:
 
 
 def _plot_field_comparison(E: torch.Tensor, E_ref: torch.Tensor, E_err: torch.Tensor = None) -> None:
-        if E_err is None:
-            E_err = (E - E_ref).abs()
-        
-        plt.figure(figsize=(8,6.4))
-        plt.subplot(221)
-        plt.imshow(E.abs())
-        plt.title("Numeric")
-        plt.colorbar()
+    '''
+    Helper function to compare the analytic PSF E field with its numerical approximation.
+    '''
+    if E_err is None:
+        E_err = (E - E_ref).abs()
+    
+    plt.figure(figsize=(8,6.4))
+    plt.subplot(221)
+    plt.imshow(E.abs())
+    plt.title("Numeric")
+    plt.colorbar()
 
-        plt.subplot(222)
-        plt.title("Exact")
-        plt.imshow(E_ref.abs())
-        plt.colorbar()
+    plt.subplot(222)
+    plt.title("Exact")
+    plt.imshow(E_ref.abs())
+    plt.colorbar()
 
-        plt.subplot(223)
-        plt.title(f"$L_1$: {_error_norm(E_err, 1):.2e},\n$L_2$: {_error_norm(E_err, 2):.2e},\n$L_\infty$: {_error_norm(E_err, torch.inf):.2e}")
-        plt.imshow(E_err)
-        plt.colorbar()
+    plt.subplot(223)
+    plt.title(f"$L_1$: {_error_norm(E_err, 1):.2e},\n$L_2$: {_error_norm(E_err, 2):.2e},\n$L_\infty$: {_error_norm(E_err, torch.inf):.2e}")
+    plt.imshow(E_err)
+    plt.colorbar()
 
-        plt.subplot(224)
-        N = E.shape[0]
-        y = E[N//2].abs()
-        y_ref = E_ref[N//2].abs()
-        plt.semilogy((y - y_ref).abs())
-        plt.title(f"Avg. magnitude error: {(y - y_ref).abs().mean().item():.3e}")
-        plt.tight_layout()
+    plt.subplot(224)
+    N = E.shape[0]
+    y = E[N//2].abs()
+    y_ref = E_ref[N//2].abs()
+    plt.semilogy((y - y_ref).abs())
+    plt.title(f"Avg. magnitude error: {(y - y_ref).abs().mean().item():.3e}")
+    plt.tight_layout()
+
 
 def _plot_convergence(error_vector_getter: Callable, Ns: List[int]=None, ord: int=1, label: str=None, method_order: int=2) -> None:
+    '''
+    Helper function to generate the error convergence plot.
+    '''
     if Ns is None:
         Ns = torch.unique(torch.logspace(2, 8, steps=20, base=2).to(torch.int32))
         Ns = 2 * (Ns // 2) + 1

@@ -150,7 +150,7 @@ class VectorialCartesianPupil(Pupil):
         x = torch.linspace(-1, 1, self.n_pix_pupil)
         y = torch.linspace(-1, 1, self.n_pix_pupil)
         kx, ky = torch.meshgrid(x, y, indexing='xy')
-        single_field = (kx**2 + ky**2 <= 1).to(torch.complex64)  # TODO
+        single_field = (kx**2 + ky**2 <= 1).to(torch.complex64)
         return torch.stack((self.e0x * single_field, self.e0y * single_field), 
                            dim=0).unsqueeze(0).to(self.device)
 
@@ -241,7 +241,6 @@ class VectorialPolarPupil(Pupil):
                 print("Warning: Zernike coefficients for l != 0 are not supported in polar coordinates.")
             elif l == 0:
                 zernike_phase += curr_coef * self._zernike_nl(n, l, rho=r, phi=0.0)
-        zernike = np.exp(1j * zernike_phase)#[None, None, :]
-        # E = np.array([self.e0x, self.e0y])[None, :, None] * zernike
-        E = np.stack((self.e0x * zernike, self.e0y * zernike), axis=0)#[None,:]
+        zernike = np.exp(1j * zernike_phase)
+        E = np.stack((self.e0x * zernike, self.e0y * zernike), axis=0)
         return E
