@@ -357,7 +357,7 @@ class VectorialPolarPropagator(Propagator):
         PSF_field = torch.stack([                                   # [n_channels=3, size_x, size_y]
             Ix0 - Ix2 * self.cos_twophi - Iy2 * self.sin_twophi,
             Iy0 - Ix2 * self.sin_twophi + Iy2 * self.cos_twophi,
-            2.0 * (Ix1 * self.cos_phi + Iy1 * self.sin_phi)],
+            -2j * (Ix1 * self.cos_phi + Iy1 * self.sin_phi)],
             dim=0)
         
         # TODO: why divide by an extra factor of sqrt(eta)?

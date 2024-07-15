@@ -303,9 +303,9 @@ class VectorPupilCase(TestCase):
 
         # updated expression with correct 1j factors
         psf_field = torch.stack(
-            [I0x + (-1.0) * I2x * cos_twophi + (-1.0) * I2y * sin_twophi,
-             I0y + (-1.0) * I2x * sin_twophi - (-1.0) * I2y * cos_twophi,
-             -2j * 1j * (I1x * cos_phi + I1y * sin_phi)]
+            [I0x - I2x * cos_twophi - I2y * sin_twophi,
+             I0y - I2x * sin_twophi + I2y * cos_twophi,
+             -2j * (I1x * cos_phi + I1y * sin_phi)]
         )
         
         return pupil_field, psf_field
