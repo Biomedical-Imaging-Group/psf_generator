@@ -14,9 +14,9 @@ from propagator import ScalarPolarPropagator, ScalarCartesianPropagator
 
 
 class TestCase:
-    def __init__(self, 
+    def __init__(self,
                  name: str=None,
-                 psf_expr: Callable=None, 
+                 psf_expr: Callable=None,
                  ):
         self.name = name
 
@@ -34,14 +34,14 @@ class TestCase:
 
     def eval_pupil_at_np(self, sin_t: np.ndarray, sin_t_max: float) -> np.ndarray:
         """
-        Evaluate the pupil field $e_{\infty}(\sin{\theta})$ at the pupil coordinate $\sin{\theta}$. 
+        Evaluate the pupil field $e_{\infty}(\sin{\theta})$ at the pupil coordinate $\sin{\theta}$.
         This version is implemented in numpy and is used to generate the ground truth PSF field.
         """
         raise NotImplementedError
 
     def eval_PSF_at(self, kr: torch.Tensor, sin_t_max: float) -> torch.Tensor:
         """
-        Evaluate the PSF at the normalized PSF radial coordinate $k * r$, which is the product of the 
+        Evaluate the PSF at the normalized PSF radial coordinate $k * r$, which is the product of the
         radial position `r` and the wavenumber `k`.
         """
         psf_coord = kr
@@ -49,8 +49,8 @@ class TestCase:
             psf_field = self.psf_expr(psf_coord)
         else:
             psf_field = _sp_integral(
-                lambda sin_t: self.eval_pupil_at_np(sin_t, sin_t_max), 
-                sin_t_max, 
+                lambda sin_t: self.eval_pupil_at_np(sin_t, sin_t_max),
+                sin_t_max,
                 psf_coord)
         return psf_field
 
@@ -75,11 +75,11 @@ class TestCase:
         return pupil_field, psf_field
 
     def get_fields_as_cartesian(self,
-                      s_x: torch.Tensor, 
-                      s_y: torch.Tensor, 
-                      s_max: float, 
+                      s_x: torch.Tensor,
+                      s_y: torch.Tensor,
+                      s_max: float,
                       norm_x: torch.Tensor,  # == k * x
-                      norm_y: torch.Tensor,  # == k * y 
+                      norm_y: torch.Tensor,  # == k * y
                       sin_t_max: float,
                       ):
         """
@@ -98,7 +98,7 @@ class TestCase:
         - pupil_field: torch.Tensor[n_pix_pupil,]. The evaluated pupil field. This is
                         used as input for the propagator's numerical integration routine.
         - psf_field: torch.Tensosr[n_pix_psf,]. The evaluated PSF field.
-        """        
+        """
         s_xx, s_yy = torch.meshgrid(s_x, s_y, indexing='ij')
 
         sin_t_sq = s_xx ** 2 + s_yy ** 2
@@ -124,11 +124,11 @@ class HankelCase(TestCase):
 
         e_inf(\sin{\theta}) = f(\sin{\theta}) * \cos{\theta}    <==>    E_psf(r) = Hf(r)
     """
-    def __init__(self, 
-                 hankel_expr: Callable, 
-                 hankel_expr_np: Callable=None, 
+    def __init__(self,
+                 hankel_expr: Callable,
+                 hankel_expr_np: Callable=None,
                  psf_expr: Callable=None,
-                 Rmax: float = 1.0, 
+                 Rmax: float = 1.0,
                  name: str=None):
         super().__init__(psf_expr=psf_expr, name=name)
 
@@ -143,13 +143,13 @@ class HankelCase(TestCase):
         Rmax = min(self.Rmax, sin_t_max)
         cos_t = np.where(sin_t <= sin_t_max, np.sqrt(1.0 - sin_t ** 2), 0.0)
         pupil_coord = sin_t / Rmax
-        return self.hankel_expr(pupil_coord) * cos_t / Rmax ** 2 
+        return self.hankel_expr(pupil_coord) * cos_t / Rmax ** 2
 
     def eval_pupil_at_np(self, sin_t: np.ndarray, sin_t_max: float) -> np.ndarray:
         Rmax = min(self.Rmax, sin_t_max)
         cos_t = np.where(sin_t <= sin_t_max, np.sqrt(1.0 - sin_t ** 2), 0.0)
         pupil_coord = sin_t / Rmax
-        return self.hankel_expr_np(pupil_coord) * cos_t / Rmax ** 2 
+        return self.hankel_expr_np(pupil_coord) * cos_t / Rmax ** 2
 
     def eval_PSF_at(self, kr: torch.Tensor, sin_t_max: float) -> torch.Tensor:
         Rmax = min(self.Rmax, sin_t_max)
@@ -157,8 +157,8 @@ class HankelCase(TestCase):
             psf_field = self.psf_expr(kr * Rmax)
         else:
             psf_field =  _sp_integral(
-                lambda sin_t: self.eval_pupil_at_np(sin_t, sin_t_max), 
-                sin_t_max, 
+                lambda sin_t: self.eval_pupil_at_np(sin_t, sin_t_max),
+                sin_t_max,
                 kr)
         return psf_field
 
@@ -167,8 +167,8 @@ class ScalarPupilCase(TestCase):
     """
     Test cases defined by an input pupil and its Zernike aberrations.
     """
-    def __init__(self, 
-                 zernike_coefficients: np.ndarray, 
+    def __init__(self,
+                 zernike_coefficients: np.ndarray,
                  name: str = "pupil_aberrations"):
         self.pupil = ScalarPolarPupil(zernike_coefficients=zernike_coefficients)
 
@@ -178,13 +178,13 @@ class ScalarPupilCase(TestCase):
         )
 
     def eval_pupil_at(self, sin_t: torch.Tensor, sin_t_max: float) -> torch.Tensor:
-        # to query the zernike aberrations, normalize the pupil coordinate 
+        # to query the zernike aberrations, normalize the pupil coordinate
         # by sin_t_max such that it spans the unit disk [0,1].
         # (the Pupil class operates in these normalized coordinates)
         return self.pupil.eval_field_at(sin_t / sin_t_max).squeeze()
 
     def eval_pupil_at_np(self, sin_t: np.ndarray, sin_t_max: float) -> np.ndarray:
-        # to query the zernike aberrations, normalize the pupil coordinate 
+        # to query the zernike aberrations, normalize the pupil coordinate
         # by sin_t_max such that it spans the unit disk [0,1].
         # (the Pupil class operates in these normalized coordinates)
         return self.pupil.eval_field_at_np(sin_t / sin_t_max).squeeze()
@@ -251,8 +251,8 @@ polar_logstep = HankelCase(
                     np.where(pupil_coord > 1e-6,
                                 np.log(1.0 / pupil_coord),
                                 0.0),
-    psf_expr = lambda psf_coord: 4.0 * torch.where(psf_coord > 1e-6, 
-                    (1.0 - bessel_j0(psf_coord)) / psf_coord ** 2, 
+    psf_expr = lambda psf_coord: 4.0 * torch.where(psf_coord > 1e-6,
+                    (1.0 - bessel_j0(psf_coord)) / psf_coord ** 2,
                     0.25 - psf_coord ** 2 / 64),
     Rmax = 0.6,
     name = "polar_logstep",
@@ -278,23 +278,23 @@ def _sp_integral(e_inf: Callable, max_pupil_coord: float, psf_coord_: torch.Tens
     return torch.tensor(out).reshape(psf_coord_.shape)
 
 '''
-Tester static classes for the scalar propagators. They are used to compute PSF approximation errors 
+Tester static classes for the scalar propagators. They are used to compute PSF approximation errors
 and generate error convergence plots.
 '''
 class ScalarPolarTester:
     @staticmethod
     def eval_error(
-        N: int, 
-        test_case: TestCase, 
+        N: int,
+        test_case: TestCase,
         plot: bool=False) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
-        Evaluate the approximation error of the computed PSF field using an input test case. This 
-        method can be called on one of the analytic test cases implemented in this module 
+        Evaluate the approximation error of the computed PSF field using an input test case. This
+        method can be called on one of the analytic test cases implemented in this module
         (`HankelCase`) or an aberrated pupil (`ScalarPupilCase`).
 
         Inputs:
         - N: int. Grid size for the propagator.
-        - test_case: TestCase. One of the implemented test cases in this module, 
+        - test_case: TestCase. One of the implemented test cases in this module,
             e.g. `polar_step`, `polar_gaussian`.
         - plot: bool. Visualize approximation errors with plots. Default: False
 
@@ -308,17 +308,17 @@ class ScalarPolarTester:
         prop  = ScalarPolarPropagator(
             pupil=_pupil,
             n_pix_psf=2 * (N - 1) + 1,
-            n_defocus=1, 
+            n_defocus=1,
             defocus_min=0,
-            defocus_max=0, 
+            defocus_max=0,
             fov=1e4,
-            envelope=None, 
-            apod_factor=False, 
+            envelope=None,
+            apod_factor=False,
             gibson_lanni=False)
 
         far_fields, E_ref = test_case.get_fields_as_polar(
-            thetas=prop.thetas, 
-            krs=prop.k * prop.rs, 
+            thetas=prop.thetas,
+            krs=prop.k * prop.rs,
             sin_t_max=torch.sin(prop.thetas.max()).item())
 
         E_ref = E_ref[prop.rr_indices]
@@ -337,7 +337,7 @@ class ScalarPolarTester:
         Generate the error convergence plot for a given test case.
 
         Inputs:
-        - test_case_data: Callable function. One of the implemented test cases in this module, 
+        - test_case_data: Callable function. One of the implemented test cases in this module,
             e.g. `polar_step`, `polar_gaussian`.
         - ord: int. Error norm order. For example, `ord == 2` calculates the L2 error (root-mean
             -squared) between the numeric and exact field values. Default: 1
@@ -345,8 +345,8 @@ class ScalarPolarTester:
             a default set of logspaced values from 2**3 to 2**8 is used.
         """
         _plot_convergence(
-            lambda N: ScalarPolarTester.eval_error(N, test_case)[0], 
-            Ns, 
+            lambda N: ScalarPolarTester.eval_error(N, test_case)[0],
+            Ns,
             ord,
             label="Polar",
             )
@@ -356,17 +356,17 @@ class ScalarPolarTester:
 class ScalarCartesianTester:
     @staticmethod
     def eval_error(
-        N: int, 
-        test_case: TestCase, 
+        N: int,
+        test_case: TestCase,
         plot: bool=False) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
-        Evaluate the approximation error of the computed PSF field using an input test case. This 
-        method can be called on one of the analytic test cases implemented in this module 
+        Evaluate the approximation error of the computed PSF field using an input test case. This
+        method can be called on one of the analytic test cases implemented in this module
         (`HankelCase`) or an aberrated pupil (`ScalarPupilCase`).
 
         Inputs:
         - N: int. Grid size for the propagator.
-        - test_case: TestCase. One of the implemented test cases in this module, 
+        - test_case: TestCase. One of the implemented test cases in this module,
             e.g. `polar_step`, `polar_gaussian`.
         - plot: bool. Visualize approximation errors with plots. Default: False
 
@@ -380,13 +380,13 @@ class ScalarCartesianTester:
         prop = ScalarCartesianPropagator(
             pupil=_pupil,
             n_pix_psf=_pupil.n_pix_pupil,
-            n_defocus=1, 
+            n_defocus=1,
             defocus_min=0,
-            defocus_max=0, 
+            defocus_max=0,
             fov=1e4,
-            envelope=None, 
+            envelope=None,
             sz_correction=True,
-            apod_factor=False, 
+            apod_factor=False,
             gibson_lanni=False)
 
         far_fields, E_ref = test_case.get_fields_as_cartesian(
@@ -412,7 +412,7 @@ class ScalarCartesianTester:
         Generate the error convergence plot for a given test case.
 
         Inputs:
-        - test_case_data: Callable function. One of the implemented test cases in this module, 
+        - test_case_data: Callable function. One of the implemented test cases in this module,
             e.g. `polar_step`, `polar_gaussian`.
         - ord: int. Error norm order. For example, `ord == 2` calculates the L2 error (root-mean
             -squared) between the numeric and exact field values. Default: 1
@@ -420,8 +420,8 @@ class ScalarCartesianTester:
             a default set of logspaced values from 9 to 257 is used.
         """
         _plot_convergence(
-            lambda N: ScalarCartesianTester.eval_error(N, test_case)[0], 
-            Ns, 
+            lambda N: ScalarCartesianTester.eval_error(N, test_case)[0],
+            Ns,
             ord,
             label="Cartesian",
             )

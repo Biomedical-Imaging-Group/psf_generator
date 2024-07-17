@@ -14,11 +14,11 @@ from bessel_ad import bessel_j2
 
 class Propagator(ABC):
     def __init__(self, pupil, n_pix_psf=128, device='cpu',
-                 wavelength=632, NA=1.3, fov=2000, refractive_index=1.5, 
+                 wavelength=632, NA=1.3, fov=2000, refractive_index=1.5,
                  defocus_min=0, defocus_max=0, n_defocus=1,
-                 apod_factor=False, envelope=None, 
+                 apod_factor=False, envelope=None,
                  gibson_lanni=False, z_p=1e3, n_s=1.3,
-                 n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3, 
+                 n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3,
                  n_i=1.5, t_i0=100e3):
         self.pupil = pupil
 
@@ -66,16 +66,16 @@ class Propagator(ABC):
 
 class ScalarCartesianPropagator(Propagator):
     def __init__(self, pupil, n_pix_psf=128, device='cpu',
-                 wavelength=632, NA=0.9, fov=1000, refractive_index=1.5, 
+                 wavelength=632, NA=0.9, fov=1000, refractive_index=1.5,
                  defocus_min=0, defocus_max=0, n_defocus=1,
-                 sz_correction=True, apod_factor=False, envelope=None, 
+                 sz_correction=True, apod_factor=False, envelope=None,
                  gibson_lanni=False, z_p=1e3, n_s=1.3,
                  n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3,
                  n_i=1.5, t_i0=100e3):
         super().__init__(pupil=pupil, n_pix_psf=n_pix_psf, device=device,
-                         wavelength=wavelength, NA=NA, fov=fov, refractive_index=refractive_index, 
+                         wavelength=wavelength, NA=NA, fov=fov, refractive_index=refractive_index,
                          defocus_min=defocus_min, defocus_max=defocus_max, n_defocus=n_defocus,
-                         apod_factor=apod_factor, envelope=envelope, 
+                         apod_factor=apod_factor, envelope=envelope,
                          gibson_lanni=gibson_lanni, z_p=z_p, n_s=n_s,
                          n_g=n_g, n_g0=n_g0, t_g=t_g, t_g0=t_g0,
                          n_i=n_i, t_i0=t_i0)
@@ -128,19 +128,19 @@ class ScalarCartesianPropagator(Propagator):
 
     def compute_focus_field(self):
         self.field = custom_ifft2(self.pupil.field * self.correction_factor * self.defocus_filters,
-                                  shape_out=(self.n_pix_psf, self.n_pix_psf), 
-                                  k_start=-self.zoom_factor*np.pi, 
-                                  k_end=self.zoom_factor*np.pi, 
+                                  shape_out=(self.n_pix_psf, self.n_pix_psf),
+                                  k_start=-self.zoom_factor*np.pi,
+                                  k_end=self.zoom_factor*np.pi,
                                   norm='backward', fftshift_input=True, include_end=True) * \
                                     (2 * self.NA / self.n_pix_pupil / self.refractive_index)**2 * 1j
         return self.field / (2 * np.pi)
 
     def _compute_PSF_for_far_field(self, far_fields):
         k = self.zoom_factor * np.pi
-        field = custom_ifft2(far_fields * self.correction_factor * self.defocus_filters, 
-                                  shape_out=(self.n_pix_psf, self.n_pix_psf), 
-                                  k_start=-k, 
-                                  k_end=k, 
+        field = custom_ifft2(far_fields * self.correction_factor * self.defocus_filters,
+                                  shape_out=(self.n_pix_psf, self.n_pix_psf),
+                                  k_start=-k,
+                                  k_end=k,
                                   norm='backward', fftshift_input=True, include_end=True) \
                                       * (self.ds * self.s_max) ** 2 * (self.n_pix_pupil) ** 2
 
@@ -154,15 +154,15 @@ class ScalarPolarPropagator(Propagator):
     def __init__(self, pupil, n_pix_psf=128, device='cpu',
                  wavelength=632, NA=0.9, fov=1000, refractive_index=1.5,
                  defocus_min=0, defocus_max=0, n_defocus=1,
-                 apod_factor=False, envelope=None,  
-                 gibson_lanni=False, z_p=1e3, n_s=1.3, 
+                 apod_factor=False, envelope=None,
+                 gibson_lanni=False, z_p=1e3, n_s=1.3,
                  n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3,
-                 n_i=1.5, t_i0=100e3, 
+                 n_i=1.5, t_i0=100e3,
                  quadrature_rule=simpsons_rule):
         super().__init__(pupil=pupil, n_pix_psf=n_pix_psf, device=device,
                          wavelength=wavelength, NA=NA, fov=fov, refractive_index=refractive_index,
-                         defocus_min=defocus_min, defocus_max=defocus_max, n_defocus=n_defocus, 
-                         apod_factor=apod_factor, envelope=envelope, 
+                         defocus_min=defocus_min, defocus_max=defocus_max, n_defocus=n_defocus,
+                         apod_factor=apod_factor, envelope=envelope,
                          gibson_lanni=gibson_lanni, z_p=z_p, n_s=n_s,
                          n_g=n_g, n_g0=n_g0, t_g=t_g, t_g0=t_g0,
                          n_i=n_i, t_i0=t_i0)
@@ -317,8 +317,8 @@ class VectorialPolarPropagator(Propagator):
         J0s = bessel_j0(bessel_arg)    # [n_theta, n_radii]
         J1s = bessel_j1(bessel_arg)    # [n_theta, n_radii]
         # J2s = bessel_j2(bessel_arg)    # [n_theta, n_radii]
-        J2s = 2.0 * torch.where(bessel_arg > 1e-6, 
-                                J1s / bessel_arg, 
+        J2s = 2.0 * torch.where(bessel_arg > 1e-6,
+                                J1s / bessel_arg,
                                 0.5 - bessel_arg ** 2 / 16) - J0s
 
         # compute PSF field; handle defocus via batching with vmap()

@@ -3,9 +3,9 @@ Implements several Newton-Cotes quadrature formulas for performing 1D numerical 
 
 `I(x) \approx \int_{a}^{b} f(x) dx`
 
-The integrand is evaluated at N equally-spaced points on [a, b], resulting in a stepsize of 
-h = 1 / (N - 1). To allow multiple integrals to be evaluated in parallel, we vectorize the 
-integration along dimension `dim = 1`. 
+The integrand is evaluated at N equally-spaced points on [a, b], resulting in a stepsize of
+h = 1 / (N - 1). To allow multiple integrals to be evaluated in parallel, we vectorize the
+integration along dimension `dim = 1`.
 
 Inputs:
 - fs: torch.tensor, shape = (N, num_integrals). The integrand evaluations.
@@ -48,10 +48,10 @@ def simpsons_rule(fs, dx):
 
 def richard1_rule(fs, dx):
     """
-    Romberg integration truncated at 1 step; equivalent to Simpson's rule, O(h ** 4), 
+    Romberg integration truncated at 1 step; equivalent to Simpson's rule, O(h ** 4),
     when the grid size is set appropriately.
 
-    Warning: this method only achieves higher-order convergence when the number of grid 
+    Warning: this method only achieves higher-order convergence when the number of grid
     points is N == 2**K + 1.
     """
     if not(is_power_of_two(fs.shape[0] - 1)):
@@ -64,10 +64,10 @@ def richard1_rule(fs, dx):
 
 def richard2_rule(fs, dx):
     """
-    Romberg integration truncated at 2 steps; equivalent to two levels of Richardson 
+    Romberg integration truncated at 2 steps; equivalent to two levels of Richardson
     extrapolation. O(h ** 6).
 
-    Warning: this method only achieves higher-order convergence when the number of grid 
+    Warning: this method only achieves higher-order convergence when the number of grid
     points is N == 2**K + 1.
     """
     if not(is_power_of_two(fs.shape[0] - 1)):
@@ -83,10 +83,10 @@ def richard2_rule(fs, dx):
 
 def richard3_rule(fs, dx):
     """
-    Romberg integration truncated at 3 steps; equivalent to three levels of Richardson 
+    Romberg integration truncated at 3 steps; equivalent to three levels of Richardson
     extrapolation. O(h ** 8).
 
-    Warning: this method only achieves higher-order convergence when the number of grid 
+    Warning: this method only achieves higher-order convergence when the number of grid
     points is N == 2**K + 1.
     """
     if not(is_power_of_two(fs.shape[0] - 1)):
