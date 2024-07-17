@@ -19,7 +19,7 @@ class TestCase:
                  psf_expr: Callable=None, 
                  ):
         self.name = name
-        
+
         self.use_analytic_psf = (psf_expr is not None)
         self.psf_expr = psf_expr
 
@@ -31,7 +31,7 @@ class TestCase:
         Evaluate the pupil field $e_{\infty}(\sin{\theta})$ at the pupil coordinate $\sin{\theta}$.
         '''
         raise NotImplementedError
-    
+
     def eval_pupil_at_np(self, sin_t: np.ndarray, sin_t_max: float) -> np.ndarray:
         '''
         Evaluate the pupil field $e_{\infty}(\sin{\theta})$ at the pupil coordinate $\sin{\theta}$. 
@@ -53,7 +53,7 @@ class TestCase:
                 sin_t_max, 
                 psf_coord)
         return psf_field
-    
+
     def get_fields_as_polar(self, thetas: torch.Tensor, krs: torch.Tensor, sin_t_max: float):
         '''
         Evaluate the test case on a polar grid.
@@ -150,7 +150,7 @@ class HankelCase(TestCase):
         cos_t = np.where(sin_t <= sin_t_max, np.sqrt(1.0 - sin_t ** 2), 0.0)
         pupil_coord = sin_t / Rmax
         return self.hankel_expr_np(pupil_coord) * cos_t / Rmax ** 2 
-    
+
     def eval_PSF_at(self, kr: torch.Tensor, sin_t_max: float) -> torch.Tensor:
         Rmax = min(self.Rmax, sin_t_max)
         if self.use_analytic_psf:
@@ -161,7 +161,7 @@ class HankelCase(TestCase):
                 sin_t_max, 
                 kr)
         return psf_field
-    
+
 
 class ScalarPupilCase(TestCase):
     '''
@@ -204,7 +204,7 @@ class ScalarPupilCase(TestCase):
                 sin_t_max,
                 psf_coord,
                 )
-        
+
         return psf_field
 
 
@@ -303,7 +303,7 @@ class ScalarPolarTester:
         - E_ref: torch.Tensor[N,N]. The reference PSF field.
         - E_num: torch.Tensor[N,N]. The calculated PSF field.
         '''
-        
+
         _pupil = ScalarPolarPupil(N)
         prop  = ScalarPolarPropagator(
             pupil=_pupil,
@@ -315,7 +315,7 @@ class ScalarPolarTester:
             envelope=None, 
             apod_factor=False, 
             gibson_lanni=False)
-        
+
         far_fields, E_ref = test_case.get_fields_as_polar(
             thetas=prop.thetas, 
             krs=prop.k * prop.rs, 
@@ -375,7 +375,7 @@ class ScalarCartesianTester:
         - E_ref: torch.Tensor[N,N]. The reference PSF field.
         - E_num: torch.Tensor[N,N]. The calculated PSF field.
         '''
-        
+
         _pupil = ScalarCartesianPupil(2 * (N - 1) + 1)
         prop = ScalarCartesianPropagator(
             pupil=_pupil,
@@ -388,7 +388,7 @@ class ScalarCartesianTester:
             sz_correction=True,
             apod_factor=False, 
             gibson_lanni=False)
-        
+
         far_fields, E_ref = test_case.get_fields_as_cartesian(
                                 s_x=prop.s_x * prop.s_max,
                                 s_y=prop.s_x * prop.s_max,
@@ -397,7 +397,7 @@ class ScalarCartesianTester:
                                 norm_y=prop.x * 2 * torch.pi / prop.s_max,
                                 sin_t_max=prop.s_max,
                                 )
-        
+
         E_num = prop._compute_PSF_for_far_field(far_fields).squeeze()
         err = (E_ref - E_num).abs()
 
@@ -405,7 +405,7 @@ class ScalarCartesianTester:
             _plot_field_comparison(E_num, E_ref, err)
 
         return err, E_ref, E_num
-    
+
     @staticmethod
     def plot_convergence(test_case: TestCase, ord: int=1, Ns: List[int]=None) -> None:
         '''
@@ -443,7 +443,7 @@ def _error_norm(err: torch.Tensor, ord: int=1) -> torch.Tensor:
 def _plot_field_comparison(E: torch.Tensor, E_ref: torch.Tensor, E_err: torch.Tensor = None) -> None:
         if E_err is None:
             E_err = (E - E_ref).abs()
-        
+
         plt.figure(figsize=(8,6.4))
         plt.subplot(221)
         plt.imshow(E.abs())
@@ -483,7 +483,7 @@ def _plot_convergence(error_vector_getter: Callable, Ns: List[int]=None, ord: in
         err_vec = error_vector_getter(int(N))
         err = _error_norm(err_vec, ord)
         errs.append(err)
-    
+
     plt.loglog(Ns, errs, label=label, linewidth=2.0, zorder=3)
     plt.loglog(Ns, errs[0] * (Ns / Ns[0]) ** (-4), 'k--', linewidth=0.75, label=rf"$O(h^{4})$")
     plt.legend()

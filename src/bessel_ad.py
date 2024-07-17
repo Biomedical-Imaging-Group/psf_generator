@@ -17,7 +17,7 @@ class BesselJ0(Function):
         ctx.save_for_backward(x)
         ctx.save_for_forward(x)
         return bessel_j0(x)
-    
+
     @staticmethod
     @torch.autograd.function.once_differentiable
     def vjp(ctx: Any, grad_output: torch.Tensor) -> torch.Tensor:
@@ -26,7 +26,7 @@ class BesselJ0(Function):
         '''
         x, = ctx.saved_tensors
         return -bessel_j1(x) * grad_output
-    
+
     @staticmethod
     def jvp(ctx: Any, grad_input: torch.Tensor) -> torch.Tensor:
         '''
@@ -34,7 +34,7 @@ class BesselJ0(Function):
         '''
         x, = ctx.saved_tensors
         return -bessel_j1(x) * grad_input
-    
+
 
 class BesselJ1(Function):
     '''
@@ -46,7 +46,7 @@ class BesselJ1(Function):
         ctx.save_for_backward(x, result)
         ctx.save_for_forward(x, result)
         return result
-    
+
     @staticmethod
     @torch.autograd.function.once_differentiable
     def vjp(ctx: Any, grad_output: torch.Tensor) -> torch.Tensor:
@@ -57,7 +57,7 @@ class BesselJ1(Function):
         j1_norm_x = torch.where(x == 0.0, 0.5, j1 / x)
         jac = bessel_j0(x) - j1_norm_x
         return jac * grad_output
-    
+
     @staticmethod
     def jvp(ctx: Any, grad_input: torch.Tensor) -> torch.Tensor:
         '''

@@ -21,7 +21,7 @@ class Propagator(ABC):
                  n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3, 
                  n_i=1.5, t_i0=100e3):
         self.pupil = pupil
-        
+
         self.n_pix_psf = n_pix_psf
         self.n_pix_pupil = pupil.n_pix_pupil
         self.device = device
@@ -84,7 +84,7 @@ class ScalarCartesianPropagator(Propagator):
         # Physical parameters
         self.k = 2 * np.pi / self.wavelength
         self.s_max = torch.tensor(self.NA / self.refractive_index)
-        
+
          # Zoom factor to determine pixel size with custom FFT
         self.zoom_factor = 2 * self.NA * self.fov / self.wavelength \
              / self.refractive_index / (self.n_pix_pupil - 1)
@@ -148,7 +148,7 @@ class ScalarCartesianPropagator(Propagator):
         # field *= torch.exp(1j*torch.tensor(angle))
 
         return field / (2 * np.pi)
-    
+
 
 class ScalarPolarPropagator(Propagator):
     def __init__(self, pupil, n_pix_psf=128, device='cpu',
@@ -166,7 +166,7 @@ class ScalarPolarPropagator(Propagator):
                          gibson_lanni=gibson_lanni, z_p=z_p, n_s=n_s,
                          n_g=n_g, n_g0=n_g0, t_g=t_g, t_g0=t_g0,
                          n_i=n_i, t_i0=t_i0)
-        
+
         # PSF coordinates
         x = torch.linspace(-self.fov/2, self.fov/2, self.n_pix_psf)
         xx, yy = torch.meshgrid(x, x, indexing='ij')
@@ -202,7 +202,7 @@ class ScalarPolarPropagator(Propagator):
             correction_factor *= torch.exp(1j * self.k * optical_path)
         self.correction_factor = correction_factor.to(self.device)
         self.quadrature_rule = quadrature_rule
-        
+
         # bessel function evaluations are expensive and can be computed independently from defocus
         self.J_evals = bessel_j0(self.k * self.rs[None,:] * sin_t[:,None])    # [n_theta, n_radii]
 
@@ -228,7 +228,7 @@ class ScalarPolarPropagator(Propagator):
 
         fields = batched_compute_field_at_defocus(self.defocus_filters, J_evals, far_fields, sin_t)
         return fields
-        
+
     def _compute_PSF_at_defocus(self, defocus_term, J_evals, far_fields, sin_t):
         # compute E(r) for a list of unique radii values
         integrand = J_evals * (far_fields * defocus_term * self.correction_factor * sin_t)[:,None]  # [n_theta, n_radii]
@@ -260,7 +260,7 @@ class VectorialPolarPropagator(Propagator):
         r_unique, rr_indices = torch.unique(rr, return_inverse=True)
         self.rs = r_unique.to(self.device)  # compute minimal number of points
         self.rr_indices = rr_indices.to(self.device)  # to invert
-        
+
         # PSF varphi coordinate
         varphi = torch.atan2(yy, xx)
         sin_phi = torch.sin(varphi)
@@ -325,7 +325,7 @@ class VectorialPolarPropagator(Propagator):
         batched_compute_field_at_defocus = vmap(self._compute_PSF_at_defocus, in_dims=(0, None, None, None, None, None, None))
         fields = batched_compute_field_at_defocus(self.defocus_filters, J0s, J1s, J2s, far_fields, sin_t, cos_t)
         return fields
-        
+
 
     def _compute_PSF_at_defocus(self, defocus_term, J0s, J1s, J2s, far_fields, sin_t, cos_t):
         field_x, field_y = far_fields[0], far_fields[1]
@@ -337,13 +337,13 @@ class VectorialPolarPropagator(Propagator):
             fs=J0s * (field_x * I_term)[:,None])
         Iy0 = self.quadrature_rule(dx=self.dtheta,
             fs=J0s * (field_y * I_term)[:,None])
-        
+
         I_term = sin_t ** 2 * defocus_term * self.correction_factor
         Ix1 = self.quadrature_rule(dx=self.dtheta,
             fs=J1s * (field_x * I_term)[:,None])
         Iy1 = self.quadrature_rule(dx=self.dtheta,
             fs=J1s * (field_y * I_term)[:,None])
-        
+
         I_term = sin_t * (cos_t - 1.0) * defocus_term * self.correction_factor
         Ix2 = self.quadrature_rule(dx=self.dtheta,
             fs=J2s * (field_x * I_term)[:,None])
@@ -369,13 +369,13 @@ class VectorialPolarPropagator(Propagator):
         #     Iy0 + Ix2 * sin_twophi - Iy2 * cos_twophi,
         #     -2j * (Ix1 * cos_phi + Iy1 * sin_phi)],
         #     dim=0)
-        
+
         PSF_field = torch.stack([                                   # [n_channels=3, size_x, size_y]
             Ix0 + Ix2 * self.cos_twophi + Iy2 * self.sin_twophi,
             Iy0 + Ix2 * self.sin_twophi - Iy2 * self.cos_twophi,
             -2j * (Ix1 * self.cos_phi + Iy1 * self.sin_phi)],
             dim=0)
-        
+
         # TODO: why divide by an extra factor of sqrt(eta)?
         return PSF_field / np.sqrt(self.refractive_index)
 
