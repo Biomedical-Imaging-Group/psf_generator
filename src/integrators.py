@@ -1,4 +1,4 @@
-'''
+"""
 Implements several Newton-Cotes quadrature formulas for performing 1D numerical integration:
 
 `I(x) \approx \int_{a}^{b} f(x) dx`
@@ -13,7 +13,7 @@ Inputs:
 
 Outputs:
 - integrals: torch.tensor, shape = (num_integrals,). The evaluated integrals.
-'''
+"""
 
 import torch
 import warnings
@@ -24,36 +24,36 @@ def is_power_of_two(k):
 
 
 def riemann_rule(fs, dx):
-    '''
+    """
     Riemann quadrature rule, O(h).
-    '''
+    """
     return torch.sum(fs, dim=0) * dx
 
 def trapezoid_rule(fs, dx):
-    '''
+    """
     Riemann quadrature rule, O(h ** 2).
-    '''
+    """
     return 0.5 * (fs[0] + 2.0 * torch.sum(fs[1:-1], dim=0) + fs[-1,:]) * dx
 
 def simpsons_rule(fs, dx):
-    '''
+    """
     Riemann quadrature rule, O(h ** 4).
 
     Warning: simpson's rule only works correctly with odd-sized grids (i.e. N == 2*K + 1)!
-    '''
+    """
     if fs.shape[0] % 2 == 0:
         warnings.warn("Pupil size is not an odd number! The computed \
                       integral will not have high-order accuracy.")
     return (fs[0] + 2 * torch.sum(fs[1:-1], dim=0) + 2 * torch.sum(fs[1:-1:2], dim=0) + fs[-1]) * dx / 3.0
 
 def richard1_rule(fs, dx):
-    '''
+    """
     Romberg integration truncated at 1 step; equivalent to Simpson's rule, O(h ** 4), 
     when the grid size is set appropriately.
 
     Warning: this method only achieves higher-order convergence when the number of grid 
     points is N == 2**K + 1.
-    '''
+    """
     if not(is_power_of_two(fs.shape[0] - 1)):
         warnings.warn("Pupil shape is not of the form (2 ** K + 1)! The computed \
                       integral will not have high-order accuracy.")
@@ -63,13 +63,13 @@ def richard1_rule(fs, dx):
     return I0 + (I0 - I1) / 3.0
 
 def richard2_rule(fs, dx):
-    '''
+    """
     Romberg integration truncated at 2 steps; equivalent to two levels of Richardson 
     extrapolation. O(h ** 6).
 
     Warning: this method only achieves higher-order convergence when the number of grid 
     points is N == 2**K + 1.
-    '''
+    """
     if not(is_power_of_two(fs.shape[0] - 1)):
         warnings.warn("Pupil shape is not of the form (2 ** K + 1)! The computed \
                       integral will not have high-order accuracy.")
@@ -82,13 +82,13 @@ def richard2_rule(fs, dx):
     return I00 + (I00 - I01) / 15.0
 
 def richard3_rule(fs, dx):
-    '''
+    """
     Romberg integration truncated at 3 steps; equivalent to three levels of Richardson 
     extrapolation. O(h ** 8).
 
     Warning: this method only achieves higher-order convergence when the number of grid 
     points is N == 2**K + 1.
-    '''
+    """
     if not(is_power_of_two(fs.shape[0] - 1)):
         warnings.warn("Pupil shape is not of the form (2 ** K + 1)! The computed \
                       integral will not have high-order accuracy.")

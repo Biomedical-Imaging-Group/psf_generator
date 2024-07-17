@@ -19,7 +19,7 @@ class Pupil(ABC):
 
 
 class ScalarCartesianPupil(Pupil):
-    '''
+    """
     Define a 2D pupil function for the scalar Cartesian case. The function is defined on the 
     unit disk centered at (0,0): u ** 2 + v ** 2 <= 1. The mapping between this domain and
     the physical pupil coordinates are:
@@ -30,7 +30,7 @@ class ScalarCartesianPupil(Pupil):
     such that the physical domain is:
 
         sx ** 2 + sy ** 2 <= s_max ** 2 = sin(theta_max) ** 2
-    '''
+    """
     def __init__(self, n_pix_pupil=128, device='cpu', zernike_coefficients=[0,]):
         super().__init__(n_pix_pupil, device, zernike_coefficients)
         self.field = self.initialize_field()
@@ -51,7 +51,7 @@ class ScalarCartesianPupil(Pupil):
 
 
 class ScalarPolarPupil(Pupil):
-    '''
+    """
     Define a (1D) radial pupil function for the scalar polar case. The function is defined on 
     the interval `\rho` \in [0,1]; `\rho` is a "normalized" radius. The conversion to physical
     pupil coordinates - the polar angle `\theta` - is given by:
@@ -61,7 +61,7 @@ class ScalarPolarPupil(Pupil):
     such that the physical domain is:
 
         \theta \leq \theta_{max}
-    '''
+    """
     def __init__(self, n_pix_pupil=128, device='cpu', zernike_coefficients=[0,]):
         super().__init__(n_pix_pupil, device, zernike_coefficients)
         self.field = self.initialize_field()
@@ -85,9 +85,9 @@ class ScalarPolarPupil(Pupil):
         return torch.exp(1j * zernike_phase).to(self.device).unsqueeze(0).unsqueeze(0)
 
     def eval_field_at(self, r):
-        '''
+        """
         Evaluate the pupil field at the radius `rho` = `r`.
-        '''
+        """
         n_zernike = len(self.zernike_coefficients)
         zernike_phase = torch.zeros_like(r)
         for i in range(n_zernike):
@@ -100,10 +100,10 @@ class ScalarPolarPupil(Pupil):
         return torch.exp(1j * zernike_phase).to(self.device).unsqueeze(0).unsqueeze(0)
 
     def eval_field_at_np(self, r):
-        '''
+        """
         Evaluate the pupil field at the radius `rho` = `r`. This version is implemented in numpy and is
         used to generate the ground truth PSF field.
-        '''
+        """
         n_zernike = len(self.zernike_coefficients)
         zernike_phase = np.zeros_like(r)
         for i in range(n_zernike):
