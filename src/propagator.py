@@ -131,7 +131,7 @@ class ScalarCartesianPropagator(Propagator):
         self.field = self._compute_PSF_for_far_field(self.pupil.field)
         return self.field
 
-    def _compute_PSF_for_far_field(self, far_fields):
+    def _compute_psf_for_far_field(self, far_fields):
         field = custom_ifft2(far_fields * self.correction_factor * self.defocus_filters,
                                   shape_out=(self.n_pix_psf, self.n_pix_psf),
                                   k_start=-k,
@@ -202,7 +202,7 @@ class ScalarPolarPropagator(Propagator):
         far_fields = self.pupil.field.squeeze()   # [n_defocus=1, channels=1, n_thetas] ==> [n_thetas, ]
         return self._compute_PSF_for_far_field(far_fields)
 
-    def _compute_PSF_for_far_field(self, far_fields):
+    def _compute_psf_for_far_field(self, far_fields):
         # argument shapes:
         # self.thetas,            [n_thetas, ]
         # self.dtheta,            float
@@ -220,7 +220,7 @@ class ScalarPolarPropagator(Propagator):
         fields = batched_compute_field_at_defocus(self.defocus_filters, J_evals, far_fields, sin_t)
         return fields
 
-    def _compute_PSF_at_defocus(self, defocus_term, J_evals, far_fields, sin_t):
+    def _compute_psf_at_defocus(self, defocus_term, J_evals, far_fields, sin_t):
         # compute E(r) for a list of unique radii values
         integrand = J_evals * (far_fields * defocus_term * self.correction_factor * sin_t)[:,None]  # [n_theta, n_radii]
         field = self.quadrature_rule(integrand, self.dtheta)
@@ -301,7 +301,7 @@ class VectorialPolarPropagator(Propagator):
         return self.field
 
 
-    def _compute_PSF_for_far_field(self, far_fields):
+    def _compute_psf_for_far_field(self, far_fields):
         sin_t = torch.sin(self.thetas) # [n_thetas, ]
         cos_t = torch.cos(self.thetas) # [n_thetas, ]
 
@@ -320,7 +320,7 @@ class VectorialPolarPropagator(Propagator):
         return fields
 
 
-    def _compute_PSF_at_defocus(self, defocus_term, J0s, J1s, J2s, far_fields, sin_t, cos_t):
+    def _compute_psf_at_defocus(self, defocus_term, J0s, J1s, J2s, far_fields, sin_t, cos_t):
         field_x, field_y = far_fields[0], far_fields[1]
 
         # compute E(r) for a list of unique radii values
@@ -459,7 +459,7 @@ class VectorialCartesianPropagator(Propagator):
                                   norm='backward', fftshift_input=True, include_end=True) * (self.ds * self.s_max) ** 2 * 1j
         return self.field / (2 * np.pi * np.sqrt(self.refractive_index))
 
-    def _compute_PSF_for_far_field(self, far_fields):  # to remove later?
+    def _compute_psf_for_far_field(self, far_fields):  # to remove later?
         s_xx, s_yy = torch.meshgrid(self.s_x * self.s_max, self.s_x * self.s_max, indexing='ij')
         sin_t_sq = s_xx ** 2 + s_yy ** 2
         s_valid = sin_t_sq <= self.s_max ** 2
