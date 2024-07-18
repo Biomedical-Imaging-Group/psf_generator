@@ -20,7 +20,7 @@ class Pupil(ABC):
 
 class ScalarCartesianPupil(Pupil):
     """
-    Define a 2D pupil function for the scalar Cartesian case. The function is defined on the 
+    Define a 2D pupil function for the scalar Cartesian case. The function is defined on the
     unit disk centered at (0,0): u ** 2 + v ** 2 <= 1. The mapping between this domain and
     the physical pupil coordinates are:
 
@@ -52,7 +52,7 @@ class ScalarCartesianPupil(Pupil):
 
 class ScalarPolarPupil(Pupil):
     """
-    Define a (1D) radial pupil function for the scalar polar case. The function is defined on 
+    Define a (1D) radial pupil function for the scalar polar case. The function is defined on
     the interval `\rho` \in [0,1]; `\rho` is a "normalized" radius. The conversion to physical
     pupil coordinates - the polar angle `\theta` - is given by:
 
@@ -137,7 +137,7 @@ class ScalarPolarPupil(Pupil):
         return Z
 
 class VectorialCartesianPupil(Pupil):
-    def __init__(self, e0x=1, e0y=0, 
+    def __init__(self, e0x=1, e0y=0,
                  n_pix_pupil=128, device='cpu', zernike_coefficients=(0,)):
         super().__init__(n_pix_pupil, device, zernike_coefficients)
         self.e0x = e0x
@@ -151,7 +151,7 @@ class VectorialCartesianPupil(Pupil):
         y = torch.linspace(-1, 1, self.n_pix_pupil)
         kx, ky = torch.meshgrid(x, y, indexing='xy')
         single_field = (kx**2 + ky**2 <= 1).to(torch.complex64)
-        return torch.stack((self.e0x * single_field, self.e0y * single_field), 
+        return torch.stack((self.e0x * single_field, self.e0y * single_field),
                            dim=0).unsqueeze(0).to(self.device)
 
     def zernike_aberrations(self):
@@ -162,7 +162,7 @@ class VectorialCartesianPupil(Pupil):
         return torch.exp(1j * zernike_phase).to(torch.complex64).to(self.device).unsqueeze(0).unsqueeze(0)
 
 class VectorialPolarPupil(Pupil):
-    def __init__(self, e0x=1, e0y=0, 
+    def __init__(self, e0x=1, e0y=0,
                  n_pix_pupil=128, device='cpu', zernike_coefficients=(0,)):
         super().__init__(n_pix_pupil, device, zernike_coefficients)
         self.e0x = e0x
