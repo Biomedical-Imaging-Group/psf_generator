@@ -15,7 +15,7 @@ from tqdm import tqdm
 
 # Parameters
 n_pix_psf = 201
-NA = 0.9
+na = 0.9
 wavelength = 632
 fov = 3000
 defocus = 0
@@ -39,13 +39,13 @@ for (i_pupil, n_pix_pupil) in tqdm(enumerate(n_pix_pupils)):
 
     # Cartesian
     pupil1 = ScalarCartesianPupil(n_pix_pupil, device=device)
-    propagator1 = ScalarCartesianPropagator(pupil1, n_pix_psf=n_pix_psf, wavelength=wavelength, NA=NA, fov=fov,
+    propagator1 = ScalarCartesianPropagator(pupil1, n_pix_psf=n_pix_psf, wavelength=wavelength, na=na, fov=fov,
                                             defocus_min=0, defocus_max=defocus, n_defocus=n_defocus, device=device)
     field1 = propagator1.compute_focus_field()
 
     # Polar
     pupil2 = ScalarPolarPupil(n_pix_pupil, device=device)
-    propagator2 = ScalarPolarPropagator(pupil2, n_pix_psf=n_pix_psf, wavelength=wavelength, NA=NA, fov=fov,
+    propagator2 = ScalarPolarPropagator(pupil2, n_pix_psf=n_pix_psf, wavelength=wavelength, na=na, fov=fov,
                                         defocus_min=0, defocus_max=defocus, n_defocus=n_defocus, device=device)
     field2 = propagator2.compute_focus_field()
 
