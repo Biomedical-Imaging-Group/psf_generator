@@ -3,8 +3,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 import torch
 from functorch import vmap
-from integrators import richard2_rule, simpsons_rule, trapezoid_rule
-from scipy.special import itj0y0
+from integrators import simpsons_rule
 from torch.special import bessel_j0, bessel_j1
 from utils.czt import custom_ifft2
 
