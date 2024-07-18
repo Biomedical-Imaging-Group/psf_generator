@@ -26,9 +26,9 @@ class ScalarCartesianPupil(Pupil):
 
         u = sx / s_max
         v = sy / s_max
-    
+
     such that the physical domain is:
-    
+
         sx ** 2 + sy ** 2 <= s_max ** 2 = sin(theta_max) ** 2
     """
     def __init__(self, n_pix_pupil=128, device='cpu', zernike_coefficients=[0,]):
@@ -57,9 +57,9 @@ class ScalarPolarPupil(Pupil):
     pupil coordinates - the polar angle `\theta` - is given by:
 
         \rho = \frac{\sin{\theta}}{\sin{\theta_{max}}}
-    
+
     such that the physical domain is:
-    
+
         \theta \leq \theta_{max}
     """
     def __init__(self, n_pix_pupil=128, device='cpu', zernike_coefficients=[0,]):
@@ -83,7 +83,7 @@ class ScalarPolarPupil(Pupil):
             elif l == 0:
                 zernike_phase += curr_coef * torch.tensor(self._zernike_nl(n, l, rho, phi))
         return torch.exp(1j * zernike_phase).to(self.device).unsqueeze(0).unsqueeze(0)
-    
+
     def eval_field_at(self, r):
         """
         Evaluate the pupil field at the radius `rho` = `r`.
@@ -98,7 +98,7 @@ class ScalarPolarPupil(Pupil):
             elif l == 0:
                 zernike_phase += curr_coef * torch.tensor(self._zernike_nl(n, l, rho=r, phi=0.0))
         return torch.exp(1j * zernike_phase).to(self.device).unsqueeze(0).unsqueeze(0)
-    
+
     def eval_field_at_np(self, r):
         """
         Evaluate the pupil field at the radius `rho` = `r`. This version is implemented in numpy and is
@@ -114,7 +114,7 @@ class ScalarPolarPupil(Pupil):
             elif l == 0:
                 zernike_phase += curr_coef * self._zernike_nl(n, l, rho=r, phi=0.0)
         return np.exp(1j * zernike_phase)
-    
+
     @staticmethod
     def index_to_nl(index):
         n = 0
@@ -188,7 +188,7 @@ class VectorialPolarPupil(Pupil):
             elif l == 0:
                 zernike_phase += curr_coef * torch.tensor(self._zernike_nl(n, l, rho, phi))
         return torch.exp(1j * zernike_phase).to(torch.complex64).to(self.device).unsqueeze(0).unsqueeze(0)
-    
+
     @staticmethod
     def index_to_nl(index):
         n = 0
@@ -226,7 +226,7 @@ class VectorialPolarPupil(Pupil):
         zernike = torch.exp(1j * zernike_phase).to(self.device).unsqueeze(0).unsqueeze(0)
         E = torch.tensor([self.e0x, self.e0y]).unsqueeze(0).unsqueeze(-1) * zernike
         return E
-    
+
     def eval_field_at_np(self, r):
         """
         Evaluate the pupil field at the radius `rho` = `r`. This version is implemented in numpy and is
