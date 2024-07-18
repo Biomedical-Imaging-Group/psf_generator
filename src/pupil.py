@@ -127,7 +127,7 @@ class ScalarPolarPupil(Pupil):
             n += 1
 
     @staticmethod
-    def _zernike_nl(n: int, l: int, rho: float, phi: float):
+    def _zernike_nl(n: int, l: int, rho: float, phi: float) -> float:
         m = abs(l)
         R = 0
         for k in np.arange(0, (n - m) / 2 + 1):
@@ -201,7 +201,7 @@ class VectorialPolarPupil(Pupil):
             n += 1
 
     @staticmethod
-    def _zernike_nl(n: int, l: int, rho: float, phi: float):
+    def _zernike_nl(n: int, l: int, rho: float, phi: float) -> float:
         m = abs(l)
         R = 0
         for k in np.arange(0, (n - m) / 2 + 1):
