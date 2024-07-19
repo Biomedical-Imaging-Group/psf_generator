@@ -1,7 +1,9 @@
-import torch
-import numpy as np
 import matplotlib.pyplot as plt
-from .pupil import ScalarPolarPupil, ScalarCartesianPupil
+import numpy as np
+import torch
+
+from .pupil import ScalarCartesianPupil, ScalarPolarPupil
+
 
 def get_polar_ck(N: int) -> np.ndarray:
     """

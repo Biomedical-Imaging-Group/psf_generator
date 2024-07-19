@@ -1,19 +1,29 @@
 """
 This file contains several classes for measuring the accuracy and convergence of the scalar propagators.
 """
-import torch
-import numpy as np
+from typing import Callable, List, Tuple
+
 import matplotlib.pyplot as plt
-from typing import Callable, Tuple, List
-from tqdm import tqdm
-from torch.special import bessel_j0, bessel_j1
+import numpy as np
+import torch
+from scipy.integrate import quad, quad_vec
 from scipy.special import j0 as sp_j0
 from scipy.special import j1 as sp_j1
-from scipy.integrate import quad, quad_vec
-from pupil import ScalarPolarPupil, ScalarCartesianPupil
-from propagator import ScalarPolarPropagator, ScalarCartesianPropagator
-from pupil import VectorialPolarPupil, VectorialCartesianPupil
-from propagator import VectorialPolarPropagator, VectorialCartesianPropagator
+from torch.special import bessel_j0, bessel_j1
+from tqdm import tqdm
+
+from propagator import (
+    ScalarCartesianPropagator,
+    ScalarPolarPropagator,
+    VectorialCartesianPropagator,
+    VectorialPolarPropagator,
+)
+from pupil import (
+    ScalarCartesianPupil,
+    ScalarPolarPupil,
+    VectorialCartesianPupil,
+    VectorialPolarPupil,
+)
 
 
 def sp_j2(x: np.ndarray) -> np.ndarray:

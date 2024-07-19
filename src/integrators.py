@@ -15,8 +15,10 @@ Outputs:
 - integrals: torch.tensor, shape = (num_integrals,). The evaluated integrals.
 """
 
-import torch
 import warnings
+
+import torch
+
 
 def is_power_of_two(k):
     k = int(k)

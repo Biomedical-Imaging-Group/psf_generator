@@ -1,18 +1,18 @@
 import os
 import sys
+
 module_path = os.path.abspath(os.path.join('')) + '/src/'
 if module_path not in sys.path:
     sys.path.insert(0, module_path)
-import numpy as np
-from matplotlib import pyplot as plt
-
-import torch
-from pupil import ScalarCartesianPupil, ScalarPolarPupil
-from propagator import ScalarCartesianPropagator, ScalarPolarPropagator
-from tqdm import tqdm
-
 from time import time
 
+import numpy as np
+import torch
+from matplotlib import pyplot as plt
+from tqdm import tqdm
+
+from propagator import ScalarCartesianPropagator, ScalarPolarPropagator
+from pupil import ScalarCartesianPupil, ScalarPolarPupil
 
 ## Scalar benchmark
 
