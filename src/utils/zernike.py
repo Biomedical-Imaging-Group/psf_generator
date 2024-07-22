@@ -1,12 +1,10 @@
-from typing import List, Tuple
-
 import numpy as np
 import torch
 from scipy.special import binom
 from zernikepy import zernike_polynomials
 
 
-def create_pupil_mesh(n_pixels: int) -> Tuple[torch.Tensor, ...]:
+def create_pupil_mesh(n_pixels: int) -> tuple[torch.Tensor, ...]:
     """
     Create a 2D square meshgrid for the pupil function.
     Parameters
@@ -59,7 +57,7 @@ def zernike_nl(n: int, l: int, rho: torch.float, phi: float, radius: float = 1) 
     return Z
 
 
-def index_to_nl(index: int) -> Tuple[int, int]:
+def index_to_nl(index: int) -> tuple[int, int]:
     """
     Find the [n, l]-pair given OSA index l for Zernike polynomials.
     The OSA index 'j' is defined as

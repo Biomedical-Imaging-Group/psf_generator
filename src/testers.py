@@ -1,7 +1,9 @@
 """
 This file contains several classes for measuring the accuracy and convergence of the scalar propagators.
 """
-from typing import Callable, List, Tuple
+from __future__ import annotations
+
+from typing import Callable
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -516,7 +518,7 @@ class ScalarPolarTester:
     def eval_error(
         N: int,
         test_case: TestCase,
-        plot: bool=False) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        plot: bool=False) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Evaluate the approximation error of the computed PSF field using an input test case. This
         method can be called on one of the analytic test cases implemented in this module
@@ -561,7 +563,7 @@ class ScalarPolarTester:
         return err, E_ref, E_num
 
     @staticmethod
-    def plot_convergence(test_case: TestCase, ord: int=1, Ns: List[int]=None) -> None:
+    def plot_convergence(test_case: TestCase, ord: int=1, Ns: list[int]=None) -> None:
         """
         Generate the error convergence plot for a given test case.
 
@@ -570,7 +572,7 @@ class ScalarPolarTester:
             e.g. `polar_step`, `polar_gaussian`.
         - ord: int. Error norm order. For example, `ord == 2` calculates the L2 error (root-mean
             -squared) between the numeric and exact field values. Default: 1
-        - Ns: List[int]. List of grid sizes to query for the propagator. If no value is specified,
+        - Ns: list[int]. List of grid sizes to query for the propagator. If no value is specified,
             a default set of logspaced values from 2**3 to 2**8 is used.
         """
         _plot_convergence(
@@ -588,7 +590,7 @@ class ScalarCartesianTester:
     def eval_error(
         N: int,
         test_case: TestCase,
-        plot: bool=False) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        plot: bool=False) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Evaluate the approximation error of the computed PSF field using an input test case. This
         method can be called on one of the analytic test cases implemented in this module
@@ -638,7 +640,7 @@ class ScalarCartesianTester:
         return err, E_ref, E_num
 
     @staticmethod
-    def plot_convergence(test_case: TestCase, ord: int=1, Ns: List[int]=None) -> None:
+    def plot_convergence(test_case: TestCase, ord: int=1, Ns: list[int]=None) -> None:
         """
         Generate the error convergence plot for a given test case.
 
@@ -647,7 +649,7 @@ class ScalarCartesianTester:
             e.g. `polar_step`, `polar_gaussian`.
         - ord: int. Error norm order. For example, `ord == 2` calculates the L2 error (root-mean
             -squared) between the numeric and exact field values. Default: 1
-        - Ns: List[int]. List of grid sizes to query for the propagator. If no value is specified,
+        - Ns: list[int]. List of grid sizes to query for the propagator. If no value is specified,
             a default set of logspaced values from 9 to 257 is used.
         """
         _plot_convergence(
@@ -665,7 +667,7 @@ class VectorPolarTester:
     def eval_error(
         N: int,
         pupil: VectorialPolarPupil,
-        plot: bool=False) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        plot: bool=False) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Evaluate the approximation error of the computed PSF field using an aberrated pupil.
 
@@ -717,7 +719,7 @@ class VectorPolarTester:
         return err, E_ref, E_num
 
     @staticmethod
-    def plot_convergence(pupil: VectorialPolarPupil, ord: int=1, Ns: List[int]=None) -> None:
+    def plot_convergence(pupil: VectorialPolarPupil, ord: int=1, Ns: list[int]=None) -> None:
         """
         Generate the error convergence plot for an aberrated pupil.
 
@@ -725,7 +727,7 @@ class VectorPolarTester:
         - pupil: VectorialPolarPupil. A vectorial pupil (possibly with aberrations).
         - ord: int. Error norm order. For example, `ord == 2` calculates the L2 error (root-mean
             -squared) between the numeric and exact field values. Default: 1
-        - Ns: List[int]. List of grid sizes to query for the propagator. If no value is specified,
+        - Ns: list[int]. List of grid sizes to query for the propagator. If no value is specified,
             a default set of logspaced values from 2**3 to 2**8 is used.
         """
         _plot_convergence(
@@ -743,7 +745,7 @@ class VectorCartesianTester:
     def eval_error(
         N: int,
         pupil: VectorialCartesianPupil,
-        plot: bool=False) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        plot: bool=False) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Evaluate the approximation error of the computed PSF field using an aberrated pupil.
 
@@ -809,7 +811,7 @@ class VectorCartesianTester:
         return err, E_ref, E_num
 
     @staticmethod
-    def plot_convergence(pupil: VectorialCartesianPupil, ord: int=1, Ns: List[int]=None) -> None:
+    def plot_convergence(pupil: VectorialCartesianPupil, ord: int=1, Ns: list[int]=None) -> None:
         """
         Generate the error convergence plot for an aberrated pupil.
 
@@ -817,7 +819,7 @@ class VectorCartesianTester:
         - pupil: VectorialCartesianPupil. A vectorial pupil (possibly with aberrations).
         - ord: int. Error norm order. For example, `ord == 2` calculates the L2 error (root-mean
             -squared) between the numeric and exact field values. Default: 1
-        - Ns: List[int]. List of grid sizes to query for the propagator. If no value is specified,
+        - Ns: list[int]. List of grid sizes to query for the propagator. If no value is specified,
             a default set of logspaced values from 2**3 to 2**8 is used.
         """
         _plot_convergence(
@@ -874,7 +876,7 @@ def _plot_field_comparison(E: torch.Tensor, E_ref: torch.Tensor, E_err: torch.Te
     plt.tight_layout()
 
 
-def _plot_convergence(error_vector_getter: Callable, Ns: List[int]=None, ord: int=1, label: str=None, method_order: int=2) -> None:
+def _plot_convergence(error_vector_getter: Callable, Ns: list[int]=None, ord: int=1, label: str=None, method_order: int=2) -> None:
     """
     Helper function to generate the error convergence plot.
     """
