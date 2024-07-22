@@ -72,8 +72,8 @@ def index_to_nl(index: int) -> Tuple[int, int]:
 
     Returns
     -------
-    [n, - n + 2 * l]: [int, int]
-        Corresponding [n, l]-pair
+    (n, - n + 2 * l): Tuple[int, int]
+        Corresponding (n, l)-pair
     """
     n = 0
     while True:
@@ -101,7 +101,7 @@ def create_zernike_aberrations(zernike_coefficients: List[torch.Tensor], n_pix_p
     n_pix_pupil: int
         number of pixels of the pupil function
     mesh_type: str
-        choose `polar` or 'cartesian'.
+        choose 'polar' or 'cartesian'.
     Returns
     -------
     torch.Tensor of type torch.complex64
