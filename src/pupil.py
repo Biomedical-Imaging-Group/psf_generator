@@ -1,9 +1,8 @@
 from abc import ABC, abstractmethod
 
-import numpy as np
 import torch
 
-from utils.handling_zernike import create_pupil_mesh, index_to_nl, zernike_nl, create_zernike_aberrations
+from utils.handling_zernike import create_pupil_mesh, create_zernike_aberrations
 
 
 class Pupil(ABC):
@@ -70,38 +69,6 @@ class ScalarPolarPupil(Pupil):
         aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='polar')
         return aberrations.to(self.device).unsqueeze(0).unsqueeze(0)
 
-    def eval_field_at(self, r):
-        """
-        Evaluate the pupil field at the radius `rho` = `r`.
-        """
-        n_zernike = len(self.zernike_coefficients)
-        zernike_phase = torch.zeros_like(r)
-        for i in range(n_zernike):
-            n, l = index_to_nl(index=i)
-            curr_coef = self.zernike_coefficients[i]
-            if l != 0 and curr_coef != 0:
-                print("Warning: Zernike coefficients for l != 0 are not supported in polar coordinates.")
-            elif l == 0:
-                zernike_phase += curr_coef * torch.tensor(zernike_nl(n=n, l=l, rho=r, phi=0.0))
-        return torch.exp(1j * zernike_phase).to(self.device).unsqueeze(0).unsqueeze(0)
-
-    def eval_field_at_np(self, r):
-        """
-        Evaluate the pupil field at the radius `rho` = `r`. This version is implemented in numpy and is
-        used to generate the ground truth PSF field.
-        """
-        n_zernike = len(self.zernike_coefficients)
-        zernike_phase = np.zeros_like(r)
-        for i in range(n_zernike):
-            n, l = index_to_nl(index=i)
-            curr_coef = self.zernike_coefficients[i]
-            if l != 0 and curr_coef != 0:
-                print("Warning: Zernike coefficients for l != 0 are not supported in polar coordinates.")
-            elif l == 0:
-                zernike_phase += curr_coef * zernike_nl(n=n, l=l, rho=r, phi=0.0)
-        return np.exp(1j * zernike_phase)
-
-
 
 class VectorialCartesianPupil(Pupil):
     def __init__(self, e0x=1, e0y=0,
@@ -140,38 +107,3 @@ class VectorialPolarPupil(Pupil):
     def zernike_aberrations(self):
         aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='polar')
         return aberrations.to(self.device).unsqueeze(0).unsqueeze(0)
-
-    def eval_field_at(self, r):
-        """
-        Evaluate the pupil field at the radius `rho` = `r`.
-        """
-        n_zernike = len(self.zernike_coefficients)
-        zernike_phase = torch.zeros_like(r)
-        for i in range(n_zernike):
-            n, l = index_to_nl(index=i)
-            curr_coef = self.zernike_coefficients[i]
-            if l != 0 and curr_coef != 0:
-                print("Warning: Zernike coefficients for l != 0 are not supported in polar coordinates.")
-            elif l == 0:
-                zernike_phase += curr_coef * torch.tensor(zernike_nl(n=n, l=l, rho=r, phi=0.0))
-        zernike = torch.exp(1j * zernike_phase).to(self.device).unsqueeze(0).unsqueeze(0)
-        E = torch.tensor([self.e0x, self.e0y]).unsqueeze(0).unsqueeze(-1) * zernike
-        return E
-
-    def eval_field_at_np(self, r):
-        """
-        Evaluate the pupil field at the radius `rho` = `r`. This version is implemented in numpy and is
-        used to generate the ground truth PSF field.
-        """
-        n_zernike = len(self.zernike_coefficients)
-        zernike_phase = np.zeros_like(r)
-        for i in range(n_zernike):
-            n, l = index_to_nl(index=i)
-            curr_coef = self.zernike_coefficients[i]
-            if l != 0 and curr_coef != 0:
-                print("Warning: Zernike coefficients for l != 0 are not supported in polar coordinates.")
-            elif l == 0:
-                zernike_phase += curr_coef * zernike_nl(n=n, l=l, rho=r, phi=0.0)
-        zernike = np.exp(1j * zernike_phase)
-        E = np.stack((self.e0x * zernike, self.e0y * zernike), axis=0)
-        return E
