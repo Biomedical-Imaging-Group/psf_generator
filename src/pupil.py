@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 import torch
 
-from utils.handling_zernike import create_pupil_mesh, create_zernike_aberrations
+from utils.zernike import create_pupil_mesh, create_zernike_aberrations
 
 
 class Pupil(ABC):

@@ -25,7 +25,7 @@ from pupil import (
     VectorialPolarPupil,
 )
 
-from utils.handling_zernike import index_to_nl, zernike_nl
+from utils.zernike import index_to_nl, zernike_nl
 
 
 def sp_j2(x: np.ndarray) -> np.ndarray:
