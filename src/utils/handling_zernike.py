@@ -85,7 +85,7 @@ def index_to_nl(index: int) -> Tuple[int, int]:
         n += 1
 
 
-def create_zernike_aberrations(zernike_coefficients: List[torch.Tensor], n_pix_pupil: int, mesh_type: str) -> torch.Tensor:
+def create_zernike_aberrations(zernike_coefficients: torch.Tensor, n_pix_pupil: int, mesh_type: str) -> torch.Tensor:
     """
     Create Zernike aberrations for the pupil function in the Cartesian case.
     For Scalar or Vectorial Cartesian cases, Zernike abberations can be added to the pupil function.
@@ -109,7 +109,7 @@ def create_zernike_aberrations(zernike_coefficients: List[torch.Tensor], n_pix_p
     n_zernike = len(zernike_coefficients)
     if mesh_type == 'cartesian':
         zernike_basis = zernike_polynomials(mode=n_zernike-1, size=n_pix_pupil, select='all')
-        zernike_coefficients = torch.tensor(zernike_coefficients).reshape(1, 1, n_zernike)
+        zernike_coefficients = zernike_coefficients.reshape(1, 1, n_zernike)
         zernike_phase = torch.sum(zernike_coefficients * torch.from_numpy(zernike_basis), dim=2)
     elif mesh_type == 'polar':
         rho = torch.linspace(0, 1, n_pix_pupil)

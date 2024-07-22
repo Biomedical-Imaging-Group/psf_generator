@@ -1,16 +1,19 @@
 from abc import ABC, abstractmethod
 
+import numpy as np
 import torch
 
 from utils.handling_zernike import create_pupil_mesh, create_zernike_aberrations
 
 
 class Pupil(ABC):
-    def __init__(self, n_pix_pupil=128, device='cpu',
-                 zernike_coefficients=[0,]):
+    def __init__(self, n_pix_pupil: int = 128, device: str = 'cpu',
+                 zernike_coefficients: torch.Tensor | np.ndarray | list[float] | None = None):
         self.n_pix_pupil = n_pix_pupil
         self.device = device
-        self.zernike_coefficients = zernike_coefficients
+        if zernike_coefficients is None:
+            zernike_coefficients = torch.tensor([0])
+        self.zernike_coefficients = torch.tensor(zernike_coefficients)
         self.field = self.initialize_field()
         self.field *= self.zernike_aberrations()
 
@@ -69,7 +72,8 @@ class ScalarPolarPupil(Pupil):
 
 class VectorialCartesianPupil(Pupil):
     def __init__(self, e0x=1, e0y=0,
-                 n_pix_pupil=128, device='cpu', zernike_coefficients=(0,)):
+                 n_pix_pupil: int = 128, device: str = 'cpu',
+                 zernike_coefficients: torch.Tensor | np.ndarray | list[float] | None = None):
         self.e0x = e0x
         self.e0y = e0y
         super().__init__(n_pix_pupil, device, zernike_coefficients)
@@ -86,7 +90,8 @@ class VectorialCartesianPupil(Pupil):
 
 class VectorialPolarPupil(Pupil):
     def __init__(self, e0x=1, e0y=0,
-                 n_pix_pupil=128, device='cpu', zernike_coefficients=(0,)):
+                 n_pix_pupil: int = 128, device: str = 'cpu',
+                 zernike_coefficients: torch.Tensor | np.ndarray | list[float] | None = None):
         self.e0x = e0x
         self.e0y = e0y
         super().__init__(n_pix_pupil, device, zernike_coefficients)
