@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 import torch
-from scipy.special import binom
 from zernikepy import zernike_polynomials
+from utils.handling_zernike import zernike_nl, index_to_nl
 
 
 class Pupil(ABC):
@@ -77,12 +77,12 @@ class ScalarPolarPupil(Pupil):
         phi = 0
         zernike_phase = torch.zeros(self.n_pix_pupil)
         for i in range(n_zernike):
-            n, l = self.index_to_nl(i)
+            n, l = index_to_nl(index=i)
             curr_coef = self.zernike_coefficients[i]
             if l != 0 and curr_coef != 0:
                 print("Warning: Zernike coefficients for l != 0 are not supported in polar coordinates.")
             elif l == 0:
-                zernike_phase += curr_coef * torch.tensor(self._zernike_nl(n, l, rho, phi))
+                zernike_phase += curr_coef * torch.tensor(zernike_nl(n=n, l=l, rho=rho, phi=phi))
         return torch.exp(1j * zernike_phase).to(self.device).unsqueeze(0).unsqueeze(0)
 
     def eval_field_at(self, r):
@@ -92,12 +92,12 @@ class ScalarPolarPupil(Pupil):
         n_zernike = len(self.zernike_coefficients)
         zernike_phase = torch.zeros_like(r)
         for i in range(n_zernike):
-            n, l = self.index_to_nl(i)
+            n, l = index_to_nl(index=i)
             curr_coef = self.zernike_coefficients[i]
             if l != 0 and curr_coef != 0:
                 print("Warning: Zernike coefficients for l != 0 are not supported in polar coordinates.")
             elif l == 0:
-                zernike_phase += curr_coef * torch.tensor(self._zernike_nl(n, l, rho=r, phi=0.0))
+                zernike_phase += curr_coef * torch.tensor(zernike_nl(n=n, l=l, rho=r, phi=0.0))
         return torch.exp(1j * zernike_phase).to(self.device).unsqueeze(0).unsqueeze(0)
 
     def eval_field_at_np(self, r):
@@ -108,34 +108,15 @@ class ScalarPolarPupil(Pupil):
         n_zernike = len(self.zernike_coefficients)
         zernike_phase = np.zeros_like(r)
         for i in range(n_zernike):
-            n, l = self.index_to_nl(i)
+            n, l = index_to_nl(index=i)
             curr_coef = self.zernike_coefficients[i]
             if l != 0 and curr_coef != 0:
                 print("Warning: Zernike coefficients for l != 0 are not supported in polar coordinates.")
             elif l == 0:
-                zernike_phase += curr_coef * self._zernike_nl(n, l, rho=r, phi=0.0)
+                zernike_phase += curr_coef * zernike_nl(n=n, l=l, rho=r, phi=0.0)
         return np.exp(1j * zernike_phase)
 
-    @staticmethod
-    def index_to_nl(index):
-        n = 0
-        while True:
-            for l in range(n + 1):
-                if n*(n+1)/2 + l == index:
-                    return (n, -n+2*l)
-                elif n*(n+1)/2 + l > index:
-                    raise ValueError('Index out of bounds.')
-            n += 1
 
-    @staticmethod
-    def _zernike_nl(n: int, l: int, rho: float, phi: float) -> float:
-        m = abs(l)
-        R = 0
-        for k in np.arange(0, (n - m) / 2 + 1):
-            R = R + (-1) ** k * binom(n - k, k) * binom(n - 2 * k, (n - m) / 2 - k) * rho ** (n - 2 * k)
-        Z = np.where(rho <= 1, R, 0)
-        Z *= np.cos(m * phi) if l >= 0 else np.sin(m * phi)
-        return Z
 
 class VectorialCartesianPupil(Pupil):
     def __init__(self, e0x=1, e0y=0,
@@ -182,34 +163,14 @@ class VectorialPolarPupil(Pupil):
         phi = 0
         zernike_phase = torch.zeros(self.n_pix_pupil)
         for i in range(n_zernike):
-            n, l = self.index_to_nl(i)
+            n, l = index_to_nl(index=i)
             curr_coef = self.zernike_coefficients[i]
             if l != 0 and curr_coef != 0:
                 print("Warning: Zernike coefficients for l != 0 are not supported in polar coordinates.")
             elif l == 0:
-                zernike_phase += curr_coef * torch.tensor(self._zernike_nl(n, l, rho, phi))
+                zernike_phase += curr_coef * torch.tensor(zernike_nl(n=n, l=l, rho=rho, phi=phi))
         return torch.exp(1j * zernike_phase).to(torch.complex64).to(self.device).unsqueeze(0).unsqueeze(0)
 
-    @staticmethod
-    def index_to_nl(index):
-        n = 0
-        while True:
-            for l in range(n + 1):
-                if n*(n+1)/2 + l == index:
-                    return (n, -n+2*l)
-                elif n*(n+1)/2 + l > index:
-                    raise ValueError('Index out of bounds.')
-            n += 1
-
-    @staticmethod
-    def _zernike_nl(n: int, l: int, rho: float, phi: float) -> float:
-        m = abs(l)
-        R = 0
-        for k in np.arange(0, (n - m) / 2 + 1):
-            R = R + (-1) ** k * binom(n - k, k) * binom(n - 2 * k, (n - m) / 2 - k) * rho ** (n - 2 * k)
-        Z = np.where(rho <= 1, R, 0)
-        Z *= np.cos(m * phi) if l >= 0 else np.sin(m * phi)
-        return Z
 
     def eval_field_at(self, r):
         """
@@ -218,12 +179,12 @@ class VectorialPolarPupil(Pupil):
         n_zernike = len(self.zernike_coefficients)
         zernike_phase = torch.zeros_like(r)
         for i in range(n_zernike):
-            n, l = self.index_to_nl(i)
+            n, l = index_to_nl(index=i)
             curr_coef = self.zernike_coefficients[i]
             if l != 0 and curr_coef != 0:
                 print("Warning: Zernike coefficients for l != 0 are not supported in polar coordinates.")
             elif l == 0:
-                zernike_phase += curr_coef * torch.tensor(self._zernike_nl(n, l, rho=r, phi=0.0))
+                zernike_phase += curr_coef * torch.tensor(zernike_nl(n=n, l=l, rho=r, phi=0.0))
         zernike = torch.exp(1j * zernike_phase).to(self.device).unsqueeze(0).unsqueeze(0)
         E = torch.tensor([self.e0x, self.e0y]).unsqueeze(0).unsqueeze(-1) * zernike
         return E
@@ -236,12 +197,12 @@ class VectorialPolarPupil(Pupil):
         n_zernike = len(self.zernike_coefficients)
         zernike_phase = np.zeros_like(r)
         for i in range(n_zernike):
-            n, l = self.index_to_nl(i)
+            n, l = index_to_nl(index=i)
             curr_coef = self.zernike_coefficients[i]
             if l != 0 and curr_coef != 0:
                 print("Warning: Zernike coefficients for l != 0 are not supported in polar coordinates.")
             elif l == 0:
-                zernike_phase += curr_coef * self._zernike_nl(n, l, rho=r, phi=0.0)
+                zernike_phase += curr_coef * zernike_nl(n=n, l=l, rho=r, phi=0.0)
         zernike = np.exp(1j * zernike_phase)
         E = np.stack((self.e0x * zernike, self.e0y * zernike), axis=0)
         return E
