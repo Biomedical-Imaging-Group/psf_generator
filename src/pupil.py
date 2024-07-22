@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 import torch
-from zernikepy import zernike_polynomials
-from utils.handling_zernike import zernike_nl, index_to_nl
+
+from utils.handling_zernike import create_pupil_mesh, index_to_nl, zernike_nl, create_zernike_aberrations
 
 
 class Pupil(ABC):
@@ -38,17 +38,12 @@ class ScalarCartesianPupil(Pupil):
         self.field *= self.zernike_aberrations()
 
     def initialize_field(self):
-        x = torch.linspace(-1, 1, self.n_pix_pupil)
-        y = torch.linspace(-1, 1, self.n_pix_pupil)
-        kx, ky = torch.meshgrid(x, y, indexing='xy')
+        kx, ky = create_pupil_mesh(n_pixels=self.n_pix_pupil)
         return (kx**2 + ky**2 <= 1).to(torch.complex64).unsqueeze(0).unsqueeze(0).to(self.device)
 
     def zernike_aberrations(self):
-        n_zernike = len(self.zernike_coefficients)
-        zernike_basis = zernike_polynomials(mode=n_zernike-1, size=self.n_pix_pupil, select='all')
-        zernike_coefficients = torch.tensor(self.zernike_coefficients).reshape(1, 1, n_zernike)
-        zernike_phase = torch.sum(zernike_coefficients * zernike_basis, dim=2)
-        return torch.exp(1j * zernike_phase).to(torch.complex64).to(self.device).unsqueeze(0).unsqueeze(0)
+        aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='cartesian')
+        return aberrations.to(self.device).unsqueeze(0).unsqueeze(0)
 
 
 class ScalarPolarPupil(Pupil):
@@ -72,18 +67,8 @@ class ScalarPolarPupil(Pupil):
         return torch.ones(self.n_pix_pupil).to(torch.complex64).to(self.device).unsqueeze(0).unsqueeze(0)
 
     def zernike_aberrations(self):
-        n_zernike = len(self.zernike_coefficients)
-        rho = torch.linspace(0, 1, self.n_pix_pupil)
-        phi = 0
-        zernike_phase = torch.zeros(self.n_pix_pupil)
-        for i in range(n_zernike):
-            n, l = index_to_nl(index=i)
-            curr_coef = self.zernike_coefficients[i]
-            if l != 0 and curr_coef != 0:
-                print("Warning: Zernike coefficients for l != 0 are not supported in polar coordinates.")
-            elif l == 0:
-                zernike_phase += curr_coef * torch.tensor(zernike_nl(n=n, l=l, rho=rho, phi=phi))
-        return torch.exp(1j * zernike_phase).to(self.device).unsqueeze(0).unsqueeze(0)
+        aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='polar')
+        return aberrations.to(self.device).unsqueeze(0).unsqueeze(0)
 
     def eval_field_at(self, r):
         """
@@ -129,19 +114,14 @@ class VectorialCartesianPupil(Pupil):
         self.field *= self.zernike_aberrations()
 
     def initialize_field(self):
-        x = torch.linspace(-1, 1, self.n_pix_pupil)
-        y = torch.linspace(-1, 1, self.n_pix_pupil)
-        kx, ky = torch.meshgrid(x, y, indexing='xy')
+        kx, ky = create_pupil_mesh(n_pixels=self.n_pix_pupil)
         single_field = (kx**2 + ky**2 <= 1).to(torch.complex64)
         return torch.stack((self.e0x * single_field, self.e0y * single_field),
                            dim=0).unsqueeze(0).to(self.device)
 
     def zernike_aberrations(self):
-        n_zernike = len(self.zernike_coefficients)
-        zernike_basis = zernike_polynomials(mode=n_zernike-1, size=self.n_pix_pupil, select='all')
-        zernike_coefficients = torch.tensor(self.zernike_coefficients).reshape(1, 1, n_zernike)
-        zernike_phase = torch.sum(zernike_coefficients * torch.from_numpy(zernike_basis), dim=2)
-        return torch.exp(1j * zernike_phase).to(torch.complex64).to(self.device).unsqueeze(0).unsqueeze(0)
+        aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='cartesian')
+        return aberrations.to(self.device).unsqueeze(0).unsqueeze(0)
 
 class VectorialPolarPupil(Pupil):
     def __init__(self, e0x=1, e0y=0,
@@ -158,19 +138,8 @@ class VectorialPolarPupil(Pupil):
                             dim=0).to(torch.complex64).unsqueeze(0)
 
     def zernike_aberrations(self):
-        n_zernike = len(self.zernike_coefficients)
-        rho = torch.linspace(0, 1, self.n_pix_pupil)
-        phi = 0
-        zernike_phase = torch.zeros(self.n_pix_pupil)
-        for i in range(n_zernike):
-            n, l = index_to_nl(index=i)
-            curr_coef = self.zernike_coefficients[i]
-            if l != 0 and curr_coef != 0:
-                print("Warning: Zernike coefficients for l != 0 are not supported in polar coordinates.")
-            elif l == 0:
-                zernike_phase += curr_coef * torch.tensor(zernike_nl(n=n, l=l, rho=rho, phi=phi))
-        return torch.exp(1j * zernike_phase).to(torch.complex64).to(self.device).unsqueeze(0).unsqueeze(0)
-
+        aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='polar')
+        return aberrations.to(self.device).unsqueeze(0).unsqueeze(0)
 
     def eval_field_at(self, r):
         """
