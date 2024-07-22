@@ -1,9 +1,9 @@
-import torch
-from torch.fft import fft, ifft, fft2, ifft2
 import numpy as np
+import torch
+from torch.fft import fft, fft2, ifft, ifft2
 
 
-def custom_fft2(x, shape_out=None, k_start=0, k_end=2*np.pi, 
+def custom_fft2(x, shape_out=None, k_start=0, k_end=2*np.pi,
                 norm='ortho', fftshift_input=False, include_end=False):
     shape_in = x.shape
     N, M = shape_in[-2:]
@@ -35,7 +35,7 @@ def custom_fft2(x, shape_out=None, k_start=0, k_end=2*np.pi,
         return result
 
 
-def custom_ifft2(x, shape_out=None, k_start=0, k_end=2*np.pi, 
+def custom_ifft2(x, shape_out=None, k_start=0, k_end=2*np.pi,
                  norm='ortho', fftshift_input=False, include_end=False):
     shape_in = x.shape
     N, M = shape_in[-2:]

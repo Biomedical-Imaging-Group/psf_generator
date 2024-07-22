@@ -1,15 +1,17 @@
-import torch
-import numpy as np
 import matplotlib.pyplot as plt
-from .pupil import ScalarPolarPupil, ScalarCartesianPupil
+import numpy as np
+import torch
+
+from .pupil import ScalarCartesianPupil, ScalarPolarPupil
+
 
 def get_polar_ck(N: int) -> np.ndarray:
-    '''
+    """
     Generate random Zernike coefficients for a radially symmetric pupil field.
 
-    Inputs: 
+    Inputs:
     - N: int. Number of nonzero terms.
-    '''
+    """
     idxs = np.arange(N)
     idxs = 2 * (idxs + 1) * idxs
 
@@ -19,11 +21,11 @@ def get_polar_ck(N: int) -> np.ndarray:
     return ck
 
 def test_pupils(Nr=128, zernike_order=3, plot=False):
-    '''
-    Numerically evaluate the aberration fields of a ScalarPolar and ScalarCartesian pupil 
+    """
+    Numerically evaluate the aberration fields of a ScalarPolar and ScalarCartesian pupil
     using the same set of Zernike coefficients. The two E fields should be identical up to
     numerical precision.
-    '''
+    """
     Nr = 128
     ck = get_polar_ck(zernike_order)
 

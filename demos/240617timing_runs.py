@@ -1,24 +1,24 @@
 import os
 import sys
+
 module_path = os.path.abspath(os.path.join('')) + '/src/'
 if module_path not in sys.path:
     sys.path.insert(0, module_path)
-import numpy as np
-from matplotlib import pyplot as plt
-
-import torch
-from pupil import ScalarCartesianPupil, ScalarPolarPupil
-from propagator import ScalarCartesianPropagator, ScalarPolarPropagator
-from tqdm import tqdm
-
 from time import time
 
+import numpy as np
+import torch
+from matplotlib import pyplot as plt
+from tqdm import tqdm
+
+from propagator import ScalarCartesianPropagator, ScalarPolarPropagator
+from pupil import ScalarCartesianPupil, ScalarPolarPupil
 
 ## Scalar benchmark
 
 # Parameters
 n_pix_psf = 201
-NA = 0.9
+na = 0.9
 wavelength = 632
 fov = 3000
 defocus = 0
@@ -43,7 +43,7 @@ for (i_pupil, n_pix_pupil) in tqdm(enumerate(n_pix_pupils)):
     init_time = time()
     for i_rep in range(n_rep):
         pupil1 = ScalarCartesianPupil(n_pix_pupil, device=device)
-        propagator1 = ScalarCartesianPropagator(pupil1, n_pix_psf=n_pix_psf, wavelength=wavelength, NA=NA, fov=fov,
+        propagator1 = ScalarCartesianPropagator(pupil1, n_pix_psf=n_pix_psf, wavelength=wavelength, na=na, fov=fov,
                                                 defocus_min=0, defocus_max=defocus, n_defocus=n_defocus, device=device)
         field1 = propagator1.compute_focus_field()
     cartesian_cpu_time[i_pupil] = (time() - init_time) / n_rep
@@ -52,7 +52,7 @@ for (i_pupil, n_pix_pupil) in tqdm(enumerate(n_pix_pupils)):
     init_time = time()
     for i_rep in range(n_rep):
         pupil2 = ScalarPolarPupil(n_pix_pupil, device=device)
-        propagator2 = ScalarPolarPropagator(pupil2, n_pix_psf=n_pix_psf, wavelength=wavelength, NA=NA, fov=fov,
+        propagator2 = ScalarPolarPropagator(pupil2, n_pix_psf=n_pix_psf, wavelength=wavelength, na=na, fov=fov,
                                             defocus_min=0, defocus_max=defocus, n_defocus=n_defocus, device=device)
         field2 = propagator2.compute_focus_field()
     polar_cpu_time[i_pupil] = (time() - init_time) / n_rep
@@ -63,7 +63,7 @@ for (i_pupil, n_pix_pupil) in tqdm(enumerate(n_pix_pupils)):
     init_time = time()
     for i_rep in range(n_rep):
         pupil1 = ScalarCartesianPupil(n_pix_pupil, device=device)
-        propagator1 = ScalarCartesianPropagator(pupil1, n_pix_psf=n_pix_psf, wavelength=wavelength, NA=NA, fov=fov,
+        propagator1 = ScalarCartesianPropagator(pupil1, n_pix_psf=n_pix_psf, wavelength=wavelength, na=na, fov=fov,
                                                 defocus_min=0, defocus_max=defocus, n_defocus=n_defocus, device=device)
         field1 = propagator1.compute_focus_field()
         torch.cuda.synchronize()
@@ -74,7 +74,7 @@ for (i_pupil, n_pix_pupil) in tqdm(enumerate(n_pix_pupils)):
     init_time = time()
     for i_rep in range(n_rep):
         pupil2 = ScalarPolarPupil(n_pix_pupil, device=device)
-        propagator2 = ScalarPolarPropagator(pupil2, n_pix_psf=n_pix_psf, wavelength=wavelength, NA=NA, fov=fov,
+        propagator2 = ScalarPolarPropagator(pupil2, n_pix_psf=n_pix_psf, wavelength=wavelength, na=na, fov=fov,
                                             defocus_min=0, defocus_max=defocus, n_defocus=n_defocus, device=device)
         field2 = propagator2.compute_focus_field()
         torch.cuda.synchronize()

@@ -1,19 +1,29 @@
-'''
+"""
 This file contains several classes for measuring the accuracy and convergence of the scalar propagators.
-'''
-import torch
-import numpy as np
+"""
+from typing import Callable, List, Tuple
+
 import matplotlib.pyplot as plt
-from typing import Callable, Tuple, List
-from tqdm import tqdm
-from torch.special import bessel_j0, bessel_j1
+import numpy as np
+import torch
+from scipy.integrate import quad, quad_vec
 from scipy.special import j0 as sp_j0
 from scipy.special import j1 as sp_j1
-from scipy.integrate import quad, quad_vec
-from pupil import ScalarPolarPupil, ScalarCartesianPupil
-from propagator import ScalarPolarPropagator, ScalarCartesianPropagator
-from pupil import VectorialPolarPupil, VectorialCartesianPupil
-from propagator import VectorialPolarPropagator, VectorialCartesianPropagator
+from torch.special import bessel_j0, bessel_j1
+from tqdm import tqdm
+
+from propagator import (
+    ScalarCartesianPropagator,
+    ScalarPolarPropagator,
+    VectorialCartesianPropagator,
+    VectorialPolarPropagator,
+)
+from pupil import (
+    ScalarCartesianPupil,
+    ScalarPolarPupil,
+    VectorialCartesianPupil,
+    VectorialPolarPupil,
+)
 
 
 def sp_j2(x: np.ndarray) -> np.ndarray:
@@ -21,12 +31,12 @@ def sp_j2(x: np.ndarray) -> np.ndarray:
 
 
 class TestCase:
-    def __init__(self, 
+    def __init__(self,
                  name: str=None,
-                 psf_expr: Callable=None, 
+                 psf_expr: Callable=None,
                  ):
         self.name = name
-        
+
         self.use_analytic_psf = (psf_expr is not None)
         self.psf_expr = psf_expr
 
@@ -34,35 +44,35 @@ class TestCase:
         return self.name
 
     def eval_pupil_at(self, sin_t: torch.Tensor, sin_t_max: float) -> torch.Tensor:
-        '''
+        """
         Evaluate the pupil field $e_{\infty}(\sin{\theta})$ at the pupil coordinate $\sin{\theta}$.
-        '''
+        """
         raise NotImplementedError
-    
+
     def eval_pupil_at_np(self, sin_t: np.ndarray, sin_t_max: float) -> np.ndarray:
-        '''
-        Evaluate the pupil field $e_{\infty}(\sin{\theta})$ at the pupil coordinate $\sin{\theta}$. 
+        """
+        Evaluate the pupil field $e_{\infty}(\sin{\theta})$ at the pupil coordinate $\sin{\theta}$.
         This version is implemented in numpy and is used to generate the ground truth PSF field.
-        '''
+        """
         raise NotImplementedError
 
     def eval_PSF_at(self, kr: torch.Tensor, sin_t_max: float) -> torch.Tensor:
-        '''
-        Evaluate the PSF at the normalized PSF radial coordinate $k * r$, which is the product of the 
+        """
+        Evaluate the PSF at the normalized PSF radial coordinate $k * r$, which is the product of the
         radial position `r` and the wavenumber `k`.
-        '''
+        """
         psf_coord = kr
         if self.use_analytic_psf:
             psf_field = self.psf_expr(psf_coord)
         else:
             psf_field = _J_integral_scalar(
                 lambda sin_t: self.eval_pupil_at_np(sin_t, sin_t_max), 
-                sin_t_max, 
+                sin_t_max,
                 psf_coord)
         return psf_field
-    
+
     def get_fields_as_polar(self, thetas: torch.Tensor, krs: torch.Tensor, sin_t_max: float):
-        '''
+        """
         Evaluate the test case on a polar grid.
 
         Inputs:
@@ -75,20 +85,20 @@ class TestCase:
         - pupil_field: torch.Tensor[n_pix_pupil,]. The evaluated pupil field. This is
                         used as input for the propagator's numerical integration routine.
         - psf_field: torch.Tensor[n_pix_psf,]. The evaluated PSF field.
-        '''
+        """
         sin_t = torch.sin(thetas)
         pupil_field = self.eval_pupil_at(sin_t, sin_t_max)
         psf_field = self.eval_PSF_at(krs, sin_t_max)
         return pupil_field, psf_field
 
     def get_fields_as_cartesian(self,
-                      s_x: torch.Tensor, 
-                      s_y: torch.Tensor, 
+                      s_x: torch.Tensor,
+                      s_y: torch.Tensor,
                       norm_x: torch.Tensor,  # == k * x
-                      norm_y: torch.Tensor,  # == k * y 
+                      norm_y: torch.Tensor,  # == k * y
                       sin_t_max: float,
                       ):
-        '''
+        """
         Evaluate the test case on a 2D Cartesian grid.
 
         Inputs:
@@ -104,7 +114,7 @@ class TestCase:
         - pupil_field: torch.Tensor[n_pix_pupil,]. The evaluated pupil field. This is
                         used as input for the propagator's numerical integration routine.
         - psf_field: torch.Tensosr[n_pix_psf,]. The evaluated PSF field.
-        '''        
+        """
         s_xx, s_yy = torch.meshgrid(s_x, s_y, indexing='ij')
 
         sin_t_sq = s_xx ** 2 + s_yy ** 2
@@ -124,17 +134,17 @@ class TestCase:
 
 
 class HankelCase(TestCase):
-    '''
+    """
     Analytic test cases defined using function <-> Hankel transform pairs. For a radial function
     and its Hankel transform pair, {f(u), Hf(v)}, we have the following relation:
 
         e_inf(\sin{\theta}) = f(\sin{\theta}) * \cos{\theta}    <==>    E_psf(r) = Hf(r)
-    '''
-    def __init__(self, 
-                 hankel_expr: Callable, 
-                 hankel_expr_np: Callable=None, 
+    """
+    def __init__(self,
+                 hankel_expr: Callable,
+                 hankel_expr_np: Callable=None,
                  psf_expr: Callable=None,
-                 Rmax: float = 1.0, 
+                 Rmax: float = 1.0,
                  name: str=None):
         super().__init__(psf_expr=psf_expr, name=name)
 
@@ -149,14 +159,14 @@ class HankelCase(TestCase):
         Rmax = min(self.Rmax, sin_t_max)
         cos_t = np.where(sin_t <= sin_t_max, np.sqrt(1.0 - sin_t ** 2), 0.0)
         pupil_coord = sin_t / Rmax
-        return self.hankel_expr(pupil_coord) * cos_t / Rmax ** 2 
+        return self.hankel_expr(pupil_coord) * cos_t / Rmax ** 2
 
     def eval_pupil_at_np(self, sin_t: np.ndarray, sin_t_max: float) -> np.ndarray:
         Rmax = min(self.Rmax, sin_t_max)
         cos_t = np.where(sin_t <= sin_t_max, np.sqrt(1.0 - sin_t ** 2), 0.0)
         pupil_coord = sin_t / Rmax
-        return self.hankel_expr_np(pupil_coord) * cos_t / Rmax ** 2 
-    
+        return self.hankel_expr_np(pupil_coord) * cos_t / Rmax ** 2
+
     def eval_PSF_at(self, kr: torch.Tensor, sin_t_max: float) -> torch.Tensor:
         Rmax = min(self.Rmax, sin_t_max)
         if self.use_analytic_psf:
@@ -164,17 +174,17 @@ class HankelCase(TestCase):
         else:
             psf_field = _J_integral_scalar(
                 lambda sin_t: self.eval_pupil_at_np(sin_t, sin_t_max), 
-                sin_t_max, 
+                sin_t_max,
                 kr)
         return psf_field
-    
+
 
 class ScalarPupilCase(TestCase):
-    '''
+    """
     Test cases defined by an input pupil and its Zernike aberrations.
-    '''
-    def __init__(self, 
-                 zernike_coefficients: np.ndarray, 
+    """
+    def __init__(self,
+                 zernike_coefficients: np.ndarray,
                  name: str = "pupil_aberrations"):
         self.pupil = ScalarPolarPupil(zernike_coefficients=zernike_coefficients)
 
@@ -184,13 +194,13 @@ class ScalarPupilCase(TestCase):
         )
 
     def eval_pupil_at(self, sin_t: torch.Tensor, sin_t_max: float) -> torch.Tensor:
-        # to query the zernike aberrations, normalize the pupil coordinate 
+        # to query the zernike aberrations, normalize the pupil coordinate
         # by sin_t_max such that it spans the unit disk [0,1].
         # (the Pupil class operates in these normalized coordinates)
         return self.pupil.eval_field_at(sin_t / sin_t_max).squeeze()
 
     def eval_pupil_at_np(self, sin_t: np.ndarray, sin_t_max: float) -> np.ndarray:
-        # to query the zernike aberrations, normalize the pupil coordinate 
+        # to query the zernike aberrations, normalize the pupil coordinate
         # by sin_t_max such that it spans the unit disk [0,1].
         # (the Pupil class operates in these normalized coordinates)
         return self.pupil.eval_field_at_np(sin_t / sin_t_max).squeeze()
@@ -210,7 +220,7 @@ class ScalarPupilCase(TestCase):
                 sin_t_max,
                 psf_coord,
                 )
-        
+
         return psf_field
 
 
@@ -218,8 +228,8 @@ class VectorPupilCase(TestCase):
     '''
     Test case for a VectorialPupil and its Zernike aberrations.
     '''
-    def __init__(self, 
-                 pupil: VectorialPolarPupil | VectorialCartesianPupil, 
+    def __init__(self,
+                 pupil: VectorialPolarPupil | VectorialCartesianPupil,
                  name: str = "pupil_aberrations"):
         self.pupil = pupil
 
@@ -229,25 +239,25 @@ class VectorPupilCase(TestCase):
         )
 
     def eval_pupil_at(self, sin_t: torch.Tensor, sin_t_max: float) -> torch.Tensor:
-        # to query the zernike aberrations, normalize the pupil coordinate 
+        # to query the zernike aberrations, normalize the pupil coordinate
         # by sin_t_max such that it spans the unit disk [0,1].
         # (the Pupil class operates in these normalized coordinates)
         return self.pupil.eval_field_at(sin_t / sin_t_max).squeeze()
 
     def eval_pupil_at_np(self, sin_t: np.ndarray, sin_t_max: float) -> np.ndarray:
-        # to query the zernike aberrations, normalize the pupil coordinate 
+        # to query the zernike aberrations, normalize the pupil coordinate
         # by sin_t_max such that it spans the unit disk [0,1].
         # (the Pupil class operates in these normalized coordinates)
         return self.pupil.eval_field_at_np(sin_t / sin_t_max).squeeze()
 
     def eval_PSF_at(self, kr: torch.Tensor, sin_t_max: float) -> torch.Tensor:
-        psf_coord = kr    
+        psf_coord = kr
         I0x, I0y, I1x, I1y, I2x, I2y = _J_integral_vector(
-            lambda sin_t: self.eval_pupil_at_np(sin_t, sin_t_max), 
+            lambda sin_t: self.eval_pupil_at_np(sin_t, sin_t_max),
             sin_t_max,
             psf_coord,
             )
-        
+
         return I0x, I0y, I1x, I1y, I2x, I2y
 
     def get_fields_as_polar(self, thetas: torch.Tensor, kxs: torch.Tensor, sin_t_max: float):
@@ -266,10 +276,10 @@ class VectorPupilCase(TestCase):
         return pupil_field.squeeze(), psf_field
 
     def get_fields_as_cartesian(self,
-                      s_x: torch.Tensor, 
-                      s_y: torch.Tensor, 
+                      s_x: torch.Tensor,
+                      s_y: torch.Tensor,
                       norm_x: torch.Tensor,
-                      norm_y: torch.Tensor, 
+                      norm_y: torch.Tensor,
                       sin_t_max: float,
                       ):
         '''
@@ -307,7 +317,7 @@ class VectorPupilCase(TestCase):
              I0y - I2x * sin_twophi + I2y * cos_twophi,
              -2j * (I1x * cos_phi + I1y * sin_phi)]
         )
-        
+
         return pupil_field, psf_field
 
 
@@ -355,8 +365,8 @@ polar_logstep = HankelCase(
                     np.where(pupil_coord > 1e-6,
                                 np.log(1.0 / pupil_coord),
                                 0.0),
-    psf_expr = lambda psf_coord: 4.0 * torch.where(psf_coord > 1e-6, 
-                    (1.0 - bessel_j0(psf_coord)) / psf_coord ** 2, 
+    psf_expr = lambda psf_coord: 4.0 * torch.where(psf_coord > 1e-6,
+                    (1.0 - bessel_j0(psf_coord)) / psf_coord ** 2,
                     0.25 - psf_coord ** 2 / 64),
     Rmax = 0.6,
     name = "polar_logstep",
@@ -364,7 +374,7 @@ polar_logstep = HankelCase(
 
 
 def _J_integral_scalar(e_inf: Callable, max_pupil_coord: float, psf_coord_: torch.Tensor) -> torch.Tensor:
-    '''
+    """
     Computes the PSF field using high-order quadrature. This function is used to generate
     ground truth/reference data against which the propagators are compared.
 
@@ -376,7 +386,7 @@ def _J_integral_scalar(e_inf: Callable, max_pupil_coord: float, psf_coord_: torc
 
     Outputs:
     - PSF_field: torch.Tensor[n_psf,]. The evaluated PSF field.
-    '''
+    """
     psf_coord = psf_coord_.numpy().flatten()
     out = psf_coord.copy() * 0.0
     for i in range(len(out)):
@@ -433,23 +443,23 @@ def _J_integral_vector(e_inf: Callable, sin_t_max: float, psf_coord_: torch.Tens
 
 
 '''
-Tester static classes for the scalar propagators. They are used to compute PSF approximation errors 
+Tester static classes for the scalar propagators. They are used to compute PSF approximation errors
 and generate error convergence plots.
 '''
 class ScalarPolarTester:
     @staticmethod
     def eval_error(
-        N: int, 
-        test_case: TestCase, 
+        N: int,
+        test_case: TestCase,
         plot: bool=False) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        '''
-        Evaluate the approximation error of the computed PSF field using an input test case. This 
-        method can be called on one of the analytic test cases implemented in this module 
+        """
+        Evaluate the approximation error of the computed PSF field using an input test case. This
+        method can be called on one of the analytic test cases implemented in this module
         (`HankelCase`) or an aberrated pupil (`ScalarPupilCase`).
 
         Inputs:
         - N: int. Grid size for the propagator.
-        - test_case: TestCase. One of the implemented test cases in this module, 
+        - test_case: TestCase. One of the implemented test cases in this module,
             e.g. `polar_step`, `polar_gaussian`.
         - plot: bool. Visualize approximation errors with plots. Default: False
 
@@ -457,23 +467,23 @@ class ScalarPolarTester:
         - err: torch.Tensor[1,]. The scalar approximation error.
         - E_ref: torch.Tensor[N,N]. The reference PSF field.
         - E_num: torch.Tensor[N,N]. The calculated PSF field.
-        '''
-        
+        """
+
         _pupil = ScalarPolarPupil(N)
         prop  = ScalarPolarPropagator(
             pupil=_pupil,
             n_pix_psf=2 * (N - 1) + 1,
-            n_defocus=1, 
+            n_defocus=1,
             defocus_min=0,
-            defocus_max=0, 
+            defocus_max=0,
             fov=1e4,
-            envelope=None, 
-            apod_factor=False, 
+            envelope=None,
+            apod_factor=False,
             gibson_lanni=False)
-        
+
         far_fields, E_ref = test_case.get_fields_as_polar(
-            thetas=prop.thetas, 
-            krs=prop.k * prop.rs, 
+            thetas=prop.thetas,
+            krs=prop.k * prop.rs,
             sin_t_max=torch.sin(prop.thetas.max()).item())
 
         E_ref = E_ref[prop.rr_indices]
@@ -487,20 +497,20 @@ class ScalarPolarTester:
 
     @staticmethod
     def plot_convergence(test_case: TestCase, ord: int=1, Ns: List[int]=None) -> None:
-        '''
+        """
         Generate the error convergence plot for a given test case.
 
         Inputs:
-        - test_case_data: Callable function. One of the implemented test cases in this module, 
+        - test_case_data: Callable function. One of the implemented test cases in this module,
             e.g. `polar_step`, `polar_gaussian`.
         - ord: int. Error norm order. For example, `ord == 2` calculates the L2 error (root-mean
             -squared) between the numeric and exact field values. Default: 1
         - Ns: List[int]. List of grid sizes to query for the propagator. If no value is specified,
             a default set of logspaced values from 2**3 to 2**8 is used.
-        '''
+        """
         _plot_convergence(
-            lambda N: ScalarPolarTester.eval_error(N, test_case)[0], 
-            Ns, 
+            lambda N: ScalarPolarTester.eval_error(N, test_case)[0],
+            Ns,
             ord,
             label="Polar",
             method_order=4,
@@ -511,17 +521,17 @@ class ScalarPolarTester:
 class ScalarCartesianTester:
     @staticmethod
     def eval_error(
-        N: int, 
-        test_case: TestCase, 
+        N: int,
+        test_case: TestCase,
         plot: bool=False) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        '''
-        Evaluate the approximation error of the computed PSF field using an input test case. This 
-        method can be called on one of the analytic test cases implemented in this module 
+        """
+        Evaluate the approximation error of the computed PSF field using an input test case. This
+        method can be called on one of the analytic test cases implemented in this module
         (`HankelCase`) or an aberrated pupil (`ScalarPupilCase`).
 
         Inputs:
         - N: int. Grid size for the propagator.
-        - test_case: TestCase. One of the implemented test cases in this module, 
+        - test_case: TestCase. One of the implemented test cases in this module,
             e.g. `polar_step`, `polar_gaussian`.
         - plot: bool. Visualize approximation errors with plots. Default: False
 
@@ -529,21 +539,21 @@ class ScalarCartesianTester:
         - err: torch.Tensor[1,]. The scalar approximation error.
         - E_ref: torch.Tensor[N,N]. The reference PSF field.
         - E_num: torch.Tensor[N,N]. The calculated PSF field.
-        '''
-        
+        """
+
         _pupil = ScalarCartesianPupil(2 * (N - 1) + 1)
         prop = ScalarCartesianPropagator(
             pupil=_pupil,
             n_pix_psf=_pupil.n_pix_pupil,
-            n_defocus=1, 
+            n_defocus=1,
             defocus_min=0,
-            defocus_max=0, 
+            defocus_max=0,
             fov=1e4,
-            envelope=None, 
+            envelope=None,
             sz_correction=True,
-            apod_factor=False, 
+            apod_factor=False,
             gibson_lanni=False)
-        
+
         far_fields, E_ref = test_case.get_fields_as_cartesian(
                                 s_x=prop.s_x * prop.s_max,
                                 s_y=prop.s_x * prop.s_max,
@@ -551,7 +561,7 @@ class ScalarCartesianTester:
                                 norm_y=prop.x * 2 * torch.pi / prop.s_max,
                                 sin_t_max=prop.s_max,
                                 )
-        
+
         E_num = prop._compute_PSF_for_far_field(far_fields).squeeze()
 
         # TODO: error metric
@@ -561,23 +571,23 @@ class ScalarCartesianTester:
             _plot_field_comparison(E_num, E_ref, err)
 
         return err, E_ref, E_num
-    
+
     @staticmethod
     def plot_convergence(test_case: TestCase, ord: int=1, Ns: List[int]=None) -> None:
-        '''
+        """
         Generate the error convergence plot for a given test case.
 
         Inputs:
-        - test_case_data: Callable function. One of the implemented test cases in this module, 
+        - test_case_data: Callable function. One of the implemented test cases in this module,
             e.g. `polar_step`, `polar_gaussian`.
         - ord: int. Error norm order. For example, `ord == 2` calculates the L2 error (root-mean
             -squared) between the numeric and exact field values. Default: 1
         - Ns: List[int]. List of grid sizes to query for the propagator. If no value is specified,
             a default set of logspaced values from 9 to 257 is used.
-        '''
+        """
         _plot_convergence(
-            lambda N: ScalarCartesianTester.eval_error(N, test_case)[0], 
-            Ns, 
+            lambda N: ScalarCartesianTester.eval_error(N, test_case)[0],
+            Ns,
             ord,
             label="Cartesian",
             method_order=2,
@@ -588,8 +598,8 @@ class ScalarCartesianTester:
 class VectorPolarTester:
     @staticmethod
     def eval_error(
-        N: int, 
-        pupil: VectorialPolarPupil, 
+        N: int,
+        pupil: VectorialPolarPupil,
         plot: bool=False) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         '''
         Evaluate the approximation error of the computed PSF field using an aberrated pupil.
@@ -615,17 +625,17 @@ class VectorPolarTester:
         prop  = VectorialPolarPropagator(
             pupil=pupil_,
             n_pix_psf=2 * (N - 1) + 1,
-            n_defocus=1, 
+            n_defocus=1,
             defocus_min=0,
-            defocus_max=0, 
+            defocus_max=0,
             fov=1e4,
-            envelope=None, 
-            apod_factor=False, 
+            envelope=None,
+            apod_factor=False,
             gibson_lanni=False)
-        
+
         far_fields, E_ref = test_case.get_fields_as_polar(
-            thetas=prop.thetas, 
-            kxs=prop.k * torch.linspace(-prop.fov / 2.0, prop.fov / 2.0, prop.n_pix_psf), 
+            thetas=prop.thetas,
+            kxs=prop.k * torch.linspace(-prop.fov / 2.0, prop.fov / 2.0, prop.n_pix_psf),
             sin_t_max=torch.sin(prop.thetas.max()).item())
 
         E_ref /= np.sqrt(prop.refractive_index)
@@ -654,8 +664,8 @@ class VectorPolarTester:
             a default set of logspaced values from 2**3 to 2**8 is used.
         '''
         _plot_convergence(
-            lambda N: VectorPolarTester.eval_error(N, pupil)[0], 
-            Ns, 
+            lambda N: VectorPolarTester.eval_error(N, pupil)[0],
+            Ns,
             ord,
             label="Polar",
             method_order=4,
@@ -666,8 +676,8 @@ class VectorPolarTester:
 class VectorCartesianTester:
     @staticmethod
     def eval_error(
-        N: int, 
-        pupil: VectorialCartesianPupil, 
+        N: int,
+        pupil: VectorialCartesianPupil,
         plot: bool=False) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         '''
         Evaluate the approximation error of the computed PSF field using an aberrated pupil.
@@ -689,19 +699,19 @@ class VectorCartesianTester:
             n_pix_pupil=Ngrid,
             device=pupil.device,
             zernike_coefficients=pupil.zernike_coefficients)
-        
+
         prop  = VectorialCartesianPropagator(
             pupil=pupil_,
             n_pix_psf=Ngrid,
-            n_defocus=1, 
+            n_defocus=1,
             defocus_min=0,
-            defocus_max=0, 
+            defocus_max=0,
             fov=1e4,
             sz_correction=True,
-            envelope=None, 
-            apod_factor=False, 
+            envelope=None,
+            apod_factor=False,
             gibson_lanni=False)
-        far_fields = pupil_.field        
+        far_fields = pupil_.field
 
         test_case = VectorPupilCase(
             VectorialPolarPupil(
@@ -710,7 +720,7 @@ class VectorCartesianTester:
                 n_pix_pupil=Ngrid,
                 device=pupil.device,
                 zernike_coefficients=pupil.zernike_coefficients))
-        
+
         _, E_ref = test_case.get_fields_as_cartesian(
                     s_x=prop.s_x * prop.s_max,
                     s_y=prop.s_x * prop.s_max,
@@ -746,8 +756,8 @@ class VectorCartesianTester:
             a default set of logspaced values from 2**3 to 2**8 is used.
         '''
         _plot_convergence(
-            lambda N: VectorCartesianTester.eval_error(N, pupil)[0], 
-            Ns, 
+            lambda N: VectorCartesianTester.eval_error(N, pupil)[0],
+            Ns,
             ord,
             label="Cartesian",
             method_order=2,
@@ -756,9 +766,9 @@ class VectorCartesianTester:
 
 
 def _error_norm(err: torch.Tensor, ord: int=1) -> torch.Tensor:
-    '''
+    """
     Compute the length/norm of an error vector.
-    '''
+    """
     if ord == 1:
         return err.abs().mean().item()
     elif ord == 2:
@@ -768,12 +778,12 @@ def _error_norm(err: torch.Tensor, ord: int=1) -> torch.Tensor:
 
 
 def _plot_field_comparison(E: torch.Tensor, E_ref: torch.Tensor, E_err: torch.Tensor = None) -> None:
-    '''
+    """
     Helper function to compare the analytic PSF E field with its numerical approximation.
-    '''
+    """
     if E_err is None:
         E_err = (E - E_ref).abs()
-    
+
     plt.figure(figsize=(8,6.4))
     plt.subplot(221)
     plt.imshow(E.abs())
@@ -817,7 +827,7 @@ def _plot_convergence(error_vector_getter: Callable, Ns: List[int]=None, ord: in
         err_vec = error_vector_getter(int(N))
         err = _error_norm(err_vec, ord)
         errs.append(err)
-    
+
     plt.loglog(Ns, errs, label=label, linewidth=2.0, zorder=3)
     plt.loglog(Ns, errs[0] * (Ns / Ns[0]) ** (-method_order), 'k--', linewidth=0.75, label=rf"$O(h^{method_order})$")
     plt.legend()
