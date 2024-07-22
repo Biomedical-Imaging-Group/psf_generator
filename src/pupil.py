@@ -11,10 +11,15 @@ class Pupil(ABC):
         self.n_pix_pupil = n_pix_pupil
         self.device = device
         self.zernike_coefficients = zernike_coefficients
-        self.field = None
+        self.field = self.initialize_field()
+        self.field *= self.zernike_aberrations()
 
     @abstractmethod
     def initialize_field(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def zernike_aberrations(self):
         raise NotImplementedError
 
 
@@ -31,10 +36,6 @@ class ScalarCartesianPupil(Pupil):
 
         sx ** 2 + sy ** 2 <= s_max ** 2 = sin(theta_max) ** 2
     """
-    def __init__(self, n_pix_pupil=128, device='cpu', zernike_coefficients=[0,]):
-        super().__init__(n_pix_pupil, device, zernike_coefficients)
-        self.field = self.initialize_field()
-        self.field *= self.zernike_aberrations()
 
     def initialize_field(self):
         kx, ky = create_pupil_mesh(n_pixels=self.n_pix_pupil)
@@ -57,10 +58,6 @@ class ScalarPolarPupil(Pupil):
 
         \theta \leq \theta_{max}
     """
-    def __init__(self, n_pix_pupil=128, device='cpu', zernike_coefficients=[0,]):
-        super().__init__(n_pix_pupil, device, zernike_coefficients)
-        self.field = self.initialize_field()
-        self.field *= self.zernike_aberrations()
 
     def initialize_field(self):
         return torch.ones(self.n_pix_pupil).to(torch.complex64).to(self.device).unsqueeze(0).unsqueeze(0)
@@ -73,12 +70,9 @@ class ScalarPolarPupil(Pupil):
 class VectorialCartesianPupil(Pupil):
     def __init__(self, e0x=1, e0y=0,
                  n_pix_pupil=128, device='cpu', zernike_coefficients=(0,)):
-        super().__init__(n_pix_pupil, device, zernike_coefficients)
         self.e0x = e0x
         self.e0y = e0y
-
-        self.field = self.initialize_field()
-        self.field *= self.zernike_aberrations()
+        super().__init__(n_pix_pupil, device, zernike_coefficients)
 
     def initialize_field(self):
         kx, ky = create_pupil_mesh(n_pixels=self.n_pix_pupil)
@@ -93,11 +87,9 @@ class VectorialCartesianPupil(Pupil):
 class VectorialPolarPupil(Pupil):
     def __init__(self, e0x=1, e0y=0,
                  n_pix_pupil=128, device='cpu', zernike_coefficients=(0,)):
-        super().__init__(n_pix_pupil, device, zernike_coefficients)
         self.e0x = e0x
         self.e0y = e0y
-        self.field = self.initialize_field()
-        self.field *= self.zernike_aberrations()
+        super().__init__(n_pix_pupil, device, zernike_coefficients)
 
     def initialize_field(self):
         single_field = torch.ones(self.n_pix_pupil).to(self.device)
