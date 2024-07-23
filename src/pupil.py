@@ -73,7 +73,7 @@ class ScalarPolarPupil(Pupil):
 
 
 class VectorialCartesianPupil(Pupil):
-    def __init__(self, e0x=1, e0y=0,
+    def __init__(self, e0x: float = 1.0, e0y: float = 0.0,
                  n_pix_pupil: int = 128, device: str = 'cpu',
                  zernike_coefficients: torch.Tensor | np.ndarray | list[float] | None = None):
         self.e0x = e0x
@@ -91,7 +91,7 @@ class VectorialCartesianPupil(Pupil):
         return aberrations.to(self.device).unsqueeze(0).unsqueeze(0)
 
 class VectorialPolarPupil(Pupil):
-    def __init__(self, e0x=1, e0y=0,
+    def __init__(self, e0x: float = 1.0, e0y: float = 0.0,
                  n_pix_pupil: int = 128, device: str = 'cpu',
                  zernike_coefficients: torch.Tensor | np.ndarray | list[float] | None = None):
         self.e0x = e0x
