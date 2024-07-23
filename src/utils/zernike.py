@@ -50,7 +50,7 @@ def zernike_nl(n: int, l: int, rho: torch.float, phi: float, radius: float = 1) 
         R = R + (-1) ** k * binom(n - k, k) * binom(n - 2 * k, (n - m) / 2 - k) * (rho / radius) ** (n - 2 * k)
 
     # radial part
-    Z = torch.where(torch.tensor(rho <= radius), R, 0)
+    Z = torch.where(rho <= radius, R, 0)
 
     # angular part
     Z *= np.cos(m * phi) if l >= 0 else np.sin(m * phi)
@@ -119,7 +119,7 @@ def create_zernike_aberrations(zernike_coefficients: torch.Tensor, n_pix_pupil: 
             if l != 0 and curr_coef != 0:
                 print("Warning: Zernike coefficients for l != 0 are not supported in polar coordinates.")
             elif l == 0:
-                zernike_phase += curr_coef * torch.tensor(zernike_nl(n=n, l=l, rho=rho, phi=phi))
+                zernike_phase += curr_coef * zernike_nl(n=n, l=l, rho=rho, phi=phi)
     else:
         raise ValueError(f"Invalid mesh type {mesh_type}, choose 'polar' or 'cartesian'.")
 
