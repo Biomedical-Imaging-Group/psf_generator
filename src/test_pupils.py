@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from .pupil import ScalarCartesianPupil, ScalarPolarPupil
+from pupil import ScalarCartesianPupil, ScalarPolarPupil
 
 
 def get_polar_ck(N: int) -> np.ndarray:
@@ -20,13 +20,12 @@ def get_polar_ck(N: int) -> np.ndarray:
     ck[idxs] = values
     return ck
 
-def test_pupils(Nr=128, zernike_order=3, plot=False):
+def test_pupils(Nr: int = 128, zernike_order: int = 3, plot: str = False):
     """
     Numerically evaluate the aberration fields of a ScalarPolar and ScalarCartesian pupil
     using the same set of Zernike coefficients. The two E fields should be identical up to
     numerical precision.
     """
-    Nr = 128
     ck = get_polar_ck(zernike_order)
 
     field_P = ScalarPolarPupil(
@@ -50,7 +49,7 @@ def test_pupils(Nr=128, zernike_order=3, plot=False):
         plt.legend()
 
         plt.tight_layout()
-
+        plt.show()
 
 if __name__ == "__main__":
     for _ in range(10):
