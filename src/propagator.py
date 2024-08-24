@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 import torch
-from functorch import vmap
+from torch import vmap
 from torch.special import bessel_j0, bessel_j1
 
 from integrators import simpsons_rule
@@ -68,7 +68,7 @@ class Propagator(ABC):
 
 class ScalarCartesianPropagator(Propagator):
     def __init__(self, pupil, n_pix_psf=128, device='cpu',
-                 wavelength=632, na=0.9, fov=1000, refractive_index=1.5,
+                 wavelength=632, na=1.3, fov=1000, refractive_index=1.5,
                  defocus_min=0, defocus_max=0, n_defocus=1,
                  sz_correction=True, apod_factor=False, envelope=None,
                  gibson_lanni=False, z_p=1e3, n_s=1.3,
@@ -128,24 +128,25 @@ class ScalarCartesianPropagator(Propagator):
                                        ).reshape(-1, 1, 1, 1).to(self.device)
         self.defocus_filters = torch.exp(1j * self.k * s_zz * defocus_range)
 
-
     def compute_focus_field(self):
-        self.field = self._compute_PSF_for_far_field(self.pupil.field)
+        self.field = self._compute_psf_for_far_field(self.pupil.field)
         return self.field
 
     def _compute_psf_for_far_field(self, far_fields):
+        k_start = -self.zoom_factor * np.pi
+        k_end   =  self.zoom_factor * np.pi
         field = custom_ifft2(far_fields * self.correction_factor * self.defocus_filters,
                                   shape_out=(self.n_pix_psf, self.n_pix_psf),
-                                  k_start=-k,
-                                  k_end=k,
-                                  norm='backward', fftshift_input=True, include_end=True) \
+                                  k_start=k_start,
+                                  k_end=k_end,
+                                  norm='forward', fftshift_input=True, include_end=True) \
                                       * (self.ds * self.s_max) ** 2 * 1j
-        return field / (2 * np.pi)
+        return field / (2 * np.pi * np.sqrt(self.refractive_index))
 
 
 class ScalarPolarPropagator(Propagator):
     def __init__(self, pupil, n_pix_psf=128, device='cpu',
-                 wavelength=632, na=0.9, fov=1000, refractive_index=1.5,
+                 wavelength=632, na=1.3, fov=1000, refractive_index=1.5,
                  defocus_min=0, defocus_max=0, n_defocus=1,
                  apod_factor=False, envelope=None,
                  gibson_lanni=False, z_p=1e3, n_s=1.3,
@@ -199,10 +200,9 @@ class ScalarPolarPropagator(Propagator):
         # bessel function evaluations are expensive and can be computed independently from defocus
         self.J_evals = bessel_j0(self.k * self.rs[None,:] * sin_t[:,None])    # [n_theta, n_radii]
 
-
     def compute_focus_field(self):
         far_fields = self.pupil.field.squeeze()   # [n_defocus=1, channels=1, n_thetas] ==> [n_thetas, ]
-        return self._compute_PSF_for_far_field(far_fields)
+        return self._compute_psf_for_far_field(far_fields)
 
     def _compute_psf_for_far_field(self, far_fields):
         # argument shapes:
@@ -217,7 +217,7 @@ class ScalarPolarPropagator(Propagator):
         J_evals = bessel_j0(self.k * self.rs[None,:] * sin_t[:,None])    # [n_theta, n_radii]
 
         # compute PSF field; handle defocus via batching with vmap()
-        batched_compute_field_at_defocus = vmap(self._compute_PSF_at_defocus, in_dims=(0, None, None, None))
+        batched_compute_field_at_defocus = vmap(self._compute_psf_at_defocus, in_dims=(0, None, None, None))
 
         fields = batched_compute_field_at_defocus(self.defocus_filters, J_evals, far_fields, sin_t)
         return fields
@@ -228,12 +228,142 @@ class ScalarPolarPropagator(Propagator):
         field = self.quadrature_rule(integrand, self.dtheta)
         # scatter the radial evaluations of E(r) onto the xy image grid
         field = field[self.rr_indices].unsqueeze(0)       # [n_channels=1, size_x, size_y]
-        return field
+        return field / np.sqrt(self.refractive_index)
+
+
+class VectorialCartesianPropagator(Propagator):
+    def __init__(self, pupil, n_pix_psf=128, device='cpu',
+                 wavelength=632, na=1.3, fov=1000, refractive_index=1.5,
+                 defocus_min=0, defocus_max=0, n_defocus=1,
+                 sz_correction=True, apod_factor=False, envelope=None,
+                 gibson_lanni=False, z_p=1e3, n_s=1.3,
+                 n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3,
+                 n_i=1.5, t_i0=100e3):
+        super().__init__(pupil=pupil, n_pix_psf=n_pix_psf, device=device,
+                         wavelength=wavelength, na=na, fov=fov, refractive_index=refractive_index,
+                         defocus_min=defocus_min, defocus_max=defocus_max, n_defocus=n_defocus,
+                         apod_factor=apod_factor, envelope=envelope,
+                         gibson_lanni=gibson_lanni, z_p=z_p, n_s=n_s,
+                         n_g=n_g, n_g0=n_g0, t_g=t_g, t_g0=t_g0,
+                         n_i=n_i, t_i0=t_i0)
+        self.sz_correction = sz_correction
+
+        # Physical parameters
+        self.k = 2 * np.pi / self.wavelength
+        self.s_max = torch.tensor(self.na / self.refractive_index)
+
+        # Zoom factor to determine pixel size with custom FFT
+        self.zoom_factor = 2 * self.na * self.fov / self.wavelength \
+                           / self.refractive_index / (self.n_pix_pupil - 1)
+
+        # Coordinates in pupil space s_x, s_y, s_z
+        n_pix_pupil = self.pupil.n_pix_pupil
+        self.s_x = torch.linspace(-1, 1, n_pix_pupil).to(self.device)
+        self.ds = self.s_x[1] - self.s_x[0]
+        s_xx, s_yy = torch.meshgrid(self.s_x, self.s_x, indexing='ij')
+        s_zz = torch.sqrt((1 - (self.na / self.refractive_index) ** 2 * (s_xx ** 2 + s_yy ** 2)
+                           ).clamp(min=0.001)).reshape(1, 1, n_pix_pupil, n_pix_pupil)
+
+        # if s_xx**2 + s_yy**2 > 1, s_xx and s_yy are 0
+        s_xx, s_yy = s_xx * (s_xx ** 2 + s_yy ** 2 <= 1), s_yy * (s_xx ** 2 + s_yy ** 2 <= 1)
+
+        # Coordinates in object space
+        total_fft_range = 1.0 / self.ds
+        k_start = -self.zoom_factor * np.pi
+        k_end = self.zoom_factor * np.pi
+        self.x = torch.linspace(k_start, k_end, self.n_pix_pupil) / (2.0 * torch.pi) * total_fft_range
+
+        # Angles theta and phi
+        s_xx, s_yy = torch.meshgrid(self.s_x * self.s_max, self.s_x * self.s_max, indexing='ij')
+        sin_t_sq = s_xx ** 2 + s_yy ** 2
+        s_valid = sin_t_sq <= self.s_max ** 2
+        sin_theta = torch.sqrt(sin_t_sq)
+        cos_theta = torch.sqrt(1.0 - sin_t_sq)
+        phi = torch.atan2(s_yy, s_xx)
+        cos_phi = torch.cos(phi)
+        sin_phi = torch.sin(phi)
+        sin_2phi = 2.0 * sin_phi * cos_phi
+        cos_2phi = cos_phi ** 2 - sin_phi ** 2
+
+        # Field after basis change
+        e_inf_x = ((cos_theta + 1.0) + (cos_theta - 1.0) * cos_2phi) * self.pupil.field[:, 0, :, :] \
+                        + (cos_theta - 1.0) * sin_2phi * self.pupil.field[:, 1, :, :]
+        e_inf_y = ((cos_theta + 1.0) - (cos_theta - 1.0) * cos_2phi) * self.pupil.field[:, 1, :, :] \
+                        + (cos_theta - 1.0) * sin_2phi * self.pupil.field[:, 0, :, :]
+        e_inf_z = -2.0 * sin_theta * (cos_phi * self.pupil.field[:, 0, :, :] + sin_phi * self.pupil.field[:, 1, :, :])
+        e_inf_x = torch.where(s_valid, e_inf_x, 0.0).unsqueeze(0) / 2
+        e_inf_y = torch.where(s_valid, e_inf_y, 0.0).unsqueeze(0) / 2
+        e_inf_z = torch.where(s_valid, e_inf_z, 0.0).unsqueeze(0) / 2
+        self.e_inf_field = torch.cat((e_inf_x, e_inf_y, e_inf_z), dim=1)
+
+        # Correction factors
+        self.correction_factor = torch.ones(1, 1, n_pix_pupil, n_pix_pupil
+                                            ).to(torch.complex64).to(self.device)
+        if self.sz_correction:
+            self.correction_factor *= 1 / s_zz
+        if self.apod_factor:
+            self.correction_factor *= torch.sqrt(s_zz)
+        if self.envelope is not None:
+            self.correction_factor *= torch.exp(- (1 - s_zz ** 2) / self.envelope ** 2)
+        if self.gibson_lanni:
+            # computed following Eq. (3.45) of François Aguet's thesis
+            sin_t = (self.na / self.refractive_index * torch.sqrt(s_xx ** 2 + s_yy ** 2)).clamp(max=1)
+            optical_path = self.z_p * torch.sqrt(self.n_s ** 2 - self.n_i ** 2 * sin_t ** 2) \
+                           + self.t_i * torch.sqrt(self.n_i ** 2 - self.n_i ** 2 * sin_t ** 2) \
+                           - self.t_i0 * torch.sqrt(self.n_i0 ** 2 - self.n_i ** 2 * sin_t ** 2) \
+                           + self.t_g * torch.sqrt(self.n_g ** 2 - self.n_i ** 2 * sin_t ** 2) \
+                           - self.t_g0 * torch.sqrt(self.n_g0 ** 2 - self.n_i ** 2 * sin_t ** 2)
+            self.correction_factor *= torch.exp(1j * self.k * optical_path)
+        defocus_range = torch.linspace(self.defocus_min, self.defocus_max, self.n_defocus
+                                       ).reshape(-1, 1, 1, 1).to(self.device)
+        self.defocus_filters = torch.exp(1j * self.k * s_zz * defocus_range)
+
+    def compute_focus_field(self):
+        self.field = custom_ifft2(self.e_inf_field * self.correction_factor * self.defocus_filters,
+                                  shape_out=(self.n_pix_psf, self.n_pix_psf),
+                                  k_start=-self.zoom_factor * np.pi,
+                                  k_end=self.zoom_factor * np.pi,
+                                  norm='forward', fftshift_input=True, include_end=True) * (self.ds * self.s_max) ** 2 * 1j
+        return self.field / (2 * np.pi * np.sqrt(self.refractive_index))
+
+    def _compute_psf_for_far_field(self, far_fields):  # to remove later?
+        s_xx, s_yy = torch.meshgrid(self.s_x * self.s_max, self.s_x * self.s_max, indexing='ij')
+        sin_t_sq = s_xx ** 2 + s_yy ** 2
+        s_valid = sin_t_sq <= self.s_max ** 2
+        sin_theta = torch.sqrt(sin_t_sq)
+        cos_theta = torch.sqrt(1.0 - sin_t_sq)
+        phi = torch.atan2(s_yy, s_xx)   # properly handles pole at sin_theta == 0.0
+        cos_phi = torch.cos(phi)
+        sin_phi = torch.sin(phi)
+        sin_2phi = 2.0 * sin_phi * cos_phi
+        cos_2phi = cos_phi ** 2 - sin_phi ** 2
+
+        far_fields_x = far_fields[:, 0, :, :]
+        far_fields_y = far_fields[:, 1, :, :]
+        e_inf_x = ((cos_theta + 1.0) + (cos_theta - 1.0) * cos_2phi) * far_fields_x \
+                        + (cos_theta - 1.0) * sin_2phi * far_fields_y
+        e_inf_y = ((cos_theta + 1.0) - (cos_theta - 1.0) * cos_2phi) * far_fields_y \
+                        + (cos_theta - 1.0) * sin_2phi * far_fields_x
+        e_inf_z = -2.0 * sin_theta * (cos_phi * far_fields_x + sin_phi * far_fields_y)
+
+        e_inf_x = torch.where(s_valid, e_inf_x, 0.0).unsqueeze(0)
+        e_inf_y = torch.where(s_valid, e_inf_y, 0.0).unsqueeze(0)
+        e_inf_z = torch.where(s_valid, e_inf_z, 0.0).unsqueeze(0)
+
+        PSF_field = custom_ifft2(torch.cat((e_inf_x, e_inf_y, e_inf_z), dim=1) * self.correction_factor * self.defocus_filters,
+                                  shape_out=(self.n_pix_psf, self.n_pix_psf),
+                                  k_start=-self.zoom_factor * np.pi,
+                                  k_end=self.zoom_factor * np.pi,
+                                  norm='forward', fftshift_input=True, include_end=True) \
+                     * (self.ds * self.s_max) ** 2 * 1j
+        PSF_field /= (2 * np.pi * np.sqrt(self.refractive_index))
+
+        return PSF_field
 
 
 class VectorialPolarPropagator(Propagator):
     def __init__(self, pupil, n_pix_psf=128, device='cpu',
-                 wavelength=632, na=0.9, fov=1000, refractive_index=1.5,
+                 wavelength=632, na=1.3, fov=1000, refractive_index=1.5,
                  defocus_min=0, defocus_max=0, n_defocus=1,
                  apod_factor=False, envelope=None,
                  gibson_lanni=False, z_p=1e3, n_s=1.3,
@@ -296,12 +426,10 @@ class VectorialPolarPropagator(Propagator):
         self.correction_factor = correction_factor.to(self.device)
         self.quadrature_rule = quadrature_rule
 
-
     def compute_focus_field(self):
         # multiplicative scalar factor to be verified for the vectorial case
-        self.field = self._compute_PSF_for_far_field(self.pupil.field)
+        self.field = self._compute_psf_for_far_field(self.pupil.field)
         return self.field
-
 
     def _compute_psf_for_far_field(self, far_fields):
         sin_t = torch.sin(self.thetas) # [n_thetas, ]
@@ -317,13 +445,12 @@ class VectorialPolarPropagator(Propagator):
                                 0.5 - bessel_arg ** 2 / 16) - J0s
 
         # compute PSF field; handle defocus via batching with vmap()
-        batched_compute_field_at_defocus = vmap(self._compute_PSF_at_defocus, in_dims=(0, None, None, None, None, None, None))
+        batched_compute_field_at_defocus = vmap(self._compute_psf_at_defocus, in_dims=(0, None, None, None, None, None, None))
         fields = batched_compute_field_at_defocus(self.defocus_filters, J0s, J1s, J2s, far_fields, sin_t, cos_t)
         return fields
 
-
     def _compute_psf_at_defocus(self, defocus_term, J0s, J1s, J2s, far_fields, sin_t, cos_t):
-        field_x, field_y = far_fields[0], far_fields[1]
+        field_x, field_y = far_fields[:, 0, :].squeeze(), far_fields[:, 1, :].squeeze()
 
         # compute E(r) for a list of unique radii values
         # shape(Ix0) == shape(Iy0) == ... == [n_radii,]
@@ -362,135 +489,5 @@ class VectorialPolarPropagator(Propagator):
             -2j * (Ix1 * self.cos_phi + Iy1 * self.sin_phi)],
             dim=0)
 
-        # TODO: why divide by an extra factor of sqrt(eta)?
-        return PSF_field / np.sqrt(self.refractive_index)
+        return PSF_field / 2 / np.sqrt(self.refractive_index)
 
-
-class VectorialCartesianPropagator(Propagator):
-    def __init__(self, pupil, n_pix_psf=128, device='cpu',
-                 wavelength=632, na=0.9, fov=1000, refractive_index=1.5,
-                 defocus_min=0, defocus_max=0, n_defocus=1,
-                 sz_correction=True, apod_factor=False, envelope=None,
-                 gibson_lanni=False, z_p=1e3, n_s=1.3,
-                 n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3,
-                 n_i=1.5, t_i0=100e3):
-        super().__init__(pupil=pupil, n_pix_psf=n_pix_psf, device=device,
-                         wavelength=wavelength, na=na, fov=fov, refractive_index=refractive_index,
-                         defocus_min=defocus_min, defocus_max=defocus_max, n_defocus=n_defocus,
-                         apod_factor=apod_factor, envelope=envelope,
-                         gibson_lanni=gibson_lanni, z_p=z_p, n_s=n_s,
-                         n_g=n_g, n_g0=n_g0, t_g=t_g, t_g0=t_g0,
-                         n_i=n_i, t_i0=t_i0)
-        self.sz_correction = sz_correction
-
-        # Physical parameters
-        self.k = 2 * np.pi / self.wavelength
-        self.s_max = torch.tensor(self.na / self.refractive_index)
-
-        # Zoom factor to determine pixel size with custom FFT
-        self.zoom_factor = 2 * self.na * self.fov / self.wavelength \
-                           / self.refractive_index / (self.n_pix_pupil - 1)
-
-        # Coordinates in pupil space s_x, s_y, s_z
-        n_pix_pupil = self.pupil.n_pix_pupil
-        self.s_x = torch.linspace(-1, 1, n_pix_pupil).to(self.device)
-        self.ds = self.s_x[1] - self.s_x[0]
-        s_xx, s_yy = torch.meshgrid(self.s_x, self.s_x, indexing='ij')
-        s_zz = torch.sqrt((1 - (self.na / self.refractive_index) ** 2 * (s_xx ** 2 + s_yy ** 2)
-                           ).clamp(min=0.001)).reshape(1, 1, n_pix_pupil, n_pix_pupil)
-
-        # if s_xx**2 + s_yy**2 > 1, s_xx and s_yy are 0
-        s_xx, s_yy = s_xx * (s_xx ** 2 + s_yy ** 2 <= 1), s_yy * (s_xx ** 2 + s_yy ** 2 <= 1)
-
-        # Coordinates in object space
-        total_fft_range = 1.0 / self.ds
-        k_start = -self.zoom_factor * np.pi
-        k_end = self.zoom_factor * np.pi
-        self.x = torch.linspace(k_start, k_end, self.n_pix_pupil) / (2.0 * torch.pi) * total_fft_range
-
-        # Angles theta and phi
-        s_xx, s_yy = torch.meshgrid(self.s_x * self.s_max, self.s_x * self.s_max, indexing='ij')
-        sin_t_sq = s_xx ** 2 + s_yy ** 2
-        s_valid = sin_t_sq <= self.s_max ** 2
-        sin_theta = torch.sqrt(sin_t_sq)
-        cos_theta = torch.sqrt(1.0 - sin_t_sq)
-        phi = torch.atan2(s_yy, s_xx)
-        cos_phi = torch.cos(phi)
-        sin_phi = torch.sin(phi)
-        sin_2phi = 2.0 * sin_phi * cos_phi
-        cos_2phi = cos_phi ** 2 - sin_phi ** 2
-
-        # Field after basis change
-        e_inf_x = ((cos_theta + 1.0) + (cos_theta - 1.0) * cos_2phi) * self.pupil.field[:, 0, :, :] \
-                        + (cos_theta - 1.0) * sin_2phi * self.pupil.field[:, 1, :, :]
-        e_inf_y = ((cos_theta + 1.0) - (cos_theta - 1.0) * cos_2phi) * self.pupil.field[:, 1, :, :] \
-                        + (cos_theta - 1.0) * sin_2phi * self.pupil.field[:, 0, :, :]
-        e_inf_z = -2.0 * sin_theta * (cos_phi * self.pupil.field[:, 0, :, :] + sin_phi * self.pupil.field[:, 1, :, :])
-        e_inf_x = torch.where(s_valid, e_inf_x, 0.0).unsqueeze(0)
-        e_inf_y = torch.where(s_valid, e_inf_y, 0.0).unsqueeze(0)
-        e_inf_z = torch.where(s_valid, e_inf_z, 0.0).unsqueeze(0)
-        self.e_inf_field = torch.cat((e_inf_x, e_inf_y, e_inf_z), dim=1)
-
-        # Correction factors
-        self.correction_factor = torch.ones(1, 1, n_pix_pupil, n_pix_pupil
-                                            ).to(torch.complex64).to(self.device)
-        if self.sz_correction:
-            self.correction_factor *= 1 / s_zz
-        if self.apod_factor:
-            self.correction_factor *= torch.sqrt(s_zz)
-        if self.envelope is not None:
-            self.correction_factor *= torch.exp(- (1 - s_zz ** 2) / self.envelope ** 2)
-        if self.gibson_lanni:
-            # computed following Eq. (3.45) of François Aguet's thesis
-            sin_t = (self.na / self.refractive_index * torch.sqrt(s_xx ** 2 + s_yy ** 2)).clamp(max=1)
-            optical_path = self.z_p * torch.sqrt(self.n_s ** 2 - self.n_i ** 2 * sin_t ** 2) \
-                           + self.t_i * torch.sqrt(self.n_i ** 2 - self.n_i ** 2 * sin_t ** 2) \
-                           - self.t_i0 * torch.sqrt(self.n_i0 ** 2 - self.n_i ** 2 * sin_t ** 2) \
-                           + self.t_g * torch.sqrt(self.n_g ** 2 - self.n_i ** 2 * sin_t ** 2) \
-                           - self.t_g0 * torch.sqrt(self.n_g0 ** 2 - self.n_i ** 2 * sin_t ** 2)
-            self.correction_factor *= torch.exp(1j * self.k * optical_path)
-        defocus_range = torch.linspace(self.defocus_min, self.defocus_max, self.n_defocus
-                                       ).reshape(-1, 1, 1, 1).to(self.device)
-        self.defocus_filters = torch.exp(1j * self.k * s_zz * defocus_range)
-
-    def compute_focus_field(self):
-        self.field = custom_ifft2(self.e_inf_field * self.correction_factor * self.defocus_filters,
-                                  shape_out=(self.n_pix_psf, self.n_pix_psf),
-                                  k_start=-self.zoom_factor * np.pi,
-                                  k_end=self.zoom_factor * np.pi,
-                                  norm='backward', fftshift_input=True, include_end=True) * (self.ds * self.s_max) ** 2 * 1j
-        return self.field / (2 * np.pi * np.sqrt(self.refractive_index))
-
-    def _compute_psf_for_far_field(self, far_fields):  # to remove later?
-        s_xx, s_yy = torch.meshgrid(self.s_x * self.s_max, self.s_x * self.s_max, indexing='ij')
-        sin_t_sq = s_xx ** 2 + s_yy ** 2
-        s_valid = sin_t_sq <= self.s_max ** 2
-        sin_theta = torch.sqrt(sin_t_sq)
-        cos_theta = torch.sqrt(1.0 - sin_t_sq)
-        phi = torch.atan2(s_yy, s_xx)   # properly handles pole at sin_theta == 0.0
-        cos_phi = torch.cos(phi)
-        sin_phi = torch.sin(phi)
-        sin_2phi = 2.0 * sin_phi * cos_phi
-        cos_2phi = cos_phi ** 2 - sin_phi ** 2
-
-        far_fields_x = far_fields[:, 0, :, :]
-        far_fields_y = far_fields[:, 1, :, :]
-        e_inf_x = ((cos_theta + 1.0) + (cos_theta - 1.0) * cos_2phi) * far_fields_x \
-                        + (cos_theta - 1.0) * sin_2phi * far_fields_y
-        e_inf_y = ((cos_theta + 1.0) - (cos_theta - 1.0) * cos_2phi) * far_fields_y \
-                        + (cos_theta - 1.0) * sin_2phi * far_fields_x
-        e_inf_z = -2.0 * sin_theta * (cos_phi * far_fields_x + sin_phi * far_fields_y)
-
-        e_inf_x = torch.where(s_valid, e_inf_x, 0.0).unsqueeze(0)
-        e_inf_y = torch.where(s_valid, e_inf_y, 0.0).unsqueeze(0)
-        e_inf_z = torch.where(s_valid, e_inf_z, 0.0).unsqueeze(0)
-
-        PSF_field = custom_ifft2(torch.cat((e_inf_x, e_inf_y, e_inf_z), dim=1) * self.correction_factor * self.defocus_filters,
-                                  shape_out=(self.n_pix_psf, self.n_pix_psf),
-                                  k_start=-self.zoom_factor * np.pi,
-                                  k_end=self.zoom_factor * np.pi,
-                                  norm='backward', fftshift_input=True, include_end=True) \
-                     * (self.ds * self.s_max) ** 2 * 1j
-        PSF_field /= (2 * np.pi * np.sqrt(self.refractive_index))
-
-        return PSF_field
