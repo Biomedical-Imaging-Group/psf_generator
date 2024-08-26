@@ -15,6 +15,8 @@ from utils.czt import custom_ifft2
 
 # Todo:
 # - refractive_index and n_i are the same thing
+# - check whether it's possible to remove torch.tensor in self.s_max in ScalarCartesianPropagator
+# - integral normalization in ScalarCartesianPropagator
 
 
 class Propagator(ABC):
@@ -144,7 +146,7 @@ class ScalarCartesianPropagator(Propagator):
                                   k_start=k_start,
                                   k_end=k_end,
                                   norm='forward', fftshift_input=True, include_end=True) \
-                                      * (self.ds * self.s_max) ** 2 * 1j
+                                      * (self.ds * self.s_max) ** 2
         return field / (2 * np.pi * np.sqrt(self.refractive_index))
 
 
@@ -333,7 +335,7 @@ class VectorialCartesianPropagator(Propagator):
                                   shape_out=(self.n_pix_psf, self.n_pix_psf),
                                   k_start=-self.zoom_factor * np.pi,
                                   k_end=self.zoom_factor * np.pi,
-                                  norm='forward', fftshift_input=True, include_end=True) * (self.ds * self.s_max) ** 2 * 1j
+                                  norm='forward', fftshift_input=True, include_end=True) * (self.ds * self.s_max) ** 2
         return self.field / (2 * np.pi * np.sqrt(self.refractive_index))
 
     def _compute_psf_for_far_field(self, far_fields):  # to remove later?
