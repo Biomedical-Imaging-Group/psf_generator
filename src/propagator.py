@@ -13,6 +13,9 @@ from utils.czt import custom_ifft2
 # from bessel_ad import BesselJ0
 # bessel_j0_ad = BesselJ0.apply
 
+# Todo:
+# - refractive_index and n_i are the same thing
+
 
 class Propagator(ABC):
     def __init__(self, pupil, n_pix_psf=128, device='cpu',
@@ -117,7 +120,8 @@ class ScalarCartesianPropagator(Propagator):
             self.correction_factor *= torch.exp(- (1-s_zz**2) / self.envelope**2)
         if self.gibson_lanni:
             # computed following Eq. (3.45) of François Aguet's thesis
-            sin_t = (self.na / self.refractive_index * torch.sqrt(s_xx**2 + s_yy**2)).clamp(max=1)
+            clamp_value = np.minimum(self.n_s/self.n_i, self.n_g/self.n_i)
+            sin_t = (self.na / self.refractive_index * torch.sqrt(s_xx**2 + s_yy**2)).clamp(max=clamp_value)
             optical_path = self.z_p * torch.sqrt(self.n_s**2 - self.n_i**2 * sin_t**2) \
                             + self.t_i * torch.sqrt(self.n_i**2 - self.n_i**2 * sin_t**2) \
                             - self.t_i0 * torch.sqrt(self.n_i0**2 - self.n_i**2 * sin_t**2) \
@@ -148,7 +152,7 @@ class ScalarPolarPropagator(Propagator):
     def __init__(self, pupil, n_pix_psf=128, device='cpu',
                  wavelength=632, na=1.3, fov=1000, refractive_index=1.5,
                  defocus_min=0, defocus_max=0, n_defocus=1,
-                 apod_factor=False, envelope=None,
+                 apod_factor=False, envelope=None, cos_factor=False,
                  gibson_lanni=False, z_p=1e3, n_s=1.3,
                  n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3,
                  n_i=1.5, t_i0=100e3,
@@ -176,24 +180,29 @@ class ScalarPolarPropagator(Propagator):
         self.dtheta = theta_max / (self.n_pix_pupil - 1)
 
         # Precompute additional factors
+        self.cos_factor = cos_factor
         self.k = 2.0 * np.pi / self.wavelength
         sin_t, cos_t = torch.sin(thetas), torch.cos(thetas)
         defocus_range = torch.linspace(self.defocus_min, self.defocus_max, self.n_defocus)
         self.defocus_filters = torch.exp(1j * self.k * defocus_range[:,None] * cos_t[None,:]).to(self.device)   # [n_defocus, n_thetas]
 
-        correction_factor = torch.ones(self.n_pix_pupil)
+        correction_factor = torch.ones(self.n_pix_pupil).to(torch.complex64)
         if self.apod_factor:
             correction_factor *= torch.sqrt(cos_t)
         if self.envelope is not None:
             correction_factor *= torch.exp(-(sin_t / self.envelope) ** 2)
         if self.gibson_lanni:
+            clamp_value = np.minimum(self.n_s/self.n_i, self.n_g/self.n_i)
+            sin_t = sin_t.clamp(max=clamp_value)
             # computed following Eq. (3.45) of François Aguet's thesis
-            optical_path = self.z_p * torch.sqrt(self.n_s**2 - self.n_i**2 * self.sin_t**2) \
-                            + self.t_i * torch.sqrt(self.n_i**2 - self.n_i**2 * self.sin_t**2) \
-                            - self.t_i0 * torch.sqrt(self.n_i0**2 - self.n_i**2 * self.sin_t**2) \
-                            + self.t_g * torch.sqrt(self.n_g**2 - self.n_i**2 * self.sin_t**2) \
-                            - self.t_g0 * torch.sqrt(self.n_g0**2 - self.n_i**2 * self.sin_t**2)
+            optical_path = self.z_p * torch.sqrt(self.n_s**2 - self.n_i**2 * sin_t**2) \
+                            + self.t_i * torch.sqrt(self.n_i**2 - self.n_i**2 * sin_t**2) \
+                            - self.t_i0 * torch.sqrt(self.n_i0**2 - self.n_i**2 * sin_t**2) \
+                            + self.t_g * torch.sqrt(self.n_g**2 - self.n_i**2 * sin_t**2) \
+                            - self.t_g0 * torch.sqrt(self.n_g0**2 - self.n_i**2 * sin_t**2)
             correction_factor *= torch.exp(1j * self.k * optical_path)
+        elif self.cos_factor:
+            correction_factor *= cos_t
         self.correction_factor = correction_factor.to(self.device)
         self.quadrature_rule = quadrature_rule
 
@@ -306,8 +315,9 @@ class VectorialCartesianPropagator(Propagator):
         if self.envelope is not None:
             self.correction_factor *= torch.exp(- (1 - s_zz ** 2) / self.envelope ** 2)
         if self.gibson_lanni:
+            clamp_value = np.minimum(self.n_s/self.n_i, self.n_g/self.n_i)
             # computed following Eq. (3.45) of François Aguet's thesis
-            sin_t = (self.na / self.refractive_index * torch.sqrt(s_xx ** 2 + s_yy ** 2)).clamp(max=1)
+            sin_t = (self.na / self.refractive_index * torch.sqrt(s_xx**2 + s_yy**2)).clamp(max=clamp_value)
             optical_path = self.z_p * torch.sqrt(self.n_s ** 2 - self.n_i ** 2 * sin_t ** 2) \
                            + self.t_i * torch.sqrt(self.n_i ** 2 - self.n_i ** 2 * sin_t ** 2) \
                            - self.t_i0 * torch.sqrt(self.n_i0 ** 2 - self.n_i ** 2 * sin_t ** 2) \
@@ -410,18 +420,20 @@ class VectorialPolarPropagator(Propagator):
         defocus_range = torch.linspace(self.defocus_min, self.defocus_max, self.n_defocus)
         self.defocus_filters = torch.exp(1j * self.k * defocus_range[:,None] * cos_t[None,:]).to(self.device)   # [n_defocus, n_thetas]
 
-        correction_factor = torch.ones(self.n_pix_pupil)
+        correction_factor = torch.ones(self.n_pix_pupil).to(torch.complex64)
         if self.apod_factor:
             correction_factor *= torch.sqrt(cos_t)
         if self.envelope is not None:
             correction_factor *= torch.exp(-(sin_t / self.envelope) ** 2)
         if self.gibson_lanni:
+            clamp_value = np.minimum(self.n_s/self.n_i, self.n_g/self.n_i)
+            sin_t = sin_t.clamp(max=clamp_value)
             # computed following Eq. (3.45) of François Aguet's thesis
-            optical_path = self.z_p * torch.sqrt(self.n_s**2 - self.n_i**2 * self.sin_t**2) \
-                            + self.t_i * torch.sqrt(self.n_i**2 - self.n_i**2 * self.sin_t**2) \
-                            - self.t_i0 * torch.sqrt(self.n_i0**2 - self.n_i**2 * self.sin_t**2) \
-                            + self.t_g * torch.sqrt(self.n_g**2 - self.n_i**2 * self.sin_t**2) \
-                            - self.t_g0 * torch.sqrt(self.n_g0**2 - self.n_i**2 * self.sin_t**2)
+            optical_path = self.z_p * torch.sqrt(self.n_s**2 - self.n_i**2 * sin_t**2) \
+                            + self.t_i * torch.sqrt(self.n_i**2 - self.n_i**2 * sin_t**2) \
+                            - self.t_i0 * torch.sqrt(self.n_i0**2 - self.n_i**2 * sin_t**2) \
+                            + self.t_g * torch.sqrt(self.n_g**2 - self.n_i**2 * sin_t**2) \
+                            - self.t_g0 * torch.sqrt(self.n_g0**2 - self.n_i**2 * sin_t**2)
             correction_factor *= torch.exp(1j * self.k * optical_path)
         self.correction_factor = correction_factor.to(self.device)
         self.quadrature_rule = quadrature_rule
