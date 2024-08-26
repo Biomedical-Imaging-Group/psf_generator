@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 import torch
-from torch import vmap
+from functorch import vmap
 from torch.special import bessel_j0, bessel_j1
 
 from integrators import simpsons_rule
