@@ -275,9 +275,6 @@ class VectorialCartesianPropagator(Propagator):
         s_zz = torch.sqrt((1 - (self.na / self.refractive_index) ** 2 * (s_xx ** 2 + s_yy ** 2)
                            ).clamp(min=0.001)).reshape(1, 1, n_pix_pupil, n_pix_pupil)
 
-        # if s_xx**2 + s_yy**2 > 1, s_xx and s_yy are 0
-        s_xx, s_yy = s_xx * (s_xx ** 2 + s_yy ** 2 <= 1), s_yy * (s_xx ** 2 + s_yy ** 2 <= 1)
-
         # Coordinates in object space
         total_fft_range = 1.0 / self.ds
         k_start = -self.zoom_factor * np.pi
@@ -285,8 +282,8 @@ class VectorialCartesianPropagator(Propagator):
         self.x = torch.linspace(k_start, k_end, self.n_pix_pupil) / (2.0 * torch.pi) * total_fft_range
 
         # Angles theta and phi
-        s_xx, s_yy = torch.meshgrid(self.s_x * self.s_max, self.s_x * self.s_max, indexing='ij')
-        sin_t_sq = s_xx ** 2 + s_yy ** 2
+        sin_xx, sin_yy = torch.meshgrid(self.s_x * self.s_max, self.s_x * self.s_max, indexing='ij')
+        sin_t_sq = sin_xx ** 2 + sin_yy ** 2
         s_valid = sin_t_sq <= self.s_max ** 2
         sin_theta = torch.sqrt(sin_t_sq)
         cos_theta = torch.sqrt(1.0 - sin_t_sq)
