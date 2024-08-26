@@ -117,7 +117,7 @@ class ScalarCartesianPropagator(Propagator):
         # Coordinates in object space
         total_fft_range = 1.0 / self.ds
         k_start = -self.zoom_factor * np.pi
-        k_end   =  self.zoom_factor * np.pi
+        k_end = self.zoom_factor * np.pi
         self.x = torch.linspace(k_start, k_end, self.n_pix_pupil) / (2.0 * torch.pi) * total_fft_range
 
         # Correction factors
