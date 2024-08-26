@@ -14,7 +14,7 @@ class Pupil(ABC):
         self.n_pix_pupil = n_pix_pupil
         self.device = device
         if zernike_coefficients is None:
-            zernike_coefficients = torch.tensor([0])
+            zernike_coefficients = [0]
         self.zernike_coefficients = torch.tensor(zernike_coefficients)
         self.field = self.initialize_field()
         self.field *= self.zernike_aberrations()
