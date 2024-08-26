@@ -187,11 +187,11 @@ class ScalarPolarPropagator(Propagator):
             correction_factor *= torch.exp(-(sin_t / self.envelope) ** 2)
         if self.gibson_lanni:
             # computed following Eq. (3.45) of François Aguet's thesis
-            optical_path = self.z_p * torch.sqrt(self.n_s**2 - self.n_i**2 * self.sin_t**2) \
-                            + self.t_i * torch.sqrt(self.n_i**2 - self.n_i**2 * self.sin_t**2) \
-                            - self.t_i0 * torch.sqrt(self.n_i0**2 - self.n_i**2 * self.sin_t**2) \
-                            + self.t_g * torch.sqrt(self.n_g**2 - self.n_i**2 * self.sin_t**2) \
-                            - self.t_g0 * torch.sqrt(self.n_g0**2 - self.n_i**2 * self.sin_t**2)
+            optical_path = self.z_p * torch.sqrt(self.n_s**2 - self.n_i**2 * sin_t**2) \
+                            + self.t_i * torch.sqrt(self.n_i**2 - self.n_i**2 * sin_t**2) \
+                            - self.t_i0 * torch.sqrt(self.n_i0**2 - self.n_i**2 * sin_t**2) \
+                            + self.t_g * torch.sqrt(self.n_g**2 - self.n_i**2 * sin_t**2) \
+                            - self.t_g0 * torch.sqrt(self.n_g0**2 - self.n_i**2 * sin_t**2)
             correction_factor *= torch.exp(1j * self.k * optical_path)
         self.correction_factor = correction_factor.to(self.device)
         self.quadrature_rule = quadrature_rule
@@ -287,11 +287,11 @@ class VectorialPolarPropagator(Propagator):
             correction_factor *= torch.exp(-(sin_t / self.envelope) ** 2)
         if self.gibson_lanni:
             # computed following Eq. (3.45) of François Aguet's thesis
-            optical_path = self.z_p * torch.sqrt(self.n_s**2 - self.n_i**2 * self.sin_t**2) \
-                            + self.t_i * torch.sqrt(self.n_i**2 - self.n_i**2 * self.sin_t**2) \
-                            - self.t_i0 * torch.sqrt(self.n_i0**2 - self.n_i**2 * self.sin_t**2) \
-                            + self.t_g * torch.sqrt(self.n_g**2 - self.n_i**2 * self.sin_t**2) \
-                            - self.t_g0 * torch.sqrt(self.n_g0**2 - self.n_i**2 * self.sin_t**2)
+            optical_path = self.z_p * torch.sqrt(self.n_s**2 - self.n_i**2 * sin_t**2) \
+                            + self.t_i * torch.sqrt(self.n_i**2 - self.n_i**2 * sin_t**2) \
+                            - self.t_i0 * torch.sqrt(self.n_i0**2 - self.n_i**2 * sin_t**2) \
+                            + self.t_g * torch.sqrt(self.n_g**2 - self.n_i**2 * sin_t**2) \
+                            - self.t_g0 * torch.sqrt(self.n_g0**2 - self.n_i**2 * sin_t**2)
             correction_factor *= torch.exp(1j * self.k * optical_path)
         self.correction_factor = correction_factor.to(self.device)
         self.quadrature_rule = quadrature_rule
