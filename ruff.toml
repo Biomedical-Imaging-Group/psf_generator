@@ -1,0 +1,39 @@
+
+
+lint.select = [
+    "ALL",
+    "ANN",
+    "D",
+    "E",
+    "F",
+    "I",
+    "Q",
+    "RET",
+    "SIM",
+    "W"
+]
+
+lint.ignore = [
+    "ANN001",
+    "ANN101",
+    "E501",
+    "E741",
+    "N806",
+    "PLR0913",
+    "Q000",
+    "RET504",
+    "T201",
+
+]
+
+[lint.pydocstyle]
+convention = "numpy"
+
+[lint.isort]
+relative-imports-order = "closest-to-furthest"
+section-order = ["future", "standard-library", "true-third-party", "third-party", "first-party", "local-folder"]
+
+[lint.isort.sections]
+"true-third-party" = [
+    "functorch", "matplotlib", "numpy", "scipy", "torch", "tqdm", "zernikepy"
+]
