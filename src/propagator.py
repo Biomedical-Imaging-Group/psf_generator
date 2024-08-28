@@ -129,7 +129,7 @@ class ScalarCartesianPropagator(Propagator):
             self.correction_factor *= torch.exp(- (1 - s_zz ** 2) / self.envelope ** 2)
         if self.gibson_lanni:
             clamp_value = np.minimum(self.n_s/self.n_i, self.n_g/self.n_i)
-            sin_t = (self.na / self.refractive_index * torch.sqrt(s_xx**2 + s_yy**2)).clamp(max=clamp_value)
+            sin_t = (self.s_max * torch.sqrt(s_xx**2 + s_yy**2)).clamp(max=clamp_value)
             path = self.compute_optical_path(sin_t)
             self.correction_factor *= torch.exp(1j * self.k * path)
 
@@ -312,7 +312,7 @@ class VectorialCartesianPropagator(Propagator):
             self.correction_factor *= torch.exp(- (1 - s_zz ** 2) / self.envelope ** 2)
         if self.gibson_lanni:
             clamp_value = np.minimum(self.n_s/self.n_i, self.n_g/self.n_i)
-            sin_t = (self.na / self.refractive_index * torch.sqrt(s_xx**2 + s_yy**2)).clamp(max=clamp_value)
+            sin_t = (self.s_max * torch.sqrt(s_xx**2 + s_yy**2)).clamp(max=clamp_value)
             path = self.compute_optical_path(sin_t)
             self.correction_factor *= torch.exp(1j * self.k * path)
 
