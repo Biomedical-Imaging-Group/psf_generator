@@ -99,11 +99,10 @@ class ScalarCartesianPropagator(Propagator):
 
         # Physical parameters
         self.k = 2 * np.pi / self.wavelength
-        s_max = self.na / self.refractive_index
-        self.s_max = torch.tensor(s_max)
+        self.s_max = torch.tensor(self.na / self.refractive_index)
 
          # Zoom factor to determine pixel size with custom FFT
-        self.zoom_factor = 2 * s_max * self.fov / self.wavelength \
+        self.zoom_factor = 2 * self.s_max * self.fov / self.wavelength \
              / (self.n_pix_pupil - 1)
 
         # Coordinates in pupil space s_x, s_y, s_z
@@ -111,7 +110,7 @@ class ScalarCartesianPropagator(Propagator):
         self.s_x = torch.linspace(-1, 1, n_pix_pupil).to(self.device)
         self.ds = self.s_x[1] - self.s_x[0]
         s_xx, s_yy = torch.meshgrid(self.s_x, self.s_x, indexing='ij')
-        s_zz = torch.sqrt((1 - s_max ** 2 * (s_xx ** 2 + s_yy ** 2)
+        s_zz = torch.sqrt((1 - self.s_max ** 2 * (s_xx ** 2 + s_yy ** 2)
                           ).clamp(min=0.001)).reshape(1, 1, n_pix_pupil, n_pix_pupil)
 
         # Coordinates in object space
@@ -127,7 +126,7 @@ class ScalarCartesianPropagator(Propagator):
         if self.apod_factor:
             self.correction_factor *= torch.sqrt(s_zz)
         if self.envelope is not None:
-            self.correction_factor *= torch.exp(- (1-s_zz**2) / self.envelope**2)
+            self.correction_factor *= torch.exp(- (1 - s_zz ** 2) / self.envelope ** 2)
         if self.gibson_lanni:
             clamp_value = np.minimum(self.n_s/self.n_i, self.n_g/self.n_i)
             sin_t = (self.na / self.refractive_index * torch.sqrt(s_xx**2 + s_yy**2)).clamp(max=clamp_value)
@@ -263,15 +262,15 @@ class VectorialCartesianPropagator(Propagator):
         self.s_max = torch.tensor(self.na / self.refractive_index)
 
         # Zoom factor to determine pixel size with custom FFT
-        self.zoom_factor = 2 * self.na * self.fov / self.wavelength \
-                           / self.refractive_index / (self.n_pix_pupil - 1)
+        self.zoom_factor = 2 * self.s_max * self.fov / self.wavelength \
+                            / (self.n_pix_pupil - 1)
 
         # Coordinates in pupil space s_x, s_y, s_z
         n_pix_pupil = self.pupil.n_pix_pupil
         self.s_x = torch.linspace(-1, 1, n_pix_pupil).to(self.device)
         self.ds = self.s_x[1] - self.s_x[0]
         s_xx, s_yy = torch.meshgrid(self.s_x, self.s_x, indexing='ij')
-        s_zz = torch.sqrt((1 - (self.na / self.refractive_index) ** 2 * (s_xx ** 2 + s_yy ** 2)
+        s_zz = torch.sqrt((1 - self.s_max ** 2 * (s_xx ** 2 + s_yy ** 2)
                            ).clamp(min=0.001)).reshape(1, 1, n_pix_pupil, n_pix_pupil)
 
         # Coordinates in object space
@@ -316,6 +315,7 @@ class VectorialCartesianPropagator(Propagator):
             sin_t = (self.na / self.refractive_index * torch.sqrt(s_xx**2 + s_yy**2)).clamp(max=clamp_value)
             path = self.compute_optical_path(sin_t)
             self.correction_factor *= torch.exp(1j * self.k * path)
+
         defocus_range = torch.linspace(self.defocus_min, self.defocus_max, self.n_defocus
                                        ).reshape(-1, 1, 1, 1).to(self.device)
         self.defocus_filters = torch.exp(1j * self.k * s_zz * defocus_range)
