@@ -9,6 +9,15 @@ from .scalar_propagator import ScalarPropagator
 
 
 class ScalarPolarPropagator(ScalarPropagator, PolarPropagator):
+
+    def _get_input_field(self) -> torch.Tensor:
+        """Get the input field for scalar polar propagator.
+        Suqeezing is applied to get rid of the empty dimensions.
+        After squeezing, the shape of pupil.field changes from [n_defocus=1, channels=1, n_thetas] to [n_thetas, ]
+        """
+        return self.pupil.field.squeeze()
+
+
     def compute_focus_field(self):
         # pupil.field.squeeze(): [n_defocus=1, channels=1, n_thetas] ==> [n_thetas, ]
         self.field = self._compute_psf_for_far_field(self.pupil.field.squeeze())
