@@ -370,7 +370,7 @@ class VectorialPolarPropagator(Propagator):
     def __init__(self, pupil, n_pix_psf=128, device='cpu',
                  wavelength=632, na=1.3, fov=1000, refractive_index=1.5,
                  defocus_min=0, defocus_max=0, n_defocus=1,
-                 apod_factor=False, envelope=None,
+                 apod_factor=False, envelope=None, cos_factor=False,
                  gibson_lanni=False, z_p=1e3, n_s=1.3,
                  n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3,
                  n_i=1.5, t_i0=100e3,
@@ -411,6 +411,7 @@ class VectorialPolarPropagator(Propagator):
         self.dtheta = dtheta
 
         # Precompute additional factors
+        self.cos_factor = cos_factor
         self.k = 2.0 * math.pi / self.wavelength
         sin_t, cos_t = torch.sin(thetas), torch.cos(thetas)
         defocus_range = torch.linspace(self.defocus_min, self.defocus_max, self.n_defocus)
@@ -426,6 +427,8 @@ class VectorialPolarPropagator(Propagator):
             sin_t = sin_t.clamp(max=clamp_value)
             path = self.compute_optical_path(sin_t)
             self.correction_factor *= torch.exp(1j * self.k * path)
+        if self.cos_factor:
+            self.correction_factor *= cos_t
 
         self.quadrature_rule = quadrature_rule
 
