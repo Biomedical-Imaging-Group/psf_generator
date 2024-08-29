@@ -1,5 +1,3 @@
-import math
-
 import torch
 
 from .cartesian_propagator import CartesianPropagator
@@ -9,21 +7,7 @@ from utils.czt import custom_ifft2
 
 class VectorialCartesianPropagator(VectorialPropagator, CartesianPropagator):
 
-    def __init__(self, pupil, n_pix_psf=128, device='cpu',
-                 wavelength=632, na=1.3, fov=1000, refractive_index=1.5,
-                 defocus_min=0, defocus_max=0, n_defocus=1,
-                 sz_correction=True, apod_factor=False, envelope=None,
-                 gibson_lanni=False, z_p=1e3, n_s=1.3,
-                 n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3,
-                 n_i=1.5, t_i0=100e3):
-        super().__init__(pupil=pupil, n_pix_psf=n_pix_psf, device=device,
-                         wavelength=wavelength, na=na, fov=fov, refractive_index=refractive_index,
-                         defocus_min=defocus_min, defocus_max=defocus_max, n_defocus=n_defocus,
-                         sz_correction=sz_correction, apod_factor=apod_factor, envelope=envelope,
-                         gibson_lanni=gibson_lanni, z_p=z_p, n_s=n_s,
-                         n_g=n_g, n_g0=n_g0, t_g=t_g, t_g0=t_g0,
-                         n_i=n_i, t_i0=t_i0)
-
+    def _get_input_field(self):
         # Angles theta and phi
         sin_xx, sin_yy = torch.meshgrid(self.s_x * self.s_max, self.s_x * self.s_max, indexing='ij')
         sin_t_sq = sin_xx ** 2 + sin_yy ** 2
@@ -45,15 +29,8 @@ class VectorialCartesianPropagator(VectorialPropagator, CartesianPropagator):
         e_inf_x = torch.where(s_valid, e_inf_x, 0.0).unsqueeze(0) / 2
         e_inf_y = torch.where(s_valid, e_inf_y, 0.0).unsqueeze(0) / 2
         e_inf_z = torch.where(s_valid, e_inf_z, 0.0).unsqueeze(0) / 2
-        self.e_inf_field = torch.cat((e_inf_x, e_inf_y, e_inf_z), dim=1)
-
-    def compute_focus_field(self):
-        self.field = custom_ifft2(self.e_inf_field * self.correction_factor * self.defocus_filters,
-                                  shape_out=(self.n_pix_psf, self.n_pix_psf),
-                                  k_start=-self.zoom_factor * torch.pi,
-                                  k_end=self.zoom_factor * torch.pi,
-                                  norm='forward', fftshift_input=True, include_end=True) * (self.ds * self.s_max) ** 2
-        return self.field / (2 * math.pi * math.sqrt(self.refractive_index))
+        e_inf_field = torch.cat((e_inf_x, e_inf_y, e_inf_z), dim=1)
+        return e_inf_field
 
     def _compute_psf_for_far_field(self, far_fields):  # to remove later?
         s_xx, s_yy = torch.meshgrid(self.s_x * self.s_max, self.s_x * self.s_max, indexing='ij')

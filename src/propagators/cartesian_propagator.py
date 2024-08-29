@@ -1,8 +1,10 @@
+import math
 from abc import ABC
 
 import torch
 
 from propagators.propagator import Propagator
+from utils.czt import custom_ifft2
 
 
 class CartesianPropagator(Propagator, ABC):
@@ -61,4 +63,13 @@ class CartesianPropagator(Propagator, ABC):
         defocus_range = torch.linspace(self.defocus_min, self.defocus_max, self.n_defocus
                                        ).reshape(-1, 1, 1, 1).to(self.device)
         self.defocus_filters = torch.exp(1j * self.k * s_zz * defocus_range)
+
+    def compute_focus_field(self):
+        input_field = self._get_input_field()
+        self.field = custom_ifft2(input_field * self.correction_factor * self.defocus_filters,
+                                  shape_out=(self.n_pix_psf, self.n_pix_psf),
+                                  k_start=-self.zoom_factor * torch.pi,
+                                  k_end=self.zoom_factor * torch.pi,
+                                  norm='forward', fftshift_input=True, include_end=True) * (self.ds * self.s_max) ** 2
+        return self.field / (2 * math.pi * math.sqrt(self.refractive_index))
 

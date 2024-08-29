@@ -51,6 +51,10 @@ class Propagator(ABC):
         self.field = None
 
     @abstractmethod
+    def _get_input_field(self):
+        raise NotImplementedError
+
+    @abstractmethod
     def compute_focus_field(self):
         raise NotImplementedError
 
