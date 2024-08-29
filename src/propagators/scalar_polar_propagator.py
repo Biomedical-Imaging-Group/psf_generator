@@ -19,33 +19,59 @@ class ScalarPolarPropagator(ScalarPropagator, PolarPropagator):
 
 
     def compute_focus_field(self):
-        # pupil.field.squeeze(): [n_defocus=1, channels=1, n_thetas] ==> [n_thetas, ]
-        self.field = self._compute_psf_for_far_field(self.pupil.field.squeeze())
+        """Compute the focus field for scalar polar propagator.
+        This invovles expensive evaluations of Bessel functions.
+        We compute it independently from defocus and handle defocus via batching with vmap().
+
+        Parameters:
+        -----------
+        self.thetas: torch.Tensor
+            shape: (n_thetas, )
+        self.dtheta: torch.Tensor[float]
+        self.rs: torch.Tensor
+            shape: (n_radii, )
+        self.correction_factor: torch.Tensor
+            shape: (n_thetas, )
+
+        J0s: torch.Tensor
+            shape: (n_theta, n_radii)
+        Returns
+        -------
+        self.field: torch.Tensor
+            output field
+        """
+        input_field = self._get_input_field()
+
+        sin_t = torch.sin(self.thetas)
+        bessel_arg = self.k * self.rs[None, :] * sin_t[:, None]
+        J0 = bessel_j0(bessel_arg)
+
+        batched_compute_field_at_defocus = vmap(self._compute_psf_at_defocus, in_dims=(0, None, None, None))
+        self.field = batched_compute_field_at_defocus(self.defocus_filters, J0, input_field, sin_t)
         return self.field
 
-    def _compute_psf_for_far_field(self, far_fields):
-        # argument shapes:
-        # self.thetas,            [n_thetas, ]
-        # self.dtheta,            float
-        # self.rs,                [n_radii, ]
-        # self.correction_factor  [n_thetas, ]
-        # far_fields              [n_thetas, ]
-        sin_t = torch.sin(self.thetas) # [n_thetas, ]
 
-        # bessel function evaluations are expensive and can be computed independently from defocus
-        bessel_arg = self.k * self.rs[None, :] * sin_t[:, None]
-        J0s = bessel_j0(bessel_arg)    # [n_theta, n_radii]
+    def _compute_psf_at_defocus(self, defocus_term, J0, input_field, sin_t):
+        """Compute PSF at defocus.
+        We first compute E(r)--`integrand` for a list of unique radii values, then scatter the radial evaluations
+        of E(r) onto the xy image grid.
 
-        # compute PSF field; handle defocus via batching with vmap()
-        batched_compute_field_at_defocus = vmap(self._compute_psf_at_defocus, in_dims=(0, None, None, None))
+        Parameters
+        ----------
+        defocus_term
+        J0: torch.Tensor
+            Bessel function J0
+        input_field: torch.Tensor
+            input pupil field
+        sin_t: torch.Tensor
+            shape: (n_thetas, )
 
-        fields = batched_compute_field_at_defocus(self.defocus_filters, J0s, far_fields, sin_t)
-        return fields
-
-    def _compute_psf_at_defocus(self, defocus_term, J_evals, far_fields, sin_t):
-        # compute E(r) for a list of unique radii values
-        integrand = J_evals * (far_fields * defocus_term * self.correction_factor * sin_t)[:,None]  # [n_theta, n_radii]
+        Returns
+        -------
+        field: torch.Tensor
+            output field at defocus, shape: (n_channels=1, size_x, size_y)
+        """
+        integrand = J0 * (input_field * defocus_term * self.correction_factor * sin_t)[:, None]  # [n_theta, n_radii]
         field = self.quadrature_rule(integrand, self.dtheta)
-        # scatter the radial evaluations of E(r) onto the xy image grid
-        field = field[self.rr_indices].unsqueeze(0)       # [n_channels=1, size_x, size_y]
+        field = field[self.rr_indices].unsqueeze(0)
         return field / math.sqrt(self.refractive_index)
