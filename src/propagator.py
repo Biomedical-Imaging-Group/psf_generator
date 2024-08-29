@@ -204,7 +204,7 @@ class ScalarPolarPropagator(Propagator):
             sin_t = sin_t.clamp(max=clamp_value)
             path = self.compute_optical_path(sin_t)
             self.correction_factor *= torch.exp(1j * self.k * path)
-        elif self.cos_factor:
+        if self.cos_factor:
             self.correction_factor *= cos_t
 
         self.quadrature_rule = quadrature_rule
