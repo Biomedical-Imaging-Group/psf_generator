@@ -10,8 +10,9 @@ from .scalar_propagator import ScalarPropagator
 
 class ScalarPolarPropagator(ScalarPropagator, PolarPropagator):
     def compute_focus_field(self):
-        far_fields = self.pupil.field.squeeze()   # [n_defocus=1, channels=1, n_thetas] ==> [n_thetas, ]
-        return self._compute_psf_for_far_field(far_fields)
+        # pupil.field.squeeze(): [n_defocus=1, channels=1, n_thetas] ==> [n_thetas, ]
+        self.field = self._compute_psf_for_far_field(self.pupil.field.squeeze())
+        return self.field
 
     def _compute_psf_for_far_field(self, far_fields):
         # argument shapes:
@@ -23,12 +24,13 @@ class ScalarPolarPropagator(ScalarPropagator, PolarPropagator):
         sin_t = torch.sin(self.thetas) # [n_thetas, ]
 
         # bessel function evaluations are expensive and can be computed independently from defocus
-        J_evals = bessel_j0(self.k * self.rs[None,:] * sin_t[:,None])    # [n_theta, n_radii]
+        bessel_arg = self.k * self.rs[None, :] * sin_t[:, None]
+        J0s = bessel_j0(bessel_arg)    # [n_theta, n_radii]
 
         # compute PSF field; handle defocus via batching with vmap()
         batched_compute_field_at_defocus = vmap(self._compute_psf_at_defocus, in_dims=(0, None, None, None))
 
-        fields = batched_compute_field_at_defocus(self.defocus_filters, J_evals, far_fields, sin_t)
+        fields = batched_compute_field_at_defocus(self.defocus_filters, J0s, far_fields, sin_t)
         return fields
 
     def _compute_psf_at_defocus(self, defocus_term, J_evals, far_fields, sin_t):
