@@ -181,9 +181,11 @@ class ScalarPolarPropagator(Propagator):
         # Pupil coordinates
         self.s_max = torch.tensor(self.na / self.refractive_index)
         theta_max = torch.arcsin(self.s_max)
-        thetas = torch.linspace(0, theta_max, self.n_pix_pupil)
+        num_thetas = self.n_pix_pupil
+        thetas = torch.linspace(0, theta_max, num_thetas)
         self.thetas = thetas.to(self.device)
-        self.dtheta = theta_max / (self.n_pix_pupil - 1)
+        dtheta = theta_max / (num_thetas - 1)
+        self.dtheta = dtheta
 
         # Precompute additional factors
         self.cos_factor = cos_factor
@@ -404,8 +406,8 @@ class VectorialPolarPropagator(Propagator):
         theta_max = torch.arcsin(self.s_max)
         num_thetas = self.n_pix_pupil
         thetas = torch.linspace(0, theta_max, num_thetas)
-        dtheta = theta_max / (num_thetas - 1)
         self.thetas = thetas.to(self.device)
+        dtheta = theta_max / (num_thetas - 1)
         self.dtheta = dtheta
 
         # Precompute additional factors
@@ -424,6 +426,7 @@ class VectorialPolarPropagator(Propagator):
             sin_t = sin_t.clamp(max=clamp_value)
             path = self.compute_optical_path(sin_t)
             self.correction_factor *= torch.exp(1j * self.k * path)
+
         self.quadrature_rule = quadrature_rule
 
     def compute_focus_field(self):
