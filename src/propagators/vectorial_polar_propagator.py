@@ -10,6 +10,11 @@ from .polar_propagator import PolarPropagator
 
 
 class VectorialPolarPropagator(VectorialPropagator, PolarPropagator):
+
+    def _get_input_field(self) -> torch.Tensor:
+        """Get the input field for vectorial polar propagator."""
+        return self.pupil.field
+
     def compute_focus_field(self):
         # multiplicative scalar factor to be verified for the vectorial case
         self.field = self._compute_psf_for_far_field(self.pupil.field)
