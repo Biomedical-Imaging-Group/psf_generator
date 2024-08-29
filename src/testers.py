@@ -14,7 +14,7 @@ from scipy.special import j1 as sp_j1
 from torch.special import bessel_j0, bessel_j1
 from tqdm import tqdm
 
-from propagator import (
+from propagators import (
     ScalarCartesianPropagator,
     ScalarPolarPropagator,
     VectorialCartesianPropagator,

@@ -11,7 +11,7 @@ import torch
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 
-from propagator import ScalarCartesianPropagator, ScalarPolarPropagator
+from propagators import ScalarCartesianPropagator, ScalarPolarPropagator
 from pupil import ScalarCartesianPupil, ScalarPolarPupil
 
 ## Scalar benchmark
