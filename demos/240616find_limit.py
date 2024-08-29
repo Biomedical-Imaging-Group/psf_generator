@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from matplotlib import pyplot as plt
 
-from propagator import ScalarCartesianPropagator, ScalarPolarPropagator
+from propagators import ScalarCartesianPropagator, ScalarPolarPropagator
 from pupil import ScalarCartesianPupil, ScalarPolarPupil
 
 # Parameters
