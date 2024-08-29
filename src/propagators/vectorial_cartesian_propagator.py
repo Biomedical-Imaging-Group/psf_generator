@@ -1,3 +1,5 @@
+import math
+
 import torch
 
 from .cartesian_propagator import CartesianPropagator
@@ -51,7 +53,7 @@ class VectorialCartesianPropagator(VectorialPropagator, CartesianPropagator):
                                   k_start=-self.zoom_factor * torch.pi,
                                   k_end=self.zoom_factor * torch.pi,
                                   norm='forward', fftshift_input=True, include_end=True) * (self.ds * self.s_max) ** 2
-        return self.field / (2 * torch.pi * torch.sqrt(torch.tensor(self.refractive_index)))
+        return self.field / (2 * math.pi * math.sqrt(self.refractive_index))
 
     def _compute_psf_for_far_field(self, far_fields):  # to remove later?
         s_xx, s_yy = torch.meshgrid(self.s_x * self.s_max, self.s_x * self.s_max, indexing='ij')

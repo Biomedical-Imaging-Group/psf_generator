@@ -1,3 +1,5 @@
+import math
+
 import torch
 
 from .cartesian_propagator import CartesianPropagator
@@ -19,5 +21,5 @@ class ScalarCartesianPropagator(ScalarPropagator, CartesianPropagator):
                                   k_end=k_end,
                                   norm='forward', fftshift_input=True, include_end=True) \
                                       * (self.ds * self.s_max) ** 2
-        return field / (2 * torch.pi * torch.sqrt(torch.tensor(self.refractive_index)))
+        return field / (2 * math.pi * math.sqrt(self.refractive_index))
 
