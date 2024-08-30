@@ -18,7 +18,7 @@ class ScalarPolarPropagator(ScalarPropagator, PolarPropagator):
         return self.pupil.field.squeeze()
 
 
-    def compute_focus_field(self):
+    def compute_focus_field(self) -> torch.Tensor:
         """Compute the focus field for scalar polar propagator.
         This invovles expensive evaluations of Bessel functions.
         We compute it independently from defocus and handle defocus via batching with vmap().
@@ -33,7 +33,7 @@ class ScalarPolarPropagator(ScalarPropagator, PolarPropagator):
         self.correction_factor: torch.Tensor
             shape: (n_thetas, )
 
-        J0s: torch.Tensor
+        J0: torch.Tensor
             shape: (n_theta, n_radii)
         Returns
         -------
@@ -51,7 +51,7 @@ class ScalarPolarPropagator(ScalarPropagator, PolarPropagator):
         return self.field
 
 
-    def _compute_psf_at_defocus(self, defocus_term, J0, input_field, sin_t):
+    def _compute_psf_at_defocus(self, defocus_term, J0, input_field, sin_t) -> torch.Tensor:
         """Compute PSF at defocus.
         We first compute E(r)--`integrand` for a list of unique radii values, then scatter the radial evaluations
         of E(r) onto the xy image grid.
@@ -72,6 +72,6 @@ class ScalarPolarPropagator(ScalarPropagator, PolarPropagator):
             output field at defocus, shape: (n_channels=1, size_x, size_y)
         """
         integrand = J0 * (input_field * defocus_term * self.correction_factor * sin_t)[:, None]  # [n_theta, n_radii]
-        field = self.quadrature_rule(integrand, self.dtheta)
+        field = self.quadrature_rule(fs=integrand, ds=self.dtheta)
         field = field[self.rr_indices].unsqueeze(0)
         return field / math.sqrt(self.refractive_index)

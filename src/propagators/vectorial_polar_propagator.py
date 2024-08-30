@@ -42,56 +42,69 @@ class VectorialPolarPropagator(VectorialPropagator, PolarPropagator):
         """Get the input field for vectorial polar propagator."""
         return self.pupil.field
 
-    def compute_focus_field(self):
-        # multiplicative scalar factor to be verified for the vectorial case
-        self.field = self._compute_psf_for_far_field(self.pupil.field)
-        return self.field
+    def compute_focus_field(self) -> torch.Tensor:
+        """Comppute the focus field for vectorial polar propagator.
+        This invovles expensive evaluations of Bessel functions.
+        We compute it independently from defocus and handle defocus via batching with vmap().
 
-    def _compute_psf_for_far_field(self, far_fields):
-        sin_t = torch.sin(self.thetas)  # [n_thetas, ]
-        cos_t = torch.cos(self.thetas)  # [n_thetas, ]
+        Returns
+        -------
+        self.field: torch.Tensor
+            output PSF
+        """
+        input_field = self._get_input_field()
 
-        # bessel function evaluations are expensive and can be computed independently from defocus
+        sin_t = torch.sin(self.thetas)
+        cos_t = torch.cos(self.thetas)
         bessel_arg = self.k * self.rs[None, :] * sin_t[:, None]
-        J0s = bessel_j0(bessel_arg)  # [n_theta, n_radii]
-        J1s = bessel_j1(bessel_arg)  # [n_theta, n_radii]
-        # bessel_j2() evaluations expressed in terms of j0(), j1()
-        J2s = 2.0 * torch.where(bessel_arg > 1e-6,
-                                J1s / bessel_arg,
-                                0.5 - bessel_arg ** 2 / 16) - J0s
+        J0 = bessel_j0(bessel_arg)
+        J1 = bessel_j1(bessel_arg)
+        J2 = 2.0 * torch.where(bessel_arg > 1e-6, J1 / bessel_arg, 0.5 - bessel_arg ** 2 / 16) - J0
 
-        # compute PSF field; handle defocus via batching with vmap()
         batched_compute_field_at_defocus = vmap(self._compute_psf_at_defocus,
                                                 in_dims=(0, None, None, None, None, None, None))
-        fields = batched_compute_field_at_defocus(self.defocus_filters, J0s, J1s, J2s, far_fields, sin_t, cos_t)
-        return fields
+        self.field = batched_compute_field_at_defocus(self.defocus_filters, J0, J1, J2, input_field, sin_t, cos_t)
+        return self.field
 
-    def _compute_psf_at_defocus(self, defocus_term, J0s, J1s, J2s, far_fields, sin_t, cos_t):
-        field_x, field_y = far_fields[:, 0, :].squeeze(), far_fields[:, 1, :].squeeze()
 
-        # compute E(r) for a list of unique radii values
-        # shape(Ix0) == shape(Iy0) == ... == [n_radii,]
-        # TODO: extend `quadrature_rule` to act on vector-valued functions?
+    def _compute_psf_at_defocus(self, defocus_term, J0, J1, J2, input_field, sin_t, cos_t) -> torch.Tensor:
+        """Compute the PSF at defocus.
+
+        Parameters
+        ----------
+        defocus_term: torch.Tensor
+        J0: torch.Tensor
+            Bessel function J0
+        J1: torch.Tensor
+            Bessel function J1
+        J2: torch.Tensor
+            Bessel function J2
+        input_field: torch.Tensor
+            input pupil field
+        sin_t: torch.Tensor
+            shape: (n_thetas, )
+        cos_t: torch.Tensor
+            shape: (n_thetas, )
+
+        Returns
+        -------
+        PSF_field: torch.Tensor
+            output field
+        """
+        field_x, field_y = input_field[:, 0, :].squeeze(), input_field[:, 1, :].squeeze()
+
         I_term = sin_t * (cos_t + 1.0) * defocus_term * self.correction_factor
-        Ix0 = self.quadrature_rule(dx=self.dtheta,
-                                   fs=J0s * (field_x * I_term)[:, None])
-        Iy0 = self.quadrature_rule(dx=self.dtheta,
-                                   fs=J0s * (field_y * I_term)[:, None])
+        Ix0 = self.quadrature_rule(fs=J0 * (field_x * I_term)[:, None], dx=self.dtheta)
+        Iy0 = self.quadrature_rule(fs=J0 * (field_y * I_term)[:, None], dx=self.dtheta)
 
         I_term = sin_t ** 2 * defocus_term * self.correction_factor
-        Ix1 = self.quadrature_rule(dx=self.dtheta,
-                                   fs=J1s * (field_x * I_term)[:, None])
-        Iy1 = self.quadrature_rule(dx=self.dtheta,
-                                   fs=J1s * (field_y * I_term)[:, None])
+        Ix1 = self.quadrature_rule(fs=J1 * (field_x * I_term)[:, None], dx=self.dtheta)
+        Iy1 = self.quadrature_rule(fs=J1 * (field_y * I_term)[:, None], dx=self.dtheta)
 
         I_term = sin_t * (cos_t - 1.0) * defocus_term * self.correction_factor
-        Ix2 = self.quadrature_rule(dx=self.dtheta,
-                                   fs=J2s * (field_x * I_term)[:, None])
-        Iy2 = self.quadrature_rule(dx=self.dtheta,
-                                   fs=J2s * (field_y * I_term)[:, None])
+        Ix2 = self.quadrature_rule(fs=J2 * (field_x * I_term)[:, None], dx=self.dtheta)
+        Iy2 = self.quadrature_rule(fs=J2 * (field_y * I_term)[:, None], dx=self.dtheta)
 
-        # scatter the radial evaluations of E(r) onto the xy image grid
-        # shape(Ix0) == shape(Iy0) == ... == [nx,ny]
         Ix0 = Ix0[self.rr_indices]
         Iy0 = Iy0[self.rr_indices]
         Ix1 = Ix1[self.rr_indices]
@@ -100,7 +113,7 @@ class VectorialPolarPropagator(VectorialPropagator, PolarPropagator):
         Iy2 = Iy2[self.rr_indices]
 
         # updated expression with correct 1j factors
-        PSF_field = torch.stack([  # [n_channels=3, size_x, size_y]
+        PSF_field = torch.stack([
             Ix0 - Ix2 * self.cos_twophi - Iy2 * self.sin_twophi,
             Iy0 - Ix2 * self.sin_twophi + Iy2 * self.cos_twophi,
             -2j * (Ix1 * self.cos_phi + Iy1 * self.sin_phi)],
