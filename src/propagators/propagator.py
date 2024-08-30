@@ -52,14 +52,16 @@ class Propagator(ABC):
 
     @abstractmethod
     def _get_input_field(self):
+        """Get the corresponding pupil as the input field for propagator."""
         raise NotImplementedError
 
     @abstractmethod
     def compute_focus_field(self):
+        """Compute the focus field - PSF - output of hte propagator."""
         raise NotImplementedError
 
     def compute_optical_path(self, sin_t: torch.Tensor) -> torch.Tensor:
-        """Computed following Eq. (3.45) of François Aguet's thesis"""
+        """Compute the optical path following Eq. (3.45) of François Aguet's thesis."""
         path = self.z_p * torch.sqrt(self.n_s ** 2 - self.n_i ** 2 * sin_t ** 2) \
                + self.t_i * torch.sqrt(self.n_i ** 2 - self.n_i ** 2 * sin_t ** 2) \
                - self.t_i0 * torch.sqrt(self.n_i0 ** 2 - self.n_i ** 2 * sin_t ** 2) \
