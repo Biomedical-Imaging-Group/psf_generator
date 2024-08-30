@@ -93,24 +93,16 @@ class VectorialPolarPropagator(VectorialPropagator, PolarPropagator):
         """
         field_x, field_y = input_field[:, 0, :].squeeze(), input_field[:, 1, :].squeeze()
 
-        I_term = sin_t * (cos_t + 1.0) * defocus_term * self.correction_factor
-        Ix0 = self.quadrature_rule(fs=J0 * (field_x * I_term)[:, None], dx=self.dtheta)
-        Iy0 = self.quadrature_rule(fs=J0 * (field_y * I_term)[:, None], dx=self.dtheta)
-
-        I_term = sin_t ** 2 * defocus_term * self.correction_factor
-        Ix1 = self.quadrature_rule(fs=J1 * (field_x * I_term)[:, None], dx=self.dtheta)
-        Iy1 = self.quadrature_rule(fs=J1 * (field_y * I_term)[:, None], dx=self.dtheta)
-
-        I_term = sin_t * (cos_t - 1.0) * defocus_term * self.correction_factor
-        Ix2 = self.quadrature_rule(fs=J2 * (field_x * I_term)[:, None], dx=self.dtheta)
-        Iy2 = self.quadrature_rule(fs=J2 * (field_y * I_term)[:, None], dx=self.dtheta)
-
-        Ix0 = Ix0[self.rr_indices]
-        Iy0 = Iy0[self.rr_indices]
-        Ix1 = Ix1[self.rr_indices]
-        Iy1 = Iy1[self.rr_indices]
-        Ix2 = Ix2[self.rr_indices]
-        Iy2 = Iy2[self.rr_indices]
+        Is = []
+        fixed_factor = sin_t * defocus_term * self.correction_factor
+        factors = [(cos_t + 1.0), sin_t, (cos_t - 1.0)]
+        for bessel, factor in zip([J0, J1, J2], factors):
+            for field in [field_x, field_y]:
+                I_term = fixed_factor * factor
+                item = self.quadrature_rule(fs=bessel * (field * I_term)[:, None], dx=self.dtheta)
+                item = item[self.rr_indices]
+                Is.append(item)
+        Ix0, Iy0, Ix1, Iy1, Ix2, Iy2 = Is
 
         # updated expression with correct 1j factors
         PSF_field = torch.stack([
