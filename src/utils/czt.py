@@ -1,9 +1,8 @@
-import numpy as np
 import torch
 from torch.fft import fft, fft2, ifft, ifft2
 
 
-def custom_fft2(x, shape_out=None, k_start=0, k_end=2*np.pi,
+def custom_fft2(x, shape_out=None, k_start=0, k_end=2*torch.pi,
                 norm='ortho', fftshift_input=False, include_end=False):
     shape_in = x.shape
     N, M = shape_in[-2:]
@@ -35,7 +34,7 @@ def custom_fft2(x, shape_out=None, k_start=0, k_end=2*np.pi,
         return result
 
 
-def custom_ifft2(x, shape_out=None, k_start=0, k_end=2*np.pi,
+def custom_ifft2(x, shape_out=None, k_start=0, k_end=2*torch.pi,
                  norm='ortho', fftshift_input=False, include_end=False):
     shape_in = x.shape
     N, M = shape_in[-2:]
@@ -74,7 +73,7 @@ def czt1d(x, shape_out=None, w_phase=None, a_phase=0):
     if shape_out is None:
         shape_out = shape_in
     if w_phase is None:
-        w_phase = - 2 * np.pi / shape_out
+        w_phase = - 2 * torch.pi / shape_out
     max_dim = max(shape_in, shape_out)
     fft_dim = int(2 ** torch.ceil(torch.log2(torch.tensor(shape_in + shape_out - 1))))
     device = x.device
@@ -106,7 +105,7 @@ def czt2d(x, shape_out=None, w_phase=None, a_phase=0):
         K, L = max(K,L), max(K,L)
 
     if w_phase is None:
-        w_phase = - 2 * np.pi / K
+        w_phase = - 2 * torch.pi / K
     max_dim = max(N, K)
     fft_dim = int(2 ** torch.ceil(torch.log2(torch.tensor(N + K - 1))))
     device = x.device

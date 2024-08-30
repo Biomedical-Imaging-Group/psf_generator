@@ -4,7 +4,8 @@ import torch
 from functorch import vmap
 from torch.special import bessel_j0, bessel_j1
 
-from integrators import simpsons_rule
+from utils.integrate import simpsons_rule
+
 from .polar_propagator import PolarPropagator
 
 
