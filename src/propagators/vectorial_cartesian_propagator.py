@@ -21,15 +21,16 @@ class VectorialCartesianPropagator(VectorialPropagator, CartesianPropagator):
         cos_2phi = cos_phi ** 2 - sin_phi ** 2
 
         # Field after basis change
-        e_inf_x = ((cos_theta + 1.0) + (cos_theta - 1.0) * cos_2phi) * self.pupil.field[:, 0, :, :] \
-                  + (cos_theta - 1.0) * sin_2phi * self.pupil.field[:, 1, :, :]
-        e_inf_y = ((cos_theta + 1.0) - (cos_theta - 1.0) * cos_2phi) * self.pupil.field[:, 1, :, :] \
-                  + (cos_theta - 1.0) * sin_2phi * self.pupil.field[:, 0, :, :]
-        e_inf_z = -2.0 * sin_theta * (cos_phi * self.pupil.field[:, 0, :, :] + sin_phi * self.pupil.field[:, 1, :, :])
-        e_inf_x = torch.where(s_valid, e_inf_x, 0.0).unsqueeze(0) / 2
-        e_inf_y = torch.where(s_valid, e_inf_y, 0.0).unsqueeze(0) / 2
-        e_inf_z = torch.where(s_valid, e_inf_z, 0.0).unsqueeze(0) / 2
-        e_inf_field = torch.cat((e_inf_x, e_inf_y, e_inf_z), dim=1)
+        field_x, field_y = self.pupil.field[:, 0, :, :], self.pupil.field[:, 1, :, :]
+        e_inf_x = ((cos_theta + 1.0) + (cos_theta - 1.0) * cos_2phi) * field_x \
+                  + (cos_theta - 1.0) * sin_2phi * field_y
+        e_inf_y = ((cos_theta + 1.0) - (cos_theta - 1.0) * cos_2phi) * field_y \
+                  + (cos_theta - 1.0) * sin_2phi * field_x
+        e_inf_z = -2.0 * sin_theta * (cos_phi * field_x + sin_phi * field_y)
+
+        e_infs = [torch.where(s_valid, e_inf, 0.0).unsqueeze(0) / 2
+                  for e_inf in (e_inf_x, e_inf_y, e_inf_z)]
+        e_inf_field = torch.cat(e_infs, dim=1)
         return e_inf_field
 
     def _compute_psf_for_far_field(self, far_fields):  # to remove later?
