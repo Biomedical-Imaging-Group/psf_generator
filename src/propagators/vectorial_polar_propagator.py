@@ -5,11 +5,10 @@ from functorch import vmap
 from torch.special import bessel_j0, bessel_j1
 
 from integrators import simpsons_rule
-from .vectorial_propagator import VectorialPropagator
 from .polar_propagator import PolarPropagator
 
 
-class VectorialPolarPropagator(VectorialPropagator, PolarPropagator):
+class VectorialPolarPropagator(PolarPropagator):
     def __init__(self, pupil, n_pix_psf=128, device='cpu',
                  wavelength=632, na=1.3, fov=1000, refractive_index=1.5,
                  defocus_min=0, defocus_max=0, n_defocus=1,

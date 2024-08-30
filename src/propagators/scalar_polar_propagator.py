@@ -5,10 +5,9 @@ from functorch import vmap
 from torch.special import bessel_j0
 
 from .polar_propagator import PolarPropagator
-from .scalar_propagator import ScalarPropagator
 
 
-class ScalarPolarPropagator(ScalarPropagator, PolarPropagator):
+class ScalarPolarPropagator(PolarPropagator):
 
     def _get_input_field(self) -> torch.Tensor:
         """Get the input field for scalar polar propagator.

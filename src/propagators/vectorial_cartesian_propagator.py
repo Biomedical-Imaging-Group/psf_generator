@@ -1,11 +1,9 @@
 import torch
 
 from .cartesian_propagator import CartesianPropagator
-from .vectorial_propagator import VectorialPropagator
-from utils.czt import custom_ifft2
 
 
-class VectorialCartesianPropagator(VectorialPropagator, CartesianPropagator):
+class VectorialCartesianPropagator(CartesianPropagator):
 
     def _get_input_field(self):
         # Angles theta and phi

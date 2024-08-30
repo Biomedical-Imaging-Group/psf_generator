@@ -1,8 +1,7 @@
 from .cartesian_propagator import CartesianPropagator
-from .scalar_propagator import ScalarPropagator
 
 
-class ScalarCartesianPropagator(ScalarPropagator, CartesianPropagator):
+class ScalarCartesianPropagator(CartesianPropagator):
 
     def _get_input_field(self):
         return self.pupil.field
