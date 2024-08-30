@@ -3,8 +3,9 @@ from abc import ABC
 
 import torch
 
-from integrators import simpsons_rule
-from propagators.propagator import Propagator
+from utils.integrate import simpsons_rule
+
+from .propagator import Propagator
 
 
 class PolarPropagator(Propagator, ABC):

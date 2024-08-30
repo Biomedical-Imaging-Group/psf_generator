@@ -8,11 +8,11 @@ h = 1 / (N - 1). To allow multiple integrals to be evaluated in parallel, we vec
 integration along dimension `dim = 1`.
 
 Inputs:
-- fs: torch.tensor, shape = (N, num_integrals). The integrand evaluations.
+- fs: torch.Tensor, shape = (N, num_integrals). The integrand evaluations.
 - dx: float. Bin width, also known as h = 1 / (N - 1). The stepsize.
 
 Outputs:
-- integrals: torch.tensor, shape = (num_integrals,). The evaluated integrals.
+- integrals: torch.Tensor, shape = (num_integrals,). The evaluated integrals.
 """
 
 import warnings
@@ -56,7 +56,7 @@ def richard1_rule(fs, dx):
     Warning: this method only achieves higher-order convergence when the number of grid
     points is N == 2**K + 1.
     """
-    if not(is_power_of_two(fs.shape[0] - 1)):
+    if not is_power_of_two(fs.shape[0] - 1):
         warnings.warn("Pupil shape is not of the form (2 ** K + 1)! The computed \
                       integral will not have high-order accuracy.")
 
@@ -72,7 +72,7 @@ def richard2_rule(fs, dx):
     Warning: this method only achieves higher-order convergence when the number of grid
     points is N == 2**K + 1.
     """
-    if not(is_power_of_two(fs.shape[0] - 1)):
+    if not is_power_of_two(fs.shape[0] - 1):
         warnings.warn("Pupil shape is not of the form (2 ** K + 1)! The computed \
                       integral will not have high-order accuracy.")
 
@@ -91,7 +91,7 @@ def richard3_rule(fs, dx):
     Warning: this method only achieves higher-order convergence when the number of grid
     points is N == 2**K + 1.
     """
-    if not(is_power_of_two(fs.shape[0] - 1)):
+    if not is_power_of_two(fs.shape[0] - 1):
         warnings.warn("Pupil shape is not of the form (2 ** K + 1)! The computed \
                       integral will not have high-order accuracy.")
 
