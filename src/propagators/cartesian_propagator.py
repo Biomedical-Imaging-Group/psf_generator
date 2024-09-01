@@ -3,19 +3,22 @@ from abc import ABC
 
 import torch
 
-from propagators.propagator import Propagator
+from .propagator import Propagator
 from utils.czt import custom_ifft2
+from utils.zernike import create_zernike_aberrations
 
 
 class CartesianPropagator(Propagator, ABC):
-    def __init__(self, pupil, n_pix_psf=128, device='cpu',
+    def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
+                 zernike_coefficients=None,
                  wavelength=632, na=1.3, fov=1000, refractive_index=1.5,
                  defocus_min=0, defocus_max=0, n_defocus=1,
                  sz_correction=True, apod_factor=False, envelope=None,
                  gibson_lanni=False, z_p=1e3, n_s=1.3,
                  n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3,
                  n_i=1.5, t_i0=100e3):
-        super().__init__(pupil=pupil, n_pix_psf=n_pix_psf, device=device,
+        super().__init__(n_pix_pupil=n_pix_pupil, n_pix_psf=n_pix_psf, device=device,
+                         zernike_coefficients=zernike_coefficients,
                          wavelength=wavelength, na=na, fov=fov, refractive_index=refractive_index,
                          defocus_min=defocus_min, defocus_max=defocus_max, n_defocus=n_defocus,
                          apod_factor=apod_factor, envelope=envelope,
@@ -33,7 +36,7 @@ class CartesianPropagator(Propagator, ABC):
              / (self.n_pix_pupil - 1)
 
         # Coordinates in pupil space s_x, s_y, s_z
-        n_pix_pupil = self.pupil.n_pix_pupil
+        n_pix_pupil = self.n_pix_pupil
         self.s_x = torch.linspace(-1, 1, n_pix_pupil).to(self.device)
         self.ds = self.s_x[1] - self.s_x[0]
         s_xx, s_yy = torch.meshgrid(self.s_x, self.s_x, indexing='ij')
@@ -64,12 +67,16 @@ class CartesianPropagator(Propagator, ABC):
                                        ).reshape(-1, 1, 1, 1).to(self.device)
         self.defocus_filters = torch.exp(1j * self.k * s_zz * defocus_range)
 
+    def _zernike_aberrations(self):
+        aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='cartesian')
+        return aberrations.to(self.device).unsqueeze(0).unsqueeze(0)
+
     def compute_focus_field(self):
-        input_field = self._get_input_field()
-        self.field = custom_ifft2(input_field * self.correction_factor * self.defocus_filters,
+        input_field = self.get_input_field()
+        field = custom_ifft2(input_field * self.correction_factor * self.defocus_filters,
                                   shape_out=(self.n_pix_psf, self.n_pix_psf),
                                   k_start=-self.zoom_factor * torch.pi,
                                   k_end=self.zoom_factor * torch.pi,
                                   norm='forward', fftshift_input=True, include_end=True) * (self.ds * self.s_max) ** 2
-        return self.field / (2 * math.pi * math.sqrt(self.refractive_index))
+        return field / (2 * math.pi * math.sqrt(self.refractive_index))
 
