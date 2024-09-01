@@ -10,7 +10,9 @@ from .polar_propagator import PolarPropagator
 
 
 class VectorialPolarPropagator(PolarPropagator):
-    def __init__(self, pupil, n_pix_psf=128, device='cpu',
+    def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
+                 zernike_coefficients=None,
+                 e0x=1.0, e0y=0.0,
                  wavelength=632, na=1.3, fov=1000, refractive_index=1.5,
                  defocus_min=0, defocus_max=0, n_defocus=1,
                  apod_factor=False, envelope=None, cos_factor=False,
@@ -18,7 +20,8 @@ class VectorialPolarPropagator(PolarPropagator):
                  n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3,
                  n_i=1.5, t_i0=100e3,
                  quadrature_rule=simpsons_rule):
-        super().__init__(pupil=pupil, n_pix_psf=n_pix_psf, device=device,
+        super().__init__(n_pix_pupil=n_pix_pupil, n_pix_psf=n_pix_psf, device=device,
+                         zernike_coefficients=zernike_coefficients,
                          wavelength=wavelength, na=na, fov=fov, refractive_index=refractive_index,
                          defocus_min=defocus_min, defocus_max=defocus_max, n_defocus=n_defocus,
                          apod_factor=apod_factor, envelope=envelope, cos_factor=cos_factor,
@@ -27,6 +30,8 @@ class VectorialPolarPropagator(PolarPropagator):
                          n_i=n_i, t_i0=t_i0,
                          quadrature_rule=quadrature_rule)
 
+        self.e0x = e0x
+        self.e0y = e0y
         # PSF varphi coordinate
         varphi = torch.atan2(self.yy, self.xx)
         sin_phi = torch.sin(varphi)
@@ -38,9 +43,12 @@ class VectorialPolarPropagator(PolarPropagator):
         self.sin_twophi = sin_twophi.to(self.device)
         self.cos_twophi = cos_twophi.to(self.device)
 
-    def _get_input_field(self) -> torch.Tensor:
+    def get_input_field(self) -> torch.Tensor:
         """Get the input field for vectorial polar propagator."""
-        return self.pupil.field
+        single_field = torch.ones(self.n_pix_pupil).to(self.device)
+        input_field = torch.stack((self.e0x * single_field, self.e0y * single_field),
+                           dim=0).to(torch.complex64).unsqueeze(0)
+        return input_field * self._zernike_aberrations()
 
     def compute_focus_field(self) -> torch.Tensor:
         """Comppute the focus field for vectorial polar propagator.
@@ -49,10 +57,10 @@ class VectorialPolarPropagator(PolarPropagator):
 
         Returns
         -------
-        self.field: torch.Tensor
+        field: torch.Tensor
             output PSF
         """
-        input_field = self._get_input_field()
+        input_field = self.get_input_field()
 
         sin_t = torch.sin(self.thetas)
         cos_t = torch.cos(self.thetas)
@@ -63,8 +71,7 @@ class VectorialPolarPropagator(PolarPropagator):
 
         batched_compute_field_at_defocus = vmap(self._compute_psf_at_defocus,
                                                 in_dims=(0, None, None, None, None, None, None))
-        self.field = batched_compute_field_at_defocus(self.defocus_filters, J0, J1, J2, input_field, sin_t, cos_t)
-        return self.field
+        return batched_compute_field_at_defocus(self.defocus_filters, J0, J1, J2, input_field, sin_t, cos_t)
 
 
     def _compute_psf_at_defocus(self, defocus_term, J0, J1, J2, input_field, sin_t, cos_t) -> torch.Tensor:

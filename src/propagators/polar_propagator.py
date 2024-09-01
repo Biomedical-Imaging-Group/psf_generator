@@ -4,12 +4,14 @@ from abc import ABC
 import torch
 
 from utils.integrate import simpsons_rule
+from utils.zernike import create_zernike_aberrations
 
 from .propagator import Propagator
 
 
 class PolarPropagator(Propagator, ABC):
-    def __init__(self, pupil, n_pix_psf=128, device='cpu',
+    def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
+                 zernike_coefficients=None,
                  wavelength=632, na=1.3, fov=1000, refractive_index=1.5,
                  defocus_min=0, defocus_max=0, n_defocus=1,
                  apod_factor=False, envelope=None, cos_factor=False,
@@ -17,7 +19,8 @@ class PolarPropagator(Propagator, ABC):
                  n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3,
                  n_i=1.5, t_i0=100e3,
                  quadrature_rule=simpsons_rule):
-        super().__init__(pupil=pupil, n_pix_psf=n_pix_psf, device=device,
+        super().__init__(n_pix_pupil=n_pix_pupil, n_pix_psf=n_pix_psf, device=device,
+                         zernike_coefficients=zernike_coefficients,
                          wavelength=wavelength, na=na, fov=fov, refractive_index=refractive_index,
                          defocus_min=defocus_min, defocus_max=defocus_max, n_defocus=n_defocus,
                          apod_factor=apod_factor, envelope=envelope,
@@ -62,3 +65,7 @@ class PolarPropagator(Propagator, ABC):
             self.correction_factor *= cos_t
 
         self.quadrature_rule = quadrature_rule
+
+    def _zernike_aberrations(self):
+        aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='polar')
+        return aberrations.to(self.device).unsqueeze(0).unsqueeze(0)

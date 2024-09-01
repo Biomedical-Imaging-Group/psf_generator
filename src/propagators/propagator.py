@@ -4,24 +4,24 @@ import torch
 
 
 class Propagator(ABC):
-    def __init__(self, pupil, n_pix_psf=128, device='cpu',
+    def __init__(self,
+                 n_pix_pupil=128,
+                 n_pix_psf=128,
+                 device='cpu',
+                 zernike_coefficients=None,
                  wavelength=632, na=1.3, fov=2000, refractive_index=1.5,
                  defocus_min=0, defocus_max=0, n_defocus=1,
                  apod_factor=False, envelope=None,
                  gibson_lanni=False, z_p=1e3, n_s=1.3,
                  n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3,
                  n_i=1.5, t_i0=100e3):
-        self.pupil = pupil
 
+        self.n_pix_pupil = n_pix_pupil
         self.n_pix_psf = n_pix_psf
-        self.n_pix_pupil = pupil.n_pix_pupil
         self.device = device
-        if self.device != pupil.device:
-            print('Warning: device of propagator and pupil are not the same.')
-            print('Pupil device: ', pupil.device)
-            print('Propagator device: ', self.device)
-            print('Setting propagator device to pupil device.')
-            self.device = pupil.device
+        if zernike_coefficients is None:
+            zernike_coefficients = [0]
+        self.zernike_coefficients = torch.tensor(zernike_coefficients)
 
         # All distances are in nanometers
         self.wavelength = wavelength
@@ -48,10 +48,13 @@ class Propagator(ABC):
         self.t_i0 = t_i0
         self.t_i = n_i * (t_g0 / n_g0 + t_i0 / self.n_i0 - t_g / n_g - z_p / n_s)
 
-        self.field = None
 
     @abstractmethod
-    def _get_input_field(self):
+    def _zernike_aberrations(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_input_field(self):
         """Get the corresponding pupil as the input field for propagator."""
         raise NotImplementedError
 
