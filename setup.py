@@ -19,5 +19,5 @@ setuptools.setup(
     ],
     install_requires=[
         "matplotlib", "numpy", "scipy", "torch", "tqdm", "zernikepy",],
-    python_requires=">=3.10",
+    python_requires=">=3.8",
 )
