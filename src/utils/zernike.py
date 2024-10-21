@@ -86,11 +86,11 @@ def index_to_nl(index: int) -> tuple[int, int]:
 def create_zernike_aberrations(zernike_coefficients: torch.Tensor, n_pix_pupil: int, mesh_type: str) -> torch.Tensor:
     """
     Create Zernike aberrations for the pupil function in the Cartesian case.
-    For Scalar or Vectorial Cartesian cases, Zernike abberations can be added to the pupil function.
+    For Scalar or Vectorial Cartesian cases, Zernike aberrations can be added to the pupil function.
     Given the Zernike coefficients as a 1D Tensor of length `n_zernike`, a stack of the first `n_zernike`
-    Zernike polymonials are constructed.
-    Then, the coefficients and the polymonials are multiplied and summed accordingly to create a phase mask.
-    Finally, we create the complex field to be multiplide with the existing  pupil function to add this aberration.
+    Zernike polynomials are constructed.
+    Then, the coefficients and the polynomials are multiplied and summed accordingly to create a phase mask.
+    Finally, we create the complex field to be multiple with the existing  pupil function to add this aberration.
 
     Parameters
     ----------
