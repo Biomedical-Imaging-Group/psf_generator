@@ -14,6 +14,90 @@ import torch
 from torch.fft import fft, fft2, ifft, ifft2
 
 
+def _validate_shape(shape_in: tuple, shape_out: [tuple | None]) -> tuple:
+    """
+    Validate the shape of the input and output.
+
+    Parameters
+    ----------
+    shape_in : sequence of ints
+        Shape of the last two dimension of the input image.
+    shape_out : sequence of ints or None
+        Shape of the output image.
+
+    Returns
+    -------
+    shape_out : tuple
+        processed output shape
+
+    """
+    if shape_in[0] != shape_in[1]:
+        raise ValueError('The input image must be square!')
+    elif shape_out is None:
+        shape_out = shape_in
+    K, L = shape_out[-2:]
+    if K != L:
+        print('Warning: Output of different size in each dimension; enforcing squared output.')
+        shape_out = (max(K, L), max(K, L))
+    return shape_out
+
+def _create_w_phase(start: float, end: float, steps: int, include_end: bool) -> float:
+    """
+    Create the W factor.
+
+    Parameters
+    ----------
+    start : float
+        start point of the sampling
+    end : float
+        end point of the sampling
+    steps : int
+        number of sampling steps
+    include_end : bool
+        whether to include the end point
+
+    Returns
+    -------
+    w_phase : float
+        W factor
+    """
+    points = steps - 1 if include_end else steps
+    w_phase = (end - start) / points
+    return w_phase
+
+def _apply_fftshift(x: torch.Tensor, shape_out: [tuple | None], k_start: float,
+                    K: int, N: int, w_phase: float, a_phase: float) -> torch.Tensor:
+    """
+    Apply fftshift on the input image.
+
+    Parameters
+    ----------
+    x : torch.Tensor
+        Input 2D image.
+    shape_out : tuple or None
+        shape of the output image.
+    k_start : float
+        start point of sampling.
+    K : int
+        size of the output image.
+    N : int
+        size of the input image.
+    w_phase : float
+        W factor
+    a_phase : float
+        A factor.
+
+    Returns
+    -------
+    output: torch.Tensor
+        fftshifted image.
+    """
+    k = torch.arange(K)
+    kx, ky = torch.meshgrid(k, k, indexing='ij')
+    center_correction = torch.exp(1j * (N - 1) / 2 * (2 * k_start - w_phase * (kx + ky))).to(x.device)
+    return czt2d(x, shape_out, w_phase, a_phase) * center_correction
+
+
 def custom_fft2(x: torch.Tensor, shape_out=None, k_start: float = 0.0, k_end: float = 2 * torch.pi,
                 norm: str = 'ortho', fftshift_input: bool = False, include_end: bool = False) -> torch.Tensor:
     """
@@ -24,7 +108,7 @@ def custom_fft2(x: torch.Tensor, shape_out=None, k_start: float = 0.0, k_end: fl
     Parameters
     ----------
     x : torch.Tensor
-        Input image
+        Input square image
     shape_out : sequence of ints, optional
         Shape of the output image.
         If None, same as the shape of the input.
@@ -45,28 +129,18 @@ def custom_fft2(x: torch.Tensor, shape_out=None, k_start: float = 0.0, k_end: fl
         Custom 2D FFT of the input image.
 
     """
-    shape_in = x.shape
-    N, M = shape_in[-2:]
-    if shape_out is None:
-        shape_out = shape_in
-    K, L = shape_out[-2:]
-    if K != L:
-        print('Warning: Output of different size in each dimension; enforcing squared output.')
-        K, L = max(K,L), max(K,L)
+    shape_out = _validate_shape(x.shape[-2:], shape_out)
+    K = shape_out[0]
+    N = x.shape[-2]
 
-    if include_end:
-        w_phase = - (k_end - k_start) / (K-1)
-    else:
-        w_phase = - (k_end - k_start) / K
+    w_phase = _create_w_phase(k_start, k_end, K, include_end)
     a_phase = k_start
 
     if fftshift_input:
-        k = torch.arange(K)
-        kx, ky = torch.meshgrid(k, k, indexing='ij')
-        center_correction = torch.exp(1j * (N - 1) / 2 * (2*k_start - w_phase * (kx+ky))).to(x.device)
-        result = czt2d(x, shape_out, w_phase, a_phase) * center_correction
+        result = _apply_fftshift(x, shape_out, k_start, K, N, w_phase, a_phase)
     else:
         result = czt2d(x, shape_out, w_phase, a_phase)
+
     if norm =='ortho':
         return result / K
     elif norm == 'forward':
@@ -85,7 +159,7 @@ def custom_ifft2(x: torch.Tensor, shape_out=None, k_start: float = 0.0, k_end: f
     Parameters
     ----------
     x : torch.Tensor
-        Input image
+        Input square image.
     shape_out : sequence of ints, optional
         Shape of the output image.
         If None, same as the shape of the input.
@@ -106,30 +180,20 @@ def custom_ifft2(x: torch.Tensor, shape_out=None, k_start: float = 0.0, k_end: f
         Custom 2D inverse FFT of the input image.
 
     """
-    shape_in = x.shape
-    N, M = shape_in[-2:]
-    if shape_out is None:
-        shape_out = shape_in
-    K, L = shape_out[-2:]
-    if K != L:
-        print('Warning: Output dimensions are different; enforcing squared output.')
-        K, L = max(K,L), max(K,L)
+    shape_out = _validate_shape(x.shape, shape_out)
+    K = shape_out[0]
+    N = x.shape[-2]
 
-    if include_end:
-        w_phase = (k_end - k_start) / (K-1)
-    else:
-        w_phase = (k_end - k_start) / K
+    w_phase = _create_w_phase(k_start, k_end, K, include_end)
     a_phase = - k_start
 
     if fftshift_input:
-        k = torch.arange(K)
-        kx, ky = torch.meshgrid(k, k, indexing='ij')
-        center_correction = torch.exp(1j * (N - 1) / 2 * (2*k_start - w_phase * (kx+ky))).to(x.device)
-        result = czt2d(x, shape_out, w_phase, a_phase) * center_correction
+        result = _apply_fftshift(x, shape_out, k_start, K, N, w_phase, a_phase)
         angle = 2 * (N - 1) * k_end
-        result *= torch.exp(1j*torch.tensor(angle))
+        result *= torch.exp(1j * torch.tensor(angle))
     else:
         result = czt2d(x, shape_out, w_phase, a_phase)
+
     if norm =='ortho':
         return result / K
     elif norm == 'forward':
@@ -208,17 +272,8 @@ def czt2d(x: torch.Tensor, shape_out=None, w_phase=None, a_phase: float = 0.0) -
         CZT of the input 2D image.
 
     """
-    shape_in = x.shape
-    if shape_out is None:
-        shape_out = shape_in
-    N, M = shape_in[-2:]
-    if N != M:
-        print('Warning: Output dimensions are different; enforcing squared output.')
-        N, M = max(N,M), max(N,M)
-    K, L = shape_out[-2:]
-    if K != L:
-        print('Warning: Output dimensions are different; enforcing squared output.')
-        K, L = max(K,L), max(K,L)
+    shape_out, K = _validate_shape(x.shape[-2:], shape_out)
+    N = x.shape[-2]
 
     if w_phase is None:
         w_phase = - 2 * torch.pi / K
