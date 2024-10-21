@@ -10,11 +10,13 @@ A collection of customized 2D FFT functions.
 
 __all__ = ['custom_fft2', 'custom_ifft2']
 
+import typing as tp
+
 import torch
 from torch.fft import fft, fft2, ifft, ifft2
 
 
-def _validate_shape(shape_in: tuple, shape_out: [tuple | None]) -> tuple:
+def _validate_shape(shape_in: tp.Tuple, shape_out: tp.Optional[tp.Tuple]) -> tp.Tuple:
     """
     Validate the shape of the input and output.
 
@@ -65,7 +67,7 @@ def _create_w_phase(start: float, end: float, steps: int, include_end: bool) -> 
     w_phase = (end - start) / points
     return w_phase
 
-def _apply_fftshift(x: torch.Tensor, shape_out: [tuple | None], k_start: float,
+def _apply_fftshift(x: torch.Tensor, shape_out: tp.Optional[tp.Tuple], k_start: float,
                     K: int, N: int, w_phase: float, a_phase: float) -> torch.Tensor:
     """
     Apply fftshift on the input image.
