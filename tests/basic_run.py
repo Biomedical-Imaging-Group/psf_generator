@@ -55,9 +55,9 @@ kwargs = {
 # define propagators
 propagators = [
     ScalarCartesianPropagator(**kwargs),
-    ScalarPolarPropagator(**kwargs),
+    ScalarSphericalPropagator(**kwargs),
     VectorialCartesianPropagator(e0x=e0x, e0y=e0y, **kwargs),
-    VectorialPolarPropagator(e0x=e0x, e0y=e0y, **kwargs)
+    VectorialSphericalPropagator(e0x=e0x, e0y=e0y, **kwargs)
 ]
 
 for propagator in propagators:

@@ -1,11 +1,11 @@
 from .scalar_cartesian_propagator import ScalarCartesianPropagator
-from .scalar_polar_propagator import ScalarPolarPropagator
+from .scalar_spherical_propagator import ScalarSphericalPropagator
 from .vectorial_cartesian_propagator import VectorialCartesianPropagator
-from .vectorial_polar_propagator import VectorialPolarPropagator
+from .vectorial_spherical_propagator import VectorialSphericalPropagator
 
 __all__ = [
     'ScalarCartesianPropagator',
-    'ScalarPolarPropagator',
+    'ScalarSphericalPropagator',
     'VectorialCartesianPropagator',
-    'VectorialPolarPropagator'
+    'VectorialSphericalPropagator'
 ]

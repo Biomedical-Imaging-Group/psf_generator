@@ -4,10 +4,10 @@ import torch
 from functorch import vmap
 from torch.special import bessel_j0
 
-from .polar_propagator import PolarPropagator
+from .spherical_propagator import SphericalPropagator
 
 
-class ScalarPolarPropagator(PolarPropagator):
+class ScalarSphericalPropagator(SphericalPropagator):
 
     def get_input_field(self) -> torch.Tensor:
         """

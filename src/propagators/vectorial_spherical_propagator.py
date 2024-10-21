@@ -6,10 +6,10 @@ from torch.special import bessel_j0, bessel_j1
 
 from utils.integrate import simpsons_rule
 
-from .polar_propagator import PolarPropagator
+from .spherical_propagator import SphericalPropagator
 
 
-class VectorialPolarPropagator(PolarPropagator):
+class VectorialSphericalPropagator(SphericalPropagator):
     def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
                  zernike_coefficients=None,
                  e0x=1.0, e0y=0.0,

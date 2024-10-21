@@ -9,7 +9,7 @@ from utils.zernike import create_zernike_aberrations
 from .propagator import Propagator
 
 
-class PolarPropagator(Propagator, ABC):
+class SphericalPropagator(Propagator, ABC):
     def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
                  zernike_coefficients=None,
                  wavelength=632, na=1.3, fov=1000, refractive_index=1.5,
@@ -67,5 +67,5 @@ class PolarPropagator(Propagator, ABC):
         self.quadrature_rule = quadrature_rule
 
     def _zernike_aberrations(self):
-        aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='polar')
+        aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='spherical')
         return aberrations.to(self.device).unsqueeze(0).unsqueeze(0)
