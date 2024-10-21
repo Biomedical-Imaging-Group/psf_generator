@@ -77,26 +77,3 @@ class BesselJ1(Function):
         j1_norm_x = torch.where(x == 0.0, 0.5, j1 / x)
         jac = bessel_j0(x) - j1_norm_x
         return jac * grad_input
-
-
-def bessel_j2(x):
-    return 2.0 * torch.where(x > 1e-6, bessel_j1(x) / x, 0.5 - x ** 2 / 16) - bessel_j0(x)
-
-if __name__ == 'main':
-    input = (torch.randn(20,20,dtype=torch.double,requires_grad=True))
-
-    j0 = BesselJ0.apply
-    assert(gradcheck(j0, input, eps=1e-8, atol=1e-8,
-                    check_grad_dtypes=True,
-                    check_forward_ad=True,
-                    check_backward_ad=True,
-                    check_batched_forward_grad=True,
-                    check_batched_grad=True)), "BesselJ0 does not pass derivative test!"
-
-    j1 = BesselJ1.apply
-    assert(gradcheck(j1, input, eps=1e-8, atol=1e-8,
-                    check_grad_dtypes=True,
-                    check_forward_ad=True,
-                    check_backward_ad=True,
-                    check_batched_forward_grad=True,
-                    check_batched_grad=True)), "BesselJ1 does not pass derivative test!"
