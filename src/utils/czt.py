@@ -192,7 +192,9 @@ def custom_ifft2(x: torch.Tensor, shape_out=None, k_start: float = 0.0, k_end: f
     if fftshift_input:
         result = _apply_fftshift(x, shape_out, k_start, K, N, w_phase, a_phase)
         angle = 2 * (N - 1) * k_end
-        result *= torch.exp(1j * torch.tensor(angle))
+        if not isinstance(angle, torch.Tensor):
+            angle = torch.tensor(angle)
+        result *= torch.exp(1j * angle)
     else:
         result = czt2d(x, shape_out, w_phase, a_phase)
 

@@ -44,7 +44,7 @@ class VectorialCartesianPropagator(CartesianPropagator):
         # Angles theta and phi
         sin_xx, sin_yy = torch.meshgrid(self.s_x * self.s_max, self.s_x * self.s_max, indexing='ij')
         sin_t_sq = sin_xx ** 2 + sin_yy ** 2
-        s_valid = torch.tensor(sin_t_sq <= self.s_max ** 2)
+        s_valid = sin_t_sq <= self.s_max ** 2
         sin_theta = torch.sqrt(sin_t_sq)
         cos_theta = torch.sqrt(1.0 - sin_t_sq)
         phi = torch.atan2(sin_yy, sin_xx)
