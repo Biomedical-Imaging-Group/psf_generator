@@ -182,7 +182,7 @@ def custom_ifft2(x: torch.Tensor, shape_out=None, k_start: float = 0.0, k_end: f
         Custom 2D inverse FFT of the input image.
 
     """
-    shape_out = _validate_shape(x.shape, shape_out)
+    shape_out = _validate_shape(x.shape[-2:], shape_out)
     K = shape_out[0]
     N = x.shape[-2]
 
@@ -274,7 +274,8 @@ def czt2d(x: torch.Tensor, shape_out=None, w_phase=None, a_phase: float = 0.0) -
         CZT of the input 2D image.
 
     """
-    shape_out, K = _validate_shape(x.shape[-2:], shape_out)
+    shape_out = _validate_shape(x.shape[-2:], shape_out)
+    K = shape_out[0]
     N = x.shape[-2]
 
     if w_phase is None:
