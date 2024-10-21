@@ -1,3 +1,7 @@
+"""
+The abstract propagator class.
+
+"""
 from abc import ABC, abstractmethod
 
 import torch
@@ -5,38 +9,61 @@ import torch
 
 class Propagator(ABC):
     def __init__(self,
-                 n_pix_pupil=128,
-                 n_pix_psf=128,
-                 device='cpu',
+                 n_pix_pupil: int =128,
+                 n_pix_psf: int = 128,
+                 device: str = 'cpu',
                  zernike_coefficients=None,
-                 wavelength=632, na=1.3, fov=2000, refractive_index=1.5,
-                 defocus_min=0, defocus_max=0, n_defocus=1,
-                 apod_factor=False, envelope=None,
-                 gibson_lanni=False, z_p=1e3, n_s=1.3,
-                 n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3,
-                 n_i=1.5, t_i0=100e3):
-
+                 wavelength: int = 632,
+                 na: float = 1.3,
+                 fov: int = 2000,
+                 refractive_index: float = 1.5,
+                 defocus_min: float = 0.0,
+                 defocus_max: float = 0.0,
+                 n_defocus: int = 1,
+                 apod_factor: bool = False,
+                 envelope=None,
+                 gibson_lanni: bool = False,
+                 z_p: float = 1e3,
+                 n_s: float = 1.3,
+                 n_g: float = 1.5,
+                 n_g0: float = 1.5,
+                 t_g: float = 170e3,
+                 t_g0: float = 170e3,
+                 n_i: float = 1.5,
+                 t_i0: float = 100e3):
+        # number of pixels (size) of the pupil, assuming square image
         self.n_pix_pupil = n_pix_pupil
+        # number of pixels (size) of the psf, assuming square image
         self.n_pix_psf = n_pix_psf
+        # device: "cpu" or "gpu"
         self.device = device
+        # Zernike coefficients
         if zernike_coefficients is None:
             zernike_coefficients = [0]
         self.zernike_coefficients = torch.tensor(zernike_coefficients)
 
         # All distances are in nanometers
+        # wavelength
         self.wavelength = wavelength
+        # numerical aperture
         self.na = na
+        # size of the field-of-view
         self.fov = fov
+        # refractive index
         self.refractive_index = refractive_index
-
+        # minimal distance of defocus
         self.defocus_min = defocus_min
+        # maximal distance of defocus
         self.defocus_max = defocus_max
+        # number of steps for defocus
         self.n_defocus = n_defocus
-
+        # whether to apply apodization factor
         self.apod_factor = apod_factor
+        # envelope of the PSF intensity
         self.envelope = envelope
-
+        # whether to apply Gibson-Lanni aberration
         self.gibson_lanni = gibson_lanni
+        # constants in the Gibson-Lanni aberration formula
         self.z_p = z_p
         self.n_s = n_s
         self.n_g = n_g
@@ -51,20 +78,27 @@ class Propagator(ABC):
 
     @abstractmethod
     def _zernike_aberrations(self):
+        """Zernike aberrations that will be applied on the pupil."""
         raise NotImplementedError
 
     @abstractmethod
     def get_input_field(self):
-        """Get the corresponding pupil as the input field for propagator."""
+        """Get the corresponding pupil as the input field of propagator."""
         raise NotImplementedError
 
     @abstractmethod
     def compute_focus_field(self):
-        """Compute the focus field - PSF - output of hte propagator."""
+        """Compute the output field of the propagator at focal plane."""
         raise NotImplementedError
 
     def compute_optical_path(self, sin_t: torch.Tensor) -> torch.Tensor:
-        """Compute the optical path following Eq. (3.45) of François Aguet's thesis."""
+        """Compute the optical path following Eq. (3.45) in [1].
+
+        References
+        ----------
+        .. [1] https://bigwww.epfl.ch/publications/aguet0903.pdf
+
+        """
         path = self.z_p * torch.sqrt(self.n_s ** 2 - self.n_i ** 2 * sin_t ** 2) \
                + self.t_i * torch.sqrt(self.n_i ** 2 - self.n_i ** 2 * sin_t ** 2) \
                - self.t_i0 * torch.sqrt(self.n_i0 ** 2 - self.n_i ** 2 * sin_t ** 2) \

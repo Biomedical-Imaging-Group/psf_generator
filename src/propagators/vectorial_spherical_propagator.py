@@ -1,3 +1,7 @@
+"""
+The propagator for the vectorial field in the spherical coordinates.
+"""
+
 import math
 
 import torch
@@ -44,21 +48,25 @@ class VectorialSphericalPropagator(SphericalPropagator):
         self.cos_twophi = cos_twophi.to(self.device)
 
     def get_input_field(self) -> torch.Tensor:
-        """Get the input field for vectorial polar propagator."""
         single_field = torch.ones(self.n_pix_pupil).to(self.device)
         input_field = torch.stack((self.e0x * single_field, self.e0y * single_field),
                            dim=0).to(torch.complex64).unsqueeze(0)
         return input_field * self._zernike_aberrations()
 
     def compute_focus_field(self) -> torch.Tensor:
-        """Comppute the focus field for vectorial polar propagator.
-        This invovles expensive evaluations of Bessel functions.
-        We compute it independently from defocus and handle defocus via batching with vmap().
+        """
+        Compute the focus field.
 
         Returns
         -------
         field: torch.Tensor
             output PSF
+
+        Notes
+        -----
+        This involves expensive evaluations of Bessel functions.
+        We compute it independently of defocus and handle defocus via batching with vmap().
+
         """
         input_field = self.get_input_field()
 
@@ -74,12 +82,23 @@ class VectorialSphericalPropagator(SphericalPropagator):
         return batched_compute_field_at_defocus(self.defocus_filters, J0, J1, J2, input_field, sin_t, cos_t)
 
 
-    def _compute_psf_at_defocus(self, defocus_term, J0, J1, J2, input_field, sin_t, cos_t) -> torch.Tensor:
-        """Compute the PSF at defocus.
+    def _compute_psf_at_defocus(
+            self,
+            defocus_term: torch.Tensor,
+            J0: torch.Tensor,
+            J1: torch.Tensor,
+            J2: torch.Tensor,
+            input_field: torch.Tensor,
+            sin_t: torch.Tensor,
+            cos_t: torch.Tensor
+    ) -> torch.Tensor:
+        """
+        Compute the PSF at defocus.
 
         Parameters
         ----------
         defocus_term: torch.Tensor
+            TODO: What is it?
         J0: torch.Tensor
             Bessel function J0
         J1: torch.Tensor
@@ -97,6 +116,7 @@ class VectorialSphericalPropagator(SphericalPropagator):
         -------
         PSF_field: torch.Tensor
             output field
+
         """
         field_x, field_y = input_field[:, 0, :].squeeze(), input_field[:, 1, :].squeeze()
 
@@ -111,7 +131,6 @@ class VectorialSphericalPropagator(SphericalPropagator):
                 Is.append(item)
         Ix0, Iy0, Ix1, Iy1, Ix2, Iy2 = Is
 
-        # updated expression with correct 1j factors
         PSF_field = torch.stack([
             Ix0 - Ix2 * self.cos_twophi - Iy2 * self.sin_twophi,
             Iy0 - Ix2 * self.sin_twophi + Iy2 * self.cos_twophi,

@@ -1,3 +1,7 @@
+"""
+The propagator for the vectorial field in the Cartesian coordinates.
+"""
+
 import torch
 
 from utils.zernike import create_pupil_mesh
@@ -6,7 +10,6 @@ from .cartesian_propagator import CartesianPropagator
 
 
 class VectorialCartesianPropagator(CartesianPropagator):
-
     def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
                  zernike_coefficients=None,
                  e0x=1.0, e0y=0.0,
@@ -24,11 +27,20 @@ class VectorialCartesianPropagator(CartesianPropagator):
                          gibson_lanni=gibson_lanni, z_p=z_p, n_s=n_s,
                          n_g=n_g, n_g0=n_g0, t_g=t_g, t_g0=t_g0,
                          n_i=n_i, t_i0=t_i0)
+
+        # electric field component ex at focal plane
         self.e0x = e0x
+        # electric field component ey at focal plane
         self.e0y = e0y
 
 
-    def get_input_field(self):
+    def get_input_field(self) -> torch.Tensor:
+        """
+        Compute the corresponding input field.
+
+        TODO: more explanations. Use :math:`\pi` for math formulae.
+
+        """
         # Angles theta and phi
         sin_xx, sin_yy = torch.meshgrid(self.s_x * self.s_max, self.s_x * self.s_max, indexing='ij')
         sin_t_sq = sin_xx ** 2 + sin_yy ** 2

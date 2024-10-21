@@ -1,16 +1,57 @@
+"""
+A collection of customized 2D FFT functions.
+
+'fft2': 2D FFT
+'ifft2': 2D inverse FFT
+'czt1D': 1D chirp Z-transform
+'czt2d': 2D chirp Z-transform
+
+"""
+
+__all__ = ['custom_fft2', 'custom_ifft2']
+
 import torch
 from torch.fft import fft, fft2, ifft, ifft2
 
 
-def custom_fft2(x, shape_out=None, k_start=0, k_end=2*torch.pi,
-                norm='ortho', fftshift_input=False, include_end=False):
+def custom_fft2(x: torch.Tensor, shape_out=None, k_start: float = 0.0, k_end: float = 2 * torch.pi,
+                norm: str = 'ortho', fftshift_input: bool = False, include_end: bool = False) -> torch.Tensor:
+    """
+    Custom 2D FFT that allows to zoom on the region of interest in the Fourier plane.
+
+    The output image is square.
+
+    Parameters
+    ----------
+    x : torch.Tensor
+        Input image
+    shape_out : sequence of ints, optional
+        Shape of the output image.
+        If None, same as the shape of the input.
+    k_start : float
+        Start point of sampling on the complex circle. Default is `0.0`.
+    k_end : float
+        End point of sampling on the complex circle. Default is :math:`2\pi`.
+    norm : {"ortho", "forward", "backward"}, optional
+        Normalization mode. Default is "ortho".
+    fftshift_input : bool, optional
+        Whether to apply fftshift on the input image. Default is "False".
+    include_end : bool, optional
+        Whether to include the end point of sampling. Default is "False".
+
+    Returns
+    -------
+    output : torch.Tensor
+        Custom 2D FFT of the input image.
+
+    """
     shape_in = x.shape
     N, M = shape_in[-2:]
     if shape_out is None:
         shape_out = shape_in
     K, L = shape_out[-2:]
     if K != L:
-        print('Warning: Output dimensions are different; enforcing squared output.')
+        print('Warning: Output of different size in each dimension; enforcing squared output.')
         K, L = max(K,L), max(K,L)
 
     if include_end:
@@ -34,8 +75,37 @@ def custom_fft2(x, shape_out=None, k_start=0, k_end=2*torch.pi,
         return result
 
 
-def custom_ifft2(x, shape_out=None, k_start=0, k_end=2*torch.pi,
-                 norm='ortho', fftshift_input=False, include_end=False):
+def custom_ifft2(x: torch.Tensor, shape_out=None, k_start: float = 0.0, k_end: float = 2 * torch.pi,
+                norm: str = 'ortho', fftshift_input: bool = False, include_end: bool = False) -> torch.Tensor:
+    """
+    Custom 2D inverse FFT that allows to zoom on the region of interest in the Fourier plane.
+
+    The output image is square.
+
+    Parameters
+    ----------
+    x : torch.Tensor
+        Input image
+    shape_out : sequence of ints, optional
+        Shape of the output image.
+        If None, same as the shape of the input.
+    k_start : float
+        Start point of sampling on the complex circle. Default is `0.0`.
+    k_end : float
+        End point of sampling on the complex circle. Default is :math:`2\pi`.
+    norm : {"ortho", "forward", "backward"}, optional
+        Normalization mode. Default is "ortho".
+    fftshift_input : bool, optional
+        Whether to apply fftshift on the input image. Default is "False".
+    include_end : bool, optional
+        Whether to include the end point of sampling. Default is "False".
+
+    Returns
+    -------
+    output : torch.Tensor
+        Custom 2D inverse FFT of the input image.
+
+    """
     shape_in = x.shape
     N, M = shape_in[-2:]
     if shape_out is None:
@@ -68,7 +138,32 @@ def custom_ifft2(x, shape_out=None, k_start=0, k_end=2*torch.pi,
         return result / K**2
 
 
-def czt1d(x, shape_out=None, w_phase=None, a_phase=0):
+def czt1d(x: torch.Tensor, shape_out=None, w_phase=None, a_phase: torch.Tensor = 0.0) -> torch.Tensor:
+    """
+    1D chirp Z-transform implemented in PyTorch.
+
+    Parameters
+    ----------
+    x : torch.Tensor
+        Input 1D image.
+    shape_out : int, optional
+        Length of the output image.
+        If None, same as the length of the input.
+    w_phase : torch.Tensor, optional
+        W factor in the definition of the CZT.
+    a_phase : torch.Tensor, optional
+        A factor in the definition of the CZT
+
+    Returns
+    -------
+    output: torch.Tensor
+        CZT of the input 1D image.
+
+    References
+    ----------
+    .. [1] https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.CZT.html
+
+    """
     shape_in = x.shape[-1]
     if shape_out is None:
         shape_out = shape_in
@@ -91,7 +186,28 @@ def czt1d(x, shape_out=None, w_phase=None, a_phase=0):
     return output
 
 
-def czt2d(x, shape_out=None, w_phase=None, a_phase=0):
+def czt2d(x: torch.Tensor, shape_out=None, w_phase=None, a_phase: float = 0.0) -> torch.Tensor:
+    """
+    2D chirp Z-transform implemented in PyTorch.
+
+    Parameters
+    ----------
+    x : torch.Tensor
+        Input 2D image.
+    shape_out : sequence of ints, optional
+        Shape of the output image.
+        If None, same as the length of the input.
+    w_phase : float, optional
+        W factor in the definition of the CZT.
+    a_phase : float, optional
+        A factor in the definition of the CZT
+
+    Returns
+    -------
+    output: torch.Tensor
+        CZT of the input 2D image.
+
+    """
     shape_in = x.shape
     if shape_out is None:
         shape_out = shape_in

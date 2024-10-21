@@ -1,3 +1,8 @@
+"""
+The propagator in the case of Spherical coordinates.
+
+"""
+
 import math
 from abc import ABC
 
@@ -64,8 +69,10 @@ class SphericalPropagator(Propagator, ABC):
         if self.cos_factor:
             self.correction_factor *= cos_t
 
+        # integration method for the Bessel functions
         self.quadrature_rule = quadrature_rule
 
     def _zernike_aberrations(self):
+        """Compute Zernike aberrations that will be applied on the pupil."""
         aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='spherical')
         return aberrations.to(self.device).unsqueeze(0).unsqueeze(0)

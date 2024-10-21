@@ -1,3 +1,8 @@
+"""
+The propagator in the case of Cartesian coordinates.
+
+"""
+
 import math
 from abc import ABC
 
@@ -68,10 +73,12 @@ class CartesianPropagator(Propagator, ABC):
         self.defocus_filters = torch.exp(1j * self.k * s_zz * defocus_range)
 
     def _zernike_aberrations(self):
+        """Compute Zernike aberrations that will be applied on the pupil."""
         aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='cartesian')
         return aberrations.to(self.device).unsqueeze(0).unsqueeze(0)
 
     def compute_focus_field(self):
+        """Compute the electric field at the focal plane."""
         input_field = self.get_input_field()
         field = custom_ifft2(input_field * self.correction_factor * self.defocus_filters,
                                   shape_out=(self.n_pix_psf, self.n_pix_psf),

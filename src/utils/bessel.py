@@ -1,11 +1,17 @@
 """
-Contains AD-enabled overrides for the bessel functions `bessel_j0` and `bessel_j1`;
-torch's implementations do not have gradient tracking as of v1.13.1.
+A collection of custom Bessel functions with gradient tracking.
+
+These functions contain adjoint-enabled overrides for the PyTorch build-in `bessel_j0` and `bessel_j1` as
+those do not have gradient tracking as of v1.13.1.
+
 """
+
+__all__ =['BesselJ0', 'BesselJ1']
+
 from typing import Any
 
 import torch
-from torch.autograd import Function, gradcheck
+from torch.autograd import Function
 from torch.special import (
     bessel_j0,  # as __bessel_j0
     bessel_j1,  # as __bessel_j1
@@ -14,7 +20,7 @@ from torch.special import (
 
 class BesselJ0(Function):
     """
-    Differentiable version of `bessel_j0(x)`.
+    Differentiable version of PyTorch's `bessel_j0(x)`.
     """
     @staticmethod
     def forward(ctx: Any, x: torch.Tensor) -> torch.Tensor:
@@ -26,7 +32,7 @@ class BesselJ0(Function):
     @torch.autograd.function.once_differentiable
     def vjp(ctx: Any, grad_output: torch.Tensor) -> torch.Tensor:
         """
-        Vector-Jacobian product, for reverse-mode AD (`backward()`).
+        Vector-Jacobian product, for reverse-mode adjoint (`backward()`).
         """
         x, = ctx.saved_tensors
         return -bessel_j1(x) * grad_output
@@ -34,7 +40,7 @@ class BesselJ0(Function):
     @staticmethod
     def jvp(ctx: Any, grad_input: torch.Tensor) -> torch.Tensor:
         """
-        Jacobian-vector product, for forward-mode AD.
+        Jacobian-vector product, for forward-mode adjoint.
         """
         x, = ctx.saved_tensors
         return -bessel_j1(x) * grad_input
@@ -55,7 +61,7 @@ class BesselJ1(Function):
     @torch.autograd.function.once_differentiable
     def vjp(ctx: Any, grad_output: torch.Tensor) -> torch.Tensor:
         """
-        Vector-Jacobian product, for reverse-mode AD (`backward()`).
+        Vector-Jacobian product, for reverse-mode adjoint (`backward()`).
         """
         x, j1 = ctx.saved_tensors
         j1_norm_x = torch.where(x == 0.0, 0.5, j1 / x)
@@ -65,7 +71,7 @@ class BesselJ1(Function):
     @staticmethod
     def jvp(ctx: Any, grad_input: torch.Tensor) -> torch.Tensor:
         """
-        Jacobian-vector product, for forward-mode AD.
+        Jacobian-vector product, for forward-mode adjoint.
         """
         x, j1 = ctx.saved_tensors
         j1_norm_x = torch.where(x == 0.0, 0.5, j1 / x)

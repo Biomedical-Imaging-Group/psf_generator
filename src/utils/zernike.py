@@ -7,14 +7,17 @@ from zernikepy import zernike_polynomials
 def create_pupil_mesh(n_pixels: int) -> tuple[torch.Tensor, ...]:
     """
     Create a 2D square meshgrid for the pupil function.
+
     Parameters
     ----------
-    n_pixels: int
-        number of pixels for the pupil function
+    n_pixels : int
+        Number of pixels for the pupil function.
+
     Returns
     -------
     (kx, ky): Tuple[torch.Tensor, ...]
-        two Tensors that represnt the 2D coordinates on the mesh
+        Two Tensors that represent the 2D coordinates on the mesh.
+
     """
     x = torch.linspace(-1, 1, n_pixels)
     y = torch.linspace(-1, 1, n_pixels)
@@ -24,25 +27,26 @@ def create_pupil_mesh(n_pixels: int) -> tuple[torch.Tensor, ...]:
 
 def zernike_nl(n: int, l: int, rho: torch.float, phi: float, radius: float = 1) -> torch.Tensor:
     """
-    Computation of the Zernike polynomial of order n and m in the polar coordinates
+    Compute the Zernike polynomial of order n and m in the polar coordinates
 
     Parameters
     ----------
-    n: int
-        index n in the definition on wikipedia, positive integer
-    l: int
-        |l| = m, m is the index m in the definition on wikipedia. l can be positive or negative
-    rho: torch.Float
-        radial distance
-    phi: float
-        azimuthal angle
-    radius: float
-        radius of the disk on which the Zernike polynomial is defined, default is 1
+    n : int
+        Index n in the definition on wikipedia, positive integer.
+    l : int
+        |l| = m, `m` is the index m in the definition on wikipedia. `l` can be positive or negative.
+    rho : torch.Float
+        Radial distance.
+    phi : float
+        Azimuthal angle.
+    radius : float
+        Radius of the disk on which the Zernike polynomial is defined, default is 1.
 
     Returns
     -------
     Z: torch.Tensor
-        Zernike polynomial Z(rho, phi) evaluated at 'rho' and 'phi' given indices n and l
+        Zernike polynomial Z(rho, phi) evaluated at `rho` and `phi` given indices `n` and `l`.
+
     """
     m = abs(l)
     R = 0
@@ -60,18 +64,20 @@ def zernike_nl(n: int, l: int, rho: torch.float, phi: float, radius: float = 1) 
 def index_to_nl(index: int) -> tuple[int, int]:
     """
     Find the [n, l]-pair given OSA index l for Zernike polynomials.
+
     The OSA index 'j' is defined as
     $j = (n(n + 2) + l) / 2$.
 
     Parameters:
     ----------
-    index: int
-        OSA index j
+    index : int
+        OSA index j.
 
     Returns
     -------
-    (n, - n + 2 * l): Tuple[int, int]
-        Corresponding (n, l)-pair
+    (n, - n + 2 * l) : Tuple[int, int]
+        Corresponding (n, l)-pair.
+
     """
     n = 0
     while True:
@@ -86,6 +92,7 @@ def index_to_nl(index: int) -> tuple[int, int]:
 def create_zernike_aberrations(zernike_coefficients: torch.Tensor, n_pix_pupil: int, mesh_type: str) -> torch.Tensor:
     """
     Create Zernike aberrations for the pupil function in the Cartesian case.
+
     For Scalar or Vectorial Cartesian cases, Zernike aberrations can be added to the pupil function.
     Given the Zernike coefficients as a 1D Tensor of length `n_zernike`, a stack of the first `n_zernike`
     Zernike polynomials are constructed.
@@ -94,15 +101,18 @@ def create_zernike_aberrations(zernike_coefficients: torch.Tensor, n_pix_pupil: 
 
     Parameters
     ----------
-    zernike_coefficients: torch.Tensor
+    zernike_coefficients : torch.Tensor
         1D Tensor of Zernike coefficients
-    n_pix_pupil: int
-        number of pixels of the pupil function
-    mesh_type: str
-        choose 'spherical' or 'cartesian'.
+    n_pix_pupil : int
+        Number of pixels of the pupil function
+    mesh_type : str
+        Choose 'spherical' or 'cartesian'.
+
     Returns
     -------
-    torch.Tensor of type torch.complex64
+    Zernike_aberrations: torch.Tensor
+        Of type torch.complex64.
+
     """
     n_zernike = len(zernike_coefficients)
     if mesh_type == 'cartesian':
@@ -115,11 +125,11 @@ def create_zernike_aberrations(zernike_coefficients: torch.Tensor, n_pix_pupil: 
         zernike_phase = torch.zeros(n_pix_pupil)
         for i in range(n_zernike):
             n, l = index_to_nl(index=i)
-            curr_coef = zernike_coefficients[i]
-            if l != 0 and curr_coef != 0:
+            curr_coefficient = zernike_coefficients[i]
+            if l != 0 and curr_coefficient != 0:
                 print("Warning: Zernike coefficients for l != 0 are not supported in spherical coordinates.")
             elif l == 0:
-                zernike_phase += curr_coef * zernike_nl(n=n, l=l, rho=rho, phi=phi)
+                zernike_phase += curr_coefficient * zernike_nl(n=n, l=l, rho=rho, phi=phi)
     else:
         raise ValueError(f"Invalid mesh type {mesh_type}, choose 'spherical' or 'cartesian'.")
 
