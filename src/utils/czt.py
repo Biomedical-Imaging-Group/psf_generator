@@ -1,3 +1,5 @@
+# Copyright Biomedical Imaging Group, EPFL 2024
+
 """
 A collection of customized 2D FFT functions.
 

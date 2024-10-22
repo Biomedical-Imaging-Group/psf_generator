@@ -1,3 +1,5 @@
+# Copyright Biomedical Imaging Group, EPFL 2024
+
 """
 A collection of custom Bessel functions with gradient tracking.
 

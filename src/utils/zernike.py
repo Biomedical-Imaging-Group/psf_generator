@@ -1,3 +1,5 @@
+# Copyright Biomedical Imaging Group, EPFL 2024
+
 import numpy as np
 import torch
 from scipy.special import binom

@@ -1,3 +1,5 @@
+# Copyright Biomedical Imaging Group, EPFL 2024
+
 """
 A collection of Newton-Cotes quadrature rules for numerical integration in 1D.
 

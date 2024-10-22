@@ -1,3 +1,5 @@
+# Copyright Biomedical Imaging Group, EPFL 2024
+
 """
 The propagator for scalar field in Cartesian coordinates.
 
