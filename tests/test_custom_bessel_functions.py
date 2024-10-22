@@ -1,8 +1,11 @@
 import torch
 from torch.autograd import gradcheck
-from utils.bessel import BesselJ0, BesselJ1
+import sys
+sys.path.append('../..')
+from src.utils.bessel import BesselJ0, BesselJ1
 
-if __name__ == 'main':
+
+def test_bessel_functions():
     input = (torch.randn(20, 20, dtype=torch.double, requires_grad=True))
 
     j0 = BesselJ0.apply
