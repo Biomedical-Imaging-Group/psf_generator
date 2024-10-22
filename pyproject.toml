@@ -1,0 +1,47 @@
+[project]
+name = "PSF-generator"
+version = "0.0.1"
+dependencies = [
+    "matplotlib>=3.6.1",
+    "numpy>=1.23.4",
+    "scipy>=1.9.1",
+    "torch>=1.14.0.dev20221103"
+]
+requires-python = ">=3.8"
+authors = [
+    {name = "Yan Liu", email = "yan.liu@epfl.ch"},
+    {name = "Vasiliki Stergiopoulou", email = "vasiliki.stergiopoulou@epfl.ch"},
+    {name = "Jonathan Dong"}, {email = "jonathan.dong@epfl.ch"},
+    {name = "Jonathan Chuah"}, {email = "jonathan.chuahwenjie@epfl.ch"},
+    {name = "Daniel Sage"}, {email = "daniel.sage@epfl.ch"}
+]
+maintainers = [
+    {name = "Yan Liu", email = "yan.liu@epfl.ch"},
+    {name = "Vasiliki Stergiopoulou", email = "vasiliki.stergiopoulou@epfl.ch"},
+    {name = "Jonathan Dong"}, {email = "jonathan.dong@epfl.ch"}
+]
+description = "Powerful PyTorch Point-Spread-Function library for microscopies."
+readme = "README.md"
+license = {file = "LICENSE"}
+keywords = ["point-spread-function", "pytorch", "deep learning", "microscopies", "imaging", "optical system",
+"fluorescene", "psf engineering", "light propagation"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python :: 3.8",
+]
+# TODO
+[project.urls]
+Homepage = "https://example.com"
+Documentation = "https://readthedocs.org"
+Repository = "https://github.com/me/spam.git"
+"Bug Tracker" = "https://github.com/me/spam/issues"
+Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
+
+[project.scripts]
+spam-cli = "spam:main_cli"
+
+[project.gui-scripts]
+spam-gui = "spam:main_gui"
+
+[project.entry-points."src"]
+tomatoes = "src"
