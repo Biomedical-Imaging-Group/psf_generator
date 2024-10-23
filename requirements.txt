@@ -1,10 +1,10 @@
 furo
 humanize
 matplotlib
-numpy
+numpy==1.23.4
 scikit-image
-scipy
+scipy==1.9.1
 sphinx
-torch
+torch==1.13.1
 tqdm
 zernikepy
