@@ -34,9 +34,9 @@ def zernike_nl(n: int, l: int, rho: torch.float, phi: float, radius: float = 1) 
     Parameters
     ----------
     n : int
-        Index n in the definition on wikipedia, positive integer.
+        Index `n` in the definition on wikipedia, positive integer.
     l : int
-        |l| = m, `m` is the index m in the definition on wikipedia. `l` can be positive or negative.
+        :math`|l| = m`, `m` is the index m in the definition on wikipedia. `l` can be positive or negative.
     rho : torch.Float
         Radial distance.
     phi : float

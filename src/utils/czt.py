@@ -1,12 +1,12 @@
 # Copyright Biomedical Imaging Group, EPFL 2024
 
 """
-A collection of customized 2D FFT functions.
+A collection of custom 2D FFT functions.
 
-'fft2': 2D FFT
-'ifft2': 2D inverse FFT
-'czt1D': 1D chirp Z-transform
-'czt2d': 2D chirp Z-transform
+- `custom_fft2`: custom 2D FFT
+- `custom_ifft2`: custom 2D inverse FFT
+- `czt1d`: 1D chirp Z-transform
+- `czt2d`: 2D chirp Z-transform
 
 """
 
