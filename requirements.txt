@@ -1,6 +1,8 @@
 furo
 humanize
+matplotlib
 numpy
+scikit-image
 scipy
 sphinx
 torch
