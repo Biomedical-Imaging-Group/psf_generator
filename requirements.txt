@@ -1,8 +1,8 @@
-numpy
-scipy
-torch
-
-zernikepy
 furo
 humanize
+numpy
+scipy
 sphinx
+torch
+tqdm
+zernikepy
