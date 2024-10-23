@@ -21,6 +21,9 @@ from tqdm import tqdm
 from propagators import ScalarCartesianPropagator, ScalarSphericalPropagator
 
 if __name__ == "__main__":
+    if not torch.cuda.is_available():
+        raise Exception('Cuda Backend not found')
+
     # psf parameters
     n_pix_psf = 201
     na = 0.9
@@ -38,13 +41,14 @@ if __name__ == "__main__":
     list_of_pupil_pixels = [int(item) for item in np.logspace(5, 13, number_of_pupil_sizes, base=2)]
     number_of_repetitions = 10
     devices = ["cpu", "cuda:0"]
-    torch.cuda.synchronize()
     # file path to save statistics
     path = os.path.join('Results', 'data')
 
     for  n_pix_pupil in tqdm(list_of_pupil_pixels):
         for propagator in propagators:
             for device in devices:
+                if 'cuda' in device:
+                    torch.cuda.synchronize()
                 runtime_list =[]
                 average_runtime_list = []
                 for _ in range(number_of_repetitions):
