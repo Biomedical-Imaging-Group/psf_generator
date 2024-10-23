@@ -1,0 +1,8 @@
+numpy
+scipy
+torch
+
+zernikepy
+furo
+humanize
+sphinx
