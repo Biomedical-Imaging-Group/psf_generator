@@ -54,7 +54,7 @@ class CartesianPropagator(Propagator, ABC):
         total_fft_range = 1.0 / self.ds
         k_start = -self.zoom_factor * torch.pi
         k_end = self.zoom_factor * torch.pi
-        self.x = torch.linspace(k_start, k_end, self.n_pix_pupil) / (2.0 * torch.pi) * total_fft_range
+        self.x = torch.linspace(k_start, k_end, self.n_pix_pupil).to(self.device) / (2.0 * torch.pi) * total_fft_range
 
         # Correction factors
         self.correction_factor = torch.ones(1, 1, n_pix_pupil, n_pix_pupil).to(torch.complex64).to(self.device)
