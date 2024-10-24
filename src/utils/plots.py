@@ -1,3 +1,5 @@
+import os
+
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -11,6 +13,9 @@ _SUP_TITLE_SIZE = 18
 _TITLE_SIZE = 16
 _LABEL_SIZE = 14
 _TICK_SIZE = 12
+lw = 1
+markersize = 6
+
 
 def colorbar(mappable, cbar_ticks: tp.Union[str, tp.List, None] = 'auto'):
     """
@@ -74,7 +79,8 @@ def plot_psf_intensity_maps(
         z_slice_number: int = None,
         x_slice_number: int = None,
         y_slice_number: int = None,
-        cmap: str = 'viridis'
+        cmap: str = 'viridis',
+        filepath: str = None
 ):
     """
     Plot three orthogonal slices of the 3D intensity map of the PSF.
@@ -91,8 +97,10 @@ def plot_psf_intensity_maps(
         Slice number at the x-axis for y-z planes. Default is the middle slice.
     y_slice_number: int, optional
         Slice number at the y-axis for x-z planes. Default is the middle slice.
-    cmap: str, optional
+    cmap : str, optional
         colormap. Default is 'viridis'.
+    filepath : str, optional
+        Path to save the plot. Default is None and figure is not saved.
 
     """
     psf_array = convert_tensor_to_array(psf_image)
@@ -133,16 +141,45 @@ def plot_psf_intensity_maps(
         ax.set_yticklabels(ytick_labels, fontsize=_TICK_SIZE)
     plt.suptitle(f'PSF intensity maps at three orthogonal planes ({name_of_propagator})', fontsize=_SUP_TITLE_SIZE)
     figure.tight_layout()
+    if filepath:
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        figure.savefig(filepath)
     plt.show()
 
 
-def plot_benchmark_results(results: list, labels: list, title: str):
-    figure, ax = plt.subplots(1, 1, figsize=(_FIG_SIZE, _FIG_SIZE))
-    for result, label in zip(results, labels):
+def plot_benchmark_results(results: list, labels: list, title: str, filepath: str = None):
+    """
+    Plot results of the benchmarking.
+
+    Parameters
+    ----------
+    results : list
+        List that contains tuples of the variable to be benchmarked and the resulting value.
+    labels : str
+        Label/name of the data.
+    title : str
+        Title of the figure.
+    filepath : str, optional
+        Path to save the figure. Default is None and figure is not saved.
+
+    """
+    figure, ax = plt.subplots(1, 1, figsize=(_FIG_SIZE*1.5, _FIG_SIZE))
+    colors = ['red', 'red', 'blue', 'blue', 'orange', 'orange', 'green', 'green']
+    for result, label, color in zip(results, labels, colors):
         x, y = zip(*result)
-        ax.loglog(x, y, base=2, label=label)
-    ax.legend(fontsize=_LABEL_SIZE)
+        if 'cpu' in label:
+            ls = 'solid'
+        else:
+            ls = 'dashed'
+        ax.loglog(x, y, base=2, label=label, ls=ls, marker='.', markersize=markersize, lw=lw, color=color)
+    ax.legend(fontsize=_TICK_SIZE)
     ax.set_title(title, fontsize=_TITLE_SIZE)
+    ax.set_xlabel('Numerical size of the pupil / pixels', fontsize=_LABEL_SIZE)
+    ax.set_ylabel('Time / s', fontsize=_LABEL_SIZE)
+    plt.grid(color='gray', ls='dotted', lw=lw)
     figure.tight_layout()
+    if filepath:
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        figure.savefig(filepath)
     plt.show()
 

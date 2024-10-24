@@ -14,7 +14,8 @@ if __name__ == "__main__":
         VectorialSphericalPropagator
     ]
     device_names = ['cpu', 'gpu']
-    title = 'benchmark runtime of pupil sizes'
+    title = 'Runtime benchmark against pupil sizes'
+    filepath = os.path.join('results', 'plots', 'benchmark_plot.png')
     results = []
     labels = []
     for propagator in propagators:
@@ -23,4 +24,4 @@ if __name__ == "__main__":
             labels.append(f'{file}_{device_name}')
             results.append(load_stats_from_csv(os.path.join(folder, f'{file}_{device_name}.csv')))
 
-    plot_benchmark_results(results, labels, title)
+    plot_benchmark_results(results, labels, title, filepath)

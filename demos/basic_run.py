@@ -1,3 +1,5 @@
+import os
+
 from propagators import *
 from utils.plots import plot_psf_intensity_maps
 
@@ -35,7 +37,8 @@ if __name__ == "__main__":
     ]
 
     for propagator in propagators:
-        class_name = propagator.__class__.__name__
+        name = propagator.get_name()
         field = propagator.compute_focus_field()
-        plot_psf_intensity_maps(field, class_name)
+        filepath = os.path.join('results', 'plots', f'{name}_psf.png')
+        plot_psf_intensity_maps(field, name, filepath=filepath)
 
