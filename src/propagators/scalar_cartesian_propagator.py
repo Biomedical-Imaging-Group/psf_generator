@@ -38,7 +38,7 @@ class ScalarCartesianPropagator(CartesianPropagator):
 
         """
         kx, ky = create_pupil_mesh(n_pixels=self.n_pix_pupil)
-        input_field = (kx**2 + ky**2 <= 1).to(torch.complex64).unsqueeze(0).unsqueeze(0).to(self.device)
+        input_field = (kx**2 + ky**2 <= 1).to(torch.complex64).to(self.device)
         return input_field * self._zernike_aberrations()
 
 

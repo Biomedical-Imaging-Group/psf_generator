@@ -35,13 +35,9 @@ class ScalarSphericalPropagator(SphericalPropagator):
 
        .. :math:`\theta \leq \theta_{max}`.
 
-        TODO:
-        Suqeezing is applied to get rid of the empty dimensions.
-        After squeezing, the shape of pupil.field changes from [n_defocus=1, channels=1, n_thetas] to [n_thetas, ]
-
         """
-        input_field = torch.ones(self.n_pix_pupil).to(torch.complex64).to(self.device).unsqueeze(0).unsqueeze(0)
-        return (input_field * self._zernike_aberrations()).squeeze()
+        input_field = torch.ones(self.n_pix_pupil).to(torch.complex64).to(self.device)
+        return input_field * self._zernike_aberrations()
 
 
     def compute_focus_field(self) -> torch.Tensor:
@@ -50,9 +46,9 @@ class ScalarSphericalPropagator(SphericalPropagator):
         Parameters:
         -----------
         self.thetas : torch.Tensor
-            List of angle of shape: (n_thetas, )
+            Angles of sampling of size: (n_thetas, )
         self.rs : torch.Tensor
-            TODO: what is it? of shape: (n_radii, )
+            Radii of sampling of size (n_radii, )
         self.correction_factor : torch.Tensor
             Correction factor of shape: (n_thetas, )
         J0 : torch.Tensor

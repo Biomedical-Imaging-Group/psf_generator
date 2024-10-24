@@ -77,4 +77,4 @@ class SphericalPropagator(Propagator, ABC):
     def _zernike_aberrations(self):
         """Compute Zernike aberrations that will be applied on the pupil."""
         aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='spherical')
-        return aberrations.to(self.device).unsqueeze(0).unsqueeze(0)
+        return aberrations.to(self.device)

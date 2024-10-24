@@ -62,16 +62,16 @@ class VectorialCartesianPropagator(CartesianPropagator):
         kx, ky = create_pupil_mesh(n_pixels=self.n_pix_pupil)
         single_field = (kx ** 2 + ky ** 2 <= 1).to(torch.complex64)
         input_field = torch.stack((self.e0x * single_field, self.e0y * single_field),
-                           dim=0).unsqueeze(0).to(self.device) * self._zernike_aberrations()
+                           dim=0).to(self.device) * self._zernike_aberrations()
 
-        field_x, field_y = input_field[:, 0, :, :], input_field[:, 1, :, :]
+        field_x, field_y = input_field[0, :, :], input_field[1, :, :]
         e_inf_x = ((cos_theta + 1.0) + (cos_theta - 1.0) * cos_2phi) * field_x \
                   + (cos_theta - 1.0) * sin_2phi * field_y
         e_inf_y = ((cos_theta + 1.0) - (cos_theta - 1.0) * cos_2phi) * field_y \
                   + (cos_theta - 1.0) * sin_2phi * field_x
         e_inf_z = -2.0 * sin_theta * (cos_phi * field_x + sin_phi * field_y)
 
-        e_infs = [torch.where(s_valid, e_inf, 0.0).unsqueeze(0) / 2
+        e_infs = [torch.where(s_valid, e_inf, 0.0) / 2
                   for e_inf in (e_inf_x, e_inf_y, e_inf_z)]
-        e_inf_field = torch.cat(e_infs, dim=1)
+        e_inf_field = torch.stack(e_infs, dim=0)
         return e_inf_field

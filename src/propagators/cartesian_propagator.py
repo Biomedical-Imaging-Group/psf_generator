@@ -77,7 +77,7 @@ class CartesianPropagator(Propagator, ABC):
     def _zernike_aberrations(self):
         """Compute Zernike aberrations that will be applied on the pupil."""
         aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='cartesian')
-        return aberrations.to(self.device).unsqueeze(0).unsqueeze(0)
+        return aberrations.to(self.device)
 
     def compute_focus_field(self):
         """Compute the electric field at the focal plane."""
