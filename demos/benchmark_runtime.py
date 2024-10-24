@@ -18,7 +18,8 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from propagators import ScalarCartesianPropagator, ScalarSphericalPropagator
+from propagators import ScalarCartesianPropagator, ScalarSphericalPropagator, VectorialCartesianPropagator, \
+    VectorialSphericalPropagator
 
 if __name__ == "__main__":
     # psf parameters
@@ -34,7 +35,9 @@ if __name__ == "__main__":
     # define propagators
     propagators = [
         ScalarCartesianPropagator,
-        ScalarSphericalPropagator
+        ScalarSphericalPropagator,
+        VectorialCartesianPropagator,
+        VectorialSphericalPropagator
     ]
     # test parameters
     number_of_pupil_sizes = 9
