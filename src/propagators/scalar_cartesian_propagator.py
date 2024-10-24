@@ -8,6 +8,7 @@ The propagator for scalar field in Cartesian coordinates.
 import torch
 
 from utils.zernike import create_pupil_mesh
+
 from .cartesian_propagator import CartesianPropagator
 
 

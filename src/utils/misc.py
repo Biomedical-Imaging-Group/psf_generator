@@ -1,6 +1,7 @@
+import typing as tp
+
 import numpy as np
 import torch
-import typing as tp
 
 
 def convert_tensor_to_array(input_data: tp.Union[torch.Tensor, np.ndarray]) -> np.ndarray:

@@ -2,6 +2,7 @@ furo
 humanize
 matplotlib
 numpy==1.23.4
+pytest
 scikit-image
 scipy==1.9.1
 sphinx

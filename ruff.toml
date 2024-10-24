@@ -35,5 +35,5 @@ section-order = ["future", "standard-library", "true-third-party", "third-party"
 
 [lint.isort.sections]
 "true-third-party" = [
-    "functorch", "matplotlib", "numpy", "scipy", "torch", "tqdm", "zernikepy"
+    "functorch", "matplotlib", "numpy", "pytest", "scipy", "skimage","torch", "tqdm", "zernikepy"
 ]

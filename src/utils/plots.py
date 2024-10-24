@@ -1,9 +1,9 @@
 import os
+import typing as tp
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import typing as tp
 
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from utils.misc import convert_tensor_to_array

@@ -3,7 +3,6 @@ import os
 from propagators import *
 from utils.plots import plot_psf_intensity_maps
 
-
 if __name__ == "__main__":
     n_pix_pupil = 127
     n_pix_psf = 256

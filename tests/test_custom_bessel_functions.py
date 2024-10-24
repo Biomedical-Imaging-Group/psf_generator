@@ -1,6 +1,8 @@
+import sys
+
 import torch
 from torch.autograd import gradcheck
-import sys
+
 sys.path.append('../..')
 from src.utils.bessel import BesselJ0, BesselJ1
 

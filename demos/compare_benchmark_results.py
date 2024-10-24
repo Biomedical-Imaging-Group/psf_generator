@@ -4,7 +4,6 @@ from propagators import *
 from utils.handle_data import load_stats_from_csv
 from utils.plots import plot_benchmark_results
 
-
 if __name__ == "__main__":
     folder = os.path.join('results', 'data')
     propagators = [
