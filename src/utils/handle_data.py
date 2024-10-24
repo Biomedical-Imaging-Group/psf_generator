@@ -9,7 +9,7 @@ import torch
 from utils.misc import convert_tensor_to_array
 
 
-def load_data(filepath: str):
+def load_image(filepath: str):
     """
     Load data from filepath.
 
