@@ -7,7 +7,7 @@ The number of pixels of the PSF is fixed and only the one slice (focal plane) is
 import os
 import sys
 
-from utils.handle_data import save_stats
+from utils.handle_data import save_stats_as_csv
 
 module_path = os.path.abspath(os.path.join('')) + '/src/'
 if module_path not in sys.path:
@@ -44,13 +44,13 @@ if __name__ == "__main__":
     # file path to save statistics
     path = os.path.join('results', 'data')
 
-    for propagator in propagators:
-        for device in devices:
-            if 'cuda' in device:
-                if torch.cuda.is_available():
-                    torch.cuda.synchronize()
-                else:
-                    continue
+    for device in devices:
+        if 'cuda' in device:
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
+            else:
+                continue
+        for propagator in propagators:
             average_runtime_list = []
             for n_pix_pupil in tqdm(list_of_pupil_pixels):
                 runtime_list =[]
@@ -60,5 +60,7 @@ if __name__ == "__main__":
                     runtime = time() - start_time
                     runtime_list.append(runtime)
                 average_runtime_list.append((n_pix_pupil, sum(runtime_list) / number_of_repetitions))
-            filename = f'{propagator.__name__.lower()}' + '_' + f'{device}'
-            save_stats(average_runtime_list, filename, path)
+            # save stats
+            filename = f'{propagator.get_name()}_{device}'
+            filepath = os.path.join(path, filename + 'csv')
+            save_stats_as_csv(average_runtime_list, filepath)
