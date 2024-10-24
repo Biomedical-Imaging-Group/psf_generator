@@ -24,7 +24,7 @@ def load_data(filepath: str):
     return skio.imread(filepath)
 
 
-def save_image(image: tp.Union[torch.Tensor, np.ndarray], filename: str, path: str, filetype: str = '.tif'):
+def save_image(image: tp.Union[torch.Tensor, np.ndarray], filepath: str):
     """
     Save image in specified format to specified location.
 
@@ -32,40 +32,30 @@ def save_image(image: tp.Union[torch.Tensor, np.ndarray], filename: str, path: s
     ----------
     image : torch.Tensor or np.ndarray
         Image to be saved.
-    filename : str
-        Name of the file.
-    path: str
-        Location of the file.
-    filetype: str
-        Format of the file. Default is '.tif'.
+    filepath : str
+        Path to save the file.
 
     """
     image = convert_tensor_to_array(image)
-    filepath = os.path.join(path, filename + filetype)
+    filepath = os.path.join(filepath)
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     skio.imsave(filepath, image, check_contrast=False)
 
 
-def save_stats(data: list, filename: str, path: str):
+def save_stats_as_csv(data: list, filepath: str):
     """
-    Save statistical data, e.g. runtime values, in a systematic way for further analysis or plotting.
+    Save statistical data to a csv file for further analysis or plotting.
 
-    Statistical data such as the runtime values saved as a list of tuples (number of iteration, value) are written
-    as a csv file.
-    They can be used for plotting later to see the evolution of statistics.
+    Statistical data such as the runtime values is saved as a list of tuples (index, value).
 
     Parameters
     ----------
     data : list
         Statistics to be saved.
-    filename : str
-        Name of the file to store the statistics.
-    path : str
-        Path on which the file should be saved
+    filepath : str
+        Path to the file to store the statistics.
 
     """
-    filetype = '.csv'
-    filepath = os.path.join(path, filename + filetype)
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     with open(filepath, 'w', newline='') as csv_file:
         writer = csv.writer(csv_file)
