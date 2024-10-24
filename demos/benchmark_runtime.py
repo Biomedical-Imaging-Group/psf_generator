@@ -16,13 +16,13 @@ from time import time
 
 import numpy as np
 import torch
-from tqdm import tqdm
 
 from propagators import ScalarCartesianPropagator, ScalarSphericalPropagator, VectorialCartesianPropagator, \
     VectorialSphericalPropagator
 
-if __name__ == "__main__":
-    # psf parameters
+
+def benchmark_runtime_pupil_size():
+    # propagator parameters
     kwargs = {
         'n_pix_psf': 201,
         'wavelength': 632,
@@ -44,10 +44,11 @@ if __name__ == "__main__":
     list_of_pupil_pixels = [int(item) for item in np.logspace(5, 13, number_of_pupil_sizes, base=2)]
     number_of_repetitions = 10
     devices = ["cpu", "cuda:0"]
+    device_names = ["cpu", "gpu"]
     # file path to save statistics
     path = os.path.join('results', 'data')
 
-    for device in devices:
+    for device, device_name in zip(devices, device_names):
         if 'cuda' in device:
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
@@ -55,8 +56,8 @@ if __name__ == "__main__":
                 continue
         for propagator in propagators:
             average_runtime_list = []
-            for n_pix_pupil in tqdm(list_of_pupil_pixels):
-                runtime_list =[]
+            for n_pix_pupil in list_of_pupil_pixels:
+                runtime_list = []
                 for _ in range(number_of_repetitions):
                     start_time = time()
                     propagator(n_pix_pupil=n_pix_pupil, device=device, **kwargs).compute_focus_field()
@@ -64,6 +65,10 @@ if __name__ == "__main__":
                     runtime_list.append(runtime)
                 average_runtime_list.append((n_pix_pupil, sum(runtime_list) / number_of_repetitions))
             # save stats
-            filename = f'{propagator.get_name()}_{device}'
+            filename = f'{propagator.get_name()}_{device_name}'
             filepath = os.path.join(path, filename + 'csv')
             save_stats_as_csv(average_runtime_list, filepath)
+
+
+if __name__ == "__main__":
+    benchmark_runtime_pupil_size()
