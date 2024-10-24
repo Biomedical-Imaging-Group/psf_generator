@@ -80,5 +80,5 @@ def load_stats_from_csv(filepath: str):
         reader = csv.reader(csv_file, delimiter=',')
         data = []
         for row in reader:
-            data.append((row[0], row[1]))
+            data.append((int(row[0]), float(row[1])))
     return data
