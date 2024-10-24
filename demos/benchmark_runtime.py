@@ -67,7 +67,7 @@ def benchmark_runtime_pupil_size():
             device_name = 'gpu' if 'cuda' in device else 'cpu'
             filename = f'{propagator.get_name()}_{device_name}'
             filepath = os.path.join(path, filename + '.csv')
-            save_stats_as_csv(average_runtime_list, filepath)
+            save_stats_as_csv(filepath, average_runtime_list)
 
 
 if __name__ == "__main__":

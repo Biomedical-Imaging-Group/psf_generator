@@ -24,25 +24,61 @@ def load_image(filepath: str):
     return skio.imread(filepath)
 
 
-def save_image(image: tp.Union[torch.Tensor, np.ndarray], filepath: str):
+def save_image(filepath: str, image: tp.Union[torch.Tensor, np.ndarray]):
     """
     Save image in specified format to specified location.
 
     Parameters
     ----------
-    image : torch.Tensor or np.ndarray
-        Image to be saved.
     filepath : str
         Path to save the file.
+    image : torch.Tensor or np.ndarray
+        Image to be saved.
 
+    Notes
+    -----
+    Scikit-image and tifffile both follow the convention of putting the channel dimension after x and y.
+    The saved tif image thus has dimension (z, x, y, channels) instead of (z, channels, x, y).
     """
     image = convert_tensor_to_array(image)
-    filepath = os.path.join(filepath)
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     skio.imsave(filepath, image, check_contrast=False)
 
 
-def save_stats_as_csv(data: list, filepath: str):
+def save_as_npy(filepath: str, input_data: tp.Union[torch.Tensor, np.ndarray]):
+    """
+    Save data as a numpy array in a .npy file.
+
+    Parameters
+    ----------
+    filepath : str
+        Path to save the file.
+    input_data : torch.Tensor or np.ndarray
+        Data to be saved
+
+    """
+    input_data = convert_tensor_to_array(input_data)
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    np.save(filepath, input_data)
+
+def load_from_npy(filepath: str) -> np.ndarray:
+    """
+    Load numpy array from a file.
+
+    Parameters
+    ----------
+    filepath : str
+        Path to file.
+
+    Returns
+    -------
+    output : np.ndarray
+        Loaded array.
+    """
+    return np.load(filepath)
+
+
+def save_stats_as_csv(filepath: str, data: list):
     """
     Save statistical data to a csv file for further analysis or plotting.
 
@@ -50,10 +86,10 @@ def save_stats_as_csv(data: list, filepath: str):
 
     Parameters
     ----------
-    data : list
-        Statistics to be saved.
     filepath : str
         Path to the file to store the statistics.
+    data : list
+        Statistics to be saved.
 
     """
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
