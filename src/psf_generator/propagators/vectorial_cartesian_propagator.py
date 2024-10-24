@@ -6,9 +6,8 @@ The propagator for the vectorial field in the Cartesian coordinates.
 
 import torch
 
-from ..utils.zernike import create_pupil_mesh
-
 from .cartesian_propagator import CartesianPropagator
+from ..utils.zernike import create_pupil_mesh
 
 
 class VectorialCartesianPropagator(CartesianPropagator):

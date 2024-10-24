@@ -10,10 +10,9 @@ from abc import ABC
 
 import torch
 
+from .propagator import Propagator
 from ..utils.integrate import simpsons_rule
 from ..utils.zernike import create_zernike_aberrations
-
-from .propagator import Propagator
 
 
 class SphericalPropagator(Propagator, ABC):

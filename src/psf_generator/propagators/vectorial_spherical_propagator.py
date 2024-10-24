@@ -10,9 +10,8 @@ import torch
 from functorch import vmap
 from torch.special import bessel_j0, bessel_j1
 
-from ..utils.integrate import simpsons_rule
-
 from .spherical_propagator import SphericalPropagator
+from ..utils.integrate import simpsons_rule
 
 
 class VectorialSphericalPropagator(SphericalPropagator):

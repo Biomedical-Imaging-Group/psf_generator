@@ -10,10 +10,9 @@ from abc import ABC
 
 import torch
 
+from .propagator import Propagator
 from ..utils.czt import custom_ifft2
 from ..utils.zernike import create_zernike_aberrations
-
-from .propagator import Propagator
 
 
 class CartesianPropagator(Propagator, ABC):
