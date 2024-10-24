@@ -61,3 +61,24 @@ def save_stats_as_csv(data: list, filepath: str):
         writer = csv.writer(csv_file)
         for row in data:
             writer.writerow(row)
+
+
+def load_stats_from_csv(filepath: str):
+    """
+    Load data from a csv file.
+
+    Parameters
+    ----------
+    filepath: str
+        Path to the csv file.
+
+    """
+    if not os.path.isfile(filepath):
+        raise FileNotFoundError(f'File {filepath} does not exist')
+
+    with open(filepath, 'r', newline='') as csv_file:
+        reader = csv.reader(csv_file, delimiter=',')
+        data = []
+        for row in reader:
+            data.append((row[0], row[1]))
+    return data
