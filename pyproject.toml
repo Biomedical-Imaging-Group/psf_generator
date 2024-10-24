@@ -1,5 +1,5 @@
 [project]
-name = "PSF-generator"
+name = "psf_generator"
 version = "0.0.1"
 dependencies = [
     "matplotlib>=3.6.1",
@@ -37,12 +37,3 @@ Documentation = "https://readthedocs.org"
 Repository = "https://github.com/me/spam.git"
 "Bug Tracker" = "https://github.com/me/spam/issues"
 Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
-
-[project.scripts]
-spam-cli = "spam:main_cli"
-
-[project.gui-scripts]
-spam-gui = "spam:main_gui"
-
-[project.entry-points."src"]
-tomatoes = "src"
