@@ -38,7 +38,6 @@ def benchmark_runtime_pupil_size():
         VectorialSphericalPropagator
     ]
     # test parameters
-    number_of_pupil_sizes = 9
     list_of_pupil_pixels = [int(math.pow(2, exponent)) for exponent in range(5, 13)]
     number_of_repetitions = 10
     devices = ["cpu", "cuda:0"]
