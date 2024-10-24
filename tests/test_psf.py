@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from propagators import *
-from utils.handle_data import save_as_npy, load_from_npy
+from utils.handle_data import load_from_npy
 from utils.misc import convert_tensor_to_array
 
 kwargs = {
