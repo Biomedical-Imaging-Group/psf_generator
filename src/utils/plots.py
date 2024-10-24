@@ -9,7 +9,7 @@ from utils.misc import convert_tensor_to_array
 _FIG_SIZE = 6
 _SUP_TITLE_SIZE = 18
 _TITLE_SIZE = 16
-_LABEL_SIZE = 10
+_LABEL_SIZE = 14
 _TICK_SIZE = 12
 
 def colorbar(mappable, cbar_ticks: tp.Union[str, tp.List, None] = 'auto'):
@@ -134,3 +134,14 @@ def plot_psf_intensity_maps(
     plt.suptitle(f'PSF intensity maps at three orthogonal planes ({name_of_propagator})', fontsize=_SUP_TITLE_SIZE)
     figure.tight_layout()
     plt.show()
+
+
+def plot_benchmark_results(results: list, labels: list, title: str):
+    figure, ax = plt.subplots(1, 1, figsize=(_FIG_SIZE, _FIG_SIZE))
+    for result, label in zip(results, labels):
+        ax.loglog(result[0], result(1), base=2, label=label)
+    ax.legend(fontsize=_LABEL_SIZE)
+    ax.set_title(title, fontsize=_TITLE_SIZE)
+    figure.tight_layout()
+    plt.show()
+
