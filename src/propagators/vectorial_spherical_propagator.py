@@ -49,6 +49,10 @@ class VectorialSphericalPropagator(SphericalPropagator):
         self.sin_twophi = sin_twophi.to(self.device)
         self.cos_twophi = cos_twophi.to(self.device)
 
+    @classmethod
+    def get_name(cls) -> str:
+        return 'vectorial_spherical'
+
     def get_input_field(self) -> torch.Tensor:
         single_field = torch.ones(self.n_pix_pupil).to(self.device)
         input_field = torch.stack((self.e0x * single_field, self.e0y * single_field),

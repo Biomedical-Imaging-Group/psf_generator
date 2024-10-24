@@ -15,6 +15,11 @@ from .spherical_propagator import SphericalPropagator
 
 
 class ScalarSphericalPropagator(SphericalPropagator):
+
+    @classmethod
+    def get_name(cls) -> str:
+        return 'scalar_spherical'
+
     def get_input_field(self) -> torch.Tensor:
         """
         Define a (1D) radial pupil function as the input field.

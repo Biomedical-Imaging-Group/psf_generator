@@ -12,6 +12,11 @@ from .cartesian_propagator import CartesianPropagator
 
 
 class ScalarCartesianPropagator(CartesianPropagator):
+
+    @classmethod
+    def get_name(cls) -> str:
+        return 'scalar_cartesian'
+
     def get_input_field(self) -> torch.Tensor:
         """
         Define the corresponding 2D pupil function as the input field.

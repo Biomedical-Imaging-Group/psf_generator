@@ -77,6 +77,11 @@ class Propagator(ABC):
         self.t_i0 = t_i0
         self.t_i = n_i * (t_g0 / n_g0 + t_i0 / self.n_i0 - t_g / n_g - z_p / n_s)
 
+    @classmethod
+    @abstractmethod
+    def get_name(cls) -> str:
+        """Get name of the propagator in a certain format, e.g. 'scalar_cartesian'."""
+        raise NotImplementedError
 
     @abstractmethod
     def _zernike_aberrations(self):

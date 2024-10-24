@@ -35,6 +35,9 @@ class VectorialCartesianPropagator(CartesianPropagator):
         # electric field component ey at focal plane
         self.e0y = e0y
 
+    @classmethod
+    def get_name(cls) -> str:
+        return 'vectorial_cartesian'
 
     def get_input_field(self) -> torch.Tensor:
         """
