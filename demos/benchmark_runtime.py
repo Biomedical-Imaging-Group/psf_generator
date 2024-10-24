@@ -4,21 +4,19 @@ Benchmark runtime of the two scalar propagators on CPU and GPU for a range of nu
 The number of pixels of the PSF is fixed and only the one slice (focal plane) is computed.
 
 """
+import math
 import os
 import sys
-
-from utils.handle_data import save_stats_as_csv
 
 module_path = os.path.abspath(os.path.join('')) + '/src/'
 if module_path not in sys.path:
     sys.path.insert(0, module_path)
 from time import time
 
-import numpy as np
 import torch
 
-from propagators import ScalarCartesianPropagator, ScalarSphericalPropagator, VectorialCartesianPropagator, \
-    VectorialSphericalPropagator
+from propagators import *
+from utils.handle_data import save_stats_as_csv
 
 
 def benchmark_runtime_pupil_size():
@@ -44,11 +42,10 @@ def benchmark_runtime_pupil_size():
     list_of_pupil_pixels = [int(item) for item in np.logspace(5, 13, number_of_pupil_sizes, base=2)]
     number_of_repetitions = 10
     devices = ["cpu", "cuda:0"]
-    device_names = ["cpu", "gpu"]
     # file path to save statistics
     path = os.path.join('results', 'data')
 
-    for device, device_name in zip(devices, device_names):
+    for device in devices:
         if 'cuda' in device:
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
@@ -57,6 +54,7 @@ def benchmark_runtime_pupil_size():
         for propagator in propagators:
             average_runtime_list = []
             for n_pix_pupil in list_of_pupil_pixels:
+                print(device, propagator.__name__, n_pix_pupil)
                 runtime_list = []
                 for _ in range(number_of_repetitions):
                     start_time = time()
@@ -65,8 +63,10 @@ def benchmark_runtime_pupil_size():
                     runtime_list.append(runtime)
                 average_runtime_list.append((n_pix_pupil, sum(runtime_list) / number_of_repetitions))
             # save stats
+
+            device_name = 'gpu' if 'cuda' in device else 'cpu'
             filename = f'{propagator.get_name()}_{device_name}'
-            filepath = os.path.join(path, filename + 'csv')
+            filepath = os.path.join(path, filename + '.csv')
             save_stats_as_csv(average_runtime_list, filepath)
 
 
