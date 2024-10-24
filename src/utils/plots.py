@@ -139,7 +139,8 @@ def plot_psf_intensity_maps(
 def plot_benchmark_results(results: list, labels: list, title: str):
     figure, ax = plt.subplots(1, 1, figsize=(_FIG_SIZE, _FIG_SIZE))
     for result, label in zip(results, labels):
-        ax.loglog(result[0], result(1), base=2, label=label)
+        x, y = zip(*result)
+        ax.loglog(x, y, base=2, label=label)
     ax.legend(fontsize=_LABEL_SIZE)
     ax.set_title(title, fontsize=_TITLE_SIZE)
     figure.tight_layout()
