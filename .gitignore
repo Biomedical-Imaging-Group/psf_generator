@@ -5,3 +5,6 @@ docs/_build
 *.png
 *.csv
 *.npy
+*.txt
+!requirements.txt
+*.egg-info/
