@@ -60,7 +60,8 @@ def _compute_intensity_of_psf(input_image: np.ndarray) -> np.ndarray:
     - dim three and four : (x, y) axes
 
     The intensity is computed as follows:
-    .. math:: I = sqrt(sum_{i}^{n_e} |e_i(x, y, z)|^2).
+
+    .. math:: I = \sqrt{\sum_{i=1}^{N_e} |e_i(x, y, z)|^2}, \quad N_e = 1 \, \mathrm{or} \, 3.
 
     Parameters
     ----------

@@ -15,6 +15,9 @@ from ..utils.integrate import simpsons_rule
 
 
 class VectorialSphericalPropagator(SphericalPropagator):
+    r"""
+    TODO: add description and formulae
+    """
     def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
                  zernike_coefficients=None,
                  e0x=1.0, e0y=0.0,

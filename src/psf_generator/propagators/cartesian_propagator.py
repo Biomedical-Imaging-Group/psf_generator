@@ -16,6 +16,9 @@ from ..utils.zernike import create_zernike_aberrations
 
 
 class CartesianPropagator(Propagator, ABC):
+    r"""
+    TODO: add description and formulae
+    """
     def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
                  zernike_coefficients=None,
                  wavelength=632, na=1.3, fov=1000, refractive_index=1.5,

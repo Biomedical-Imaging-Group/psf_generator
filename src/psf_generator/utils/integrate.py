@@ -1,6 +1,6 @@
 # Copyright Biomedical Imaging Group, EPFL 2024
 
-"""
+r"""
 A collection of Newton-Cotes quadrature rules for numerical integration in 1D.
 
 The definition of the integral :math:`I(x)` of a function :math:`f(x)` over an interval :math:`[a, b]` is
@@ -8,7 +8,7 @@ The definition of the integral :math:`I(x)` of a function :math:`f(x)` over an i
 .. math:: I(x) = \int_{a}^{b} f(x) dx
 
 The integrand is evaluated at `N` equally-spaced points on :math:`[a, b]`, resulting in a step size of
-:math:`h = 1/(N - 1)`.
+:math:`h = \frac{1}{N - 1}`.
 We vectorize the integration along dimension `dim = 1` to allow multiple integrals to be evaluated in parallel.
 """
 

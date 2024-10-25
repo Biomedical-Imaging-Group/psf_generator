@@ -10,6 +10,9 @@ import torch
 
 
 class Propagator(ABC):
+    r"""
+    TODO: add description
+    """
     def __init__(self,
                  n_pix_pupil: int =128,
                  n_pix_psf: int = 128,

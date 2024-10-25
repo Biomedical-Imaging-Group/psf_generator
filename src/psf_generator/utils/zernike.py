@@ -40,7 +40,7 @@ def zernike_nl(n: int, l: int, rho: torch.float, phi: float, radius: float = 1) 
     n : int
         Index `n` in the definition on wikipedia, positive integer.
     l : int
-        :math`|l| = m`, `m` is the index m in the definition on wikipedia. `l` can be positive or negative.
+        :math:`|l| = m`, `m` is the index m in the definition on wikipedia. `l` can be positive or negative.
     rho : torch.Float
         Radial distance.
     phi : float
@@ -71,8 +71,7 @@ def index_to_nl(index: int) -> tuple[int, int]:
     """
     Find the [n, l]-pair given OSA index l for Zernike polynomials.
 
-    The OSA index 'j' is defined as
-    $j = (n(n + 2) + l) / 2$.
+    The OSA index 'j' is defined as :math:`j = (n(n + 2) + l) / 2`.
 
     Parameters
     ----------

@@ -15,13 +15,15 @@ from .spherical_propagator import SphericalPropagator
 
 
 class ScalarSphericalPropagator(SphericalPropagator):
-
+    r"""
+    TODO: add description and formulae
+    """
     @classmethod
     def get_name(cls) -> str:
         return 'scalar_spherical'
 
     def get_input_field(self) -> torch.Tensor:
-        """
+        r"""
         Define a (1D) radial pupil function as the input field.
 
         Notes
@@ -29,11 +31,11 @@ class ScalarSphericalPropagator(SphericalPropagator):
         This function is defined on the interval :math:`\rho \in [0,1]`; :math:`\rho` is a "normalized" radius.
         The conversion to physical pupil coordinates - the polar angle :math:`\theta` - is given by
 
-        .. `math:`\rho = \frac{\sin{\theta}}{\sin{\theta_{max}}}`,
+        .. math:: \rho = \frac{\sin{\theta}}{\sin{\theta_{max}}},
 
         such that the physical domain is
 
-       .. :math:`\theta \leq \theta_{max}`.
+        .. math:: \theta \leq \theta_{max}.
 
         """
         input_field = torch.ones(self.n_pix_pupil).to(torch.complex64).to(self.device)
