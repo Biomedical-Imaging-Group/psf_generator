@@ -1,3 +1,7 @@
+"""
+A collection of plotting functions.
+
+"""
 import os
 import typing as tp
 
@@ -20,6 +24,7 @@ markersize = 6
 def colorbar(mappable, cbar_ticks: tp.Union[str, tp.List, None] = 'auto'):
     """
     colorbar with the option to add or remove ticks
+
     Parameters
     ----------
     mappable
@@ -61,6 +66,7 @@ def _compute_intensity_of_psf(input_image: np.ndarray) -> np.ndarray:
     ----------
     input_image : np.ndarray
         Scalar or vectorial electric field. 4D array.
+
     Returns
     -------
     output : np.ndarray
@@ -80,7 +86,7 @@ def plot_psf_intensity_maps(
         x_slice_number: int = None,
         y_slice_number: int = None,
         cmap: str = 'viridis',
-        filepath: str = None
+        filepath: str = None,
 ):
     """
     Plot three orthogonal slices of the 3D intensity map of the PSF.

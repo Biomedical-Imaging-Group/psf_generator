@@ -9,5 +9,5 @@ __all__ = [
     'ScalarCartesianPropagator',
     'ScalarSphericalPropagator',
     'VectorialCartesianPropagator',
-    'VectorialSphericalPropagator'
+    'VectorialSphericalPropagator',
 ]

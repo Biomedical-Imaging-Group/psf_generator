@@ -70,7 +70,7 @@ class CartesianPropagator(Propagator, ABC):
             path = self.compute_optical_path(sin_t)
             self.correction_factor *= torch.exp(1j * self.k * path)
 
-        defocus_range = torch.linspace(self.defocus_min, self.defocus_max, self.n_defocus
+        defocus_range = torch.linspace(self.defocus_min, self.defocus_max, self.n_defocus,
                                        ).reshape(-1, 1, 1, 1).to(self.device)
         self.defocus_filters = torch.exp(1j * self.k * s_zz * defocus_range)
 

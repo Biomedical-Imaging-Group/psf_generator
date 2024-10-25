@@ -95,7 +95,7 @@ class VectorialSphericalPropagator(SphericalPropagator):
             J2: torch.Tensor,
             input_field: torch.Tensor,
             sin_t: torch.Tensor,
-            cos_t: torch.Tensor
+            cos_t: torch.Tensor,
     ) -> torch.Tensor:
         """
         Compute the PSF at defocus.

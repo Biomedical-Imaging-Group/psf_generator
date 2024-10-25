@@ -1,3 +1,7 @@
+"""
+Tests for PSFs.
+
+"""
 import os
 
 import numpy as np
@@ -17,14 +21,14 @@ kwargs = {
             'defocus_max': 1000,
             'n_defocus': 126,
             'apod_factor': False,
-            'gibson_lanni': False
+            'gibson_lanni': False,
         }
 
 @pytest.mark.parametrize('propagator_type', [
     ScalarCartesianPropagator,
     ScalarSphericalPropagator,
     VectorialCartesianPropagator,
-    VectorialSphericalPropagator
+    VectorialSphericalPropagator,
 ])
 def test_psf(propagator_type):
     """

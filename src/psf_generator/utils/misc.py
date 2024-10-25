@@ -1,3 +1,7 @@
+"""
+A collection of miscellaneous functions.
+
+"""
 import typing as tp
 
 import numpy as np

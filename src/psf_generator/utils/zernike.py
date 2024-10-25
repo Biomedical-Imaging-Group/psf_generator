@@ -1,5 +1,9 @@
 # Copyright Biomedical Imaging Group, EPFL 2024
 
+"""
+A collection of functions related to Zernike polynomials.
+
+"""
 import numpy as np
 import torch
 from scipy.special import binom
@@ -70,7 +74,7 @@ def index_to_nl(index: int) -> tuple[int, int]:
     The OSA index 'j' is defined as
     $j = (n(n + 2) + l) / 2$.
 
-    Parameters:
+    Parameters
     ----------
     index : int
         OSA index j.

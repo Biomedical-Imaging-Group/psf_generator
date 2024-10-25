@@ -8,7 +8,7 @@ The definition of the integral :math:`I(x)` of a function :math:`f(x)` over an i
 .. math:: I(x) = \int_{a}^{b} f(x) dx
 
 The integrand is evaluated at `N` equally-spaced points on :math:`[a, b]`, resulting in a step size of
-:math:`h = \frac{1}{N - 1}`.
+:math:`h = 1/(N - 1)`.
 We vectorize the integration along dimension `dim = 1` to allow multiple integrals to be evaluated in parallel.
 """
 
@@ -100,7 +100,6 @@ def simpsons_rule(fs: torch.Tensor, dx: float) -> torch.Tensor:
     Simpson's rule only works correctly with grids of odd sizes (i.e. N == 2*K + 1)!
 
     """
-
     if fs.shape[0] % 2 == 0:
         warnings.warn("Pupil size is not an odd number! The computed \
                       integral will not have high-order accuracy.")

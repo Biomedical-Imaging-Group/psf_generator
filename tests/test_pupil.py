@@ -1,3 +1,7 @@
+"""
+Tests for pupils.
+
+"""
 import os
 
 import numpy as np
@@ -19,14 +23,14 @@ kwargs = {
             'defocus_max': 1000,
             'n_defocus': 126,
             'apod_factor': False,
-            'gibson_lanni': False
+            'gibson_lanni': False,
         }
 
 @pytest.mark.parametrize('propagator_type, pupil_shape', [
     (ScalarCartesianPropagator, (N_PIX_PUPIL, N_PIX_PUPIL)),
     (ScalarSphericalPropagator, (N_PIX_PUPIL,)),
     (VectorialCartesianPropagator, (3, N_PIX_PUPIL, N_PIX_PUPIL)),
-    (VectorialSphericalPropagator, (2, N_PIX_PUPIL))
+    (VectorialSphericalPropagator, (2, N_PIX_PUPIL)),
 ])
 def test_pupil(propagator_type, pupil_shape):
     """

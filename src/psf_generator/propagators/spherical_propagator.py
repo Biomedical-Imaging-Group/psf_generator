@@ -73,7 +73,7 @@ class SphericalPropagator(Propagator, ABC):
         # integration method for the Bessel functions
         self.quadrature_rule = quadrature_rule
 
-    def _zernike_aberrations(self):
+    def _zernike_aberrations(self) -> torch.Tensor:
         """Compute Zernike aberrations that will be applied on the pupil."""
         aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='spherical')
         return aberrations.to(self.device)

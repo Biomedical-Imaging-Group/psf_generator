@@ -46,7 +46,7 @@ extensions = [
     'sphinxcontrib.bibtex',
     'sphinx_proof',
     'myst_parser',
-    'autoapi.extension'
+    'autoapi.extension',
 ]
 
 # Make sure the target is unique

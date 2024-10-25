@@ -1,3 +1,7 @@
+"""
+Visualize the benchmark result of the runtime of all four propagators against the size of pixels on the pupil.
+
+"""
 import os
 
 from src.psf_generator.propagators import *
@@ -10,7 +14,7 @@ if __name__ == "__main__":
         ScalarCartesianPropagator,
         ScalarSphericalPropagator,
         VectorialCartesianPropagator,
-        VectorialSphericalPropagator
+        VectorialSphericalPropagator,
     ]
     device_names = ['cpu', 'gpu']
     title = 'Runtime benchmark against pupil sizes'

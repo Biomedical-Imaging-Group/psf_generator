@@ -7,11 +7,12 @@ The number of pixels of the PSF is fixed and only the one slice (focal plane) is
 import math
 import os
 import sys
+from time import time
+
 
 module_path = os.path.abspath(os.path.join('')) + '/src/'
 if module_path not in sys.path:
     sys.path.insert(0, module_path)
-from time import time
 
 import torch
 
@@ -20,6 +21,7 @@ from src.psf_generator.utils.handle_data import save_stats_as_csv
 
 
 def benchmark_runtime_pupil_size():
+    """Benchmark the runtime against the size of the pupil."""
     # propagator parameters
     kwargs = {
         'n_pix_psf': 201,
@@ -35,7 +37,7 @@ def benchmark_runtime_pupil_size():
         ScalarCartesianPropagator,
         ScalarSphericalPropagator,
         VectorialCartesianPropagator,
-        VectorialSphericalPropagator
+        VectorialSphericalPropagator,
     ]
     # test parameters
     list_of_pupil_pixels = [int(math.pow(2, exponent)) for exponent in range(5, 13)]

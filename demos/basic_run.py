@@ -1,3 +1,9 @@
+"""
+Example usage of all the propagators.
+
+How to call them and visualize the generated PSF.
+
+"""
 import os
 
 from src.psf_generator.propagators import *
@@ -24,7 +30,7 @@ if __name__ == "__main__":
         'defocus_max': defocus,
         'n_defocus': n_defocus,
         'apod_factor': False,
-        'gibson_lanni': True
+        'gibson_lanni': True,
     }
 
     # define propagators
@@ -32,7 +38,7 @@ if __name__ == "__main__":
         ScalarCartesianPropagator(**kwargs),
         ScalarSphericalPropagator(**kwargs),
         VectorialCartesianPropagator(e0x=e0x, e0y=e0y, **kwargs),
-        VectorialSphericalPropagator(e0x=e0x, e0y=e0y, **kwargs)
+        VectorialSphericalPropagator(e0x=e0x, e0y=e0y, **kwargs),
     ]
 
     for propagator in propagators:

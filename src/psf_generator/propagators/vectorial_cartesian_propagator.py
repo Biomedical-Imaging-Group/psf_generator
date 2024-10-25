@@ -39,7 +39,7 @@ class VectorialCartesianPropagator(CartesianPropagator):
         return 'vectorial_cartesian'
 
     def get_input_field(self) -> torch.Tensor:
-        """
+        r"""
         Compute the corresponding input field.
 
         TODO: more explanations. Use :math:`\pi` for math formulae.

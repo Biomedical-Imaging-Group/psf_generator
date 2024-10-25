@@ -104,7 +104,7 @@ def _apply_fftshift(x: torch.Tensor, shape_out: tp.Optional[tp.Tuple], k_start: 
 
 def custom_fft2(x: torch.Tensor, shape_out=None, k_start: float = 0.0, k_end: float = 2 * torch.pi,
                 norm: str = 'ortho', fftshift_input: bool = False, include_end: bool = False) -> torch.Tensor:
-    """
+    r"""
     Custom 2D FFT that allows to zoom on the region of interest in the Fourier plane.
 
     The output image is square.
@@ -155,7 +155,7 @@ def custom_fft2(x: torch.Tensor, shape_out=None, k_start: float = 0.0, k_end: fl
 
 def custom_ifft2(x: torch.Tensor, shape_out=None, k_start: float = 0.0, k_end: float = 2 * torch.pi,
                 norm: str = 'ortho', fftshift_input: bool = False, include_end: bool = False) -> torch.Tensor:
-    """
+    r"""
     Custom 2D inverse FFT that allows to zoom on the region of interest in the Fourier plane.
 
     The output image is square.
@@ -296,12 +296,12 @@ def czt2d(x: torch.Tensor, shape_out=None, w_phase=None, a_phase: float = 0.0) -
     second_factor = fft2(1 / torch.hstack(
         (torch.vstack(
             (torch.flip(wk2[1:N, 1:N], dims=(0,1)),
-            torch.flip(wk2[:K, 1:N], dims=(1,)))
+            torch.flip(wk2[:K, 1:N], dims=(1,))),
         ),
         torch.vstack(
             (torch.flip(wk2[1:N, :K], dims=(0,)),
-            wk2[:K, :K])
-        ))
+            wk2[:K, :K]),
+        )),
     ), s=(fft_dim,fft_dim))
     idx = slice(N - 1, N + K - 1)
 

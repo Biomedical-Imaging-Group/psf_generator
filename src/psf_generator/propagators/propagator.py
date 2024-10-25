@@ -84,17 +84,17 @@ class Propagator(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def _zernike_aberrations(self):
+    def _zernike_aberrations(self) -> torch.Tensor:
         """Zernike aberrations that will be applied on the pupil."""
         raise NotImplementedError
 
     @abstractmethod
-    def get_input_field(self):
+    def get_input_field(self) -> torch.Tensor:
         """Get the corresponding pupil as the input field of propagator."""
         raise NotImplementedError
 
     @abstractmethod
-    def compute_focus_field(self):
+    def compute_focus_field(self) -> torch.Tensor:
         """Compute the output field of the propagator at focal plane."""
         raise NotImplementedError
 

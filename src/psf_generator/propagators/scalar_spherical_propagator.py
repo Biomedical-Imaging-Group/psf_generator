@@ -43,8 +43,8 @@ class ScalarSphericalPropagator(SphericalPropagator):
     def compute_focus_field(self) -> torch.Tensor:
         """Compute the focus field for scalar spherical propagator.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         self.thetas : torch.Tensor
             Angles of sampling of size: (n_thetas, )
         self.rs : torch.Tensor
@@ -80,7 +80,7 @@ class ScalarSphericalPropagator(SphericalPropagator):
             defocus_term,
             J0: torch.Tensor,
             input_field: torch.Tensor,
-            sin_t: torch.Tensor
+            sin_t: torch.Tensor,
     ) -> torch.Tensor:
         """Compute PSF at defocus.
 

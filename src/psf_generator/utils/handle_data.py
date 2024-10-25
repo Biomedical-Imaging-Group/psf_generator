@@ -1,3 +1,16 @@
+"""
+A collection of functions to handle loading and saving of data and image.
+
+- `image` uses common image formats, e.g., `.tif`
+- `npy` uses numpy data format `.npy` for images
+- `csv` uses `.csv` for statistical data
+
+Notes
+-----
+    `save_image` follows convention (spatial dimensions, channels), i.e. it changes the axes of the input image.
+    For tests, we save images in `.npy` format to avoid this inconvenience.
+
+"""
 import csv
 import os
 import typing as tp
