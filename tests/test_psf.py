@@ -3,9 +3,9 @@ import os
 import numpy as np
 import pytest
 
-from propagators import *
-from utils.handle_data import load_from_npy
-from utils.misc import convert_tensor_to_array
+from src.psf_generator.propagators import *
+from src.psf_generator.utils.handle_data import load_from_npy
+from src.psf_generator.utils.misc import convert_tensor_to_array
 
 kwargs = {
             'n_pix_pupil': 127,

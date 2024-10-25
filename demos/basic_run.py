@@ -1,7 +1,7 @@
 import os
 
-from propagators import *
-from utils.plots import plot_psf_intensity_maps
+from src.psf_generator.propagators import *
+from src.psf_generator.utils.plots import plot_psf_intensity_maps
 
 if __name__ == "__main__":
     n_pix_pupil = 127

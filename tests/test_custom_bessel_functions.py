@@ -4,7 +4,7 @@ import torch
 from torch.autograd import gradcheck
 
 sys.path.append('../..')
-from src.utils.bessel import BesselJ0, BesselJ1
+from src.psf_generator.utils.bessel import BesselJ0, BesselJ1
 
 
 def test_bessel_functions():

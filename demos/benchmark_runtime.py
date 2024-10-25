@@ -15,8 +15,8 @@ from time import time
 
 import torch
 
-from propagators import *
-from utils.handle_data import save_stats_as_csv
+from src.psf_generator.propagators import *
+from src.psf_generator.utils.handle_data import save_stats_as_csv
 
 
 def benchmark_runtime_pupil_size():
