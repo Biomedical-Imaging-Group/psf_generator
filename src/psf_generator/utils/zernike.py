@@ -139,3 +139,51 @@ def create_zernike_aberrations(zernike_coefficients: torch.Tensor, n_pix_pupil: 
         raise ValueError(f"Invalid mesh type {mesh_type}, choose 'spherical' or 'cartesian'.")
 
     return torch.exp(1j * zernike_phase).to(torch.complex64)
+
+
+def create_special_pupil(n_pix_pupil: int, name: str = 'flat', tophat_radius: float = 0.5) -> torch.Tensor:
+    """
+    Special phase masks not included in the space spanned by the Zernike polynomials.
+    TODO: only applicable in the Cartesian case?
+
+    The supported special phase masks are:
+    - None <-> flat phase, Gaussian beam
+    - `vortex` <-> donut beam
+    - `halfmoon-h` <-> horizontal halfmoon beam
+    - `halfmoon-v` <-> vertical halfmoon beam
+    - `tophat` <-> tophat beam
+
+    Parameters
+    ----------
+    n_pix_pupil : int
+        Number of pixels on the pupil plane.
+    name : str
+        Name of the special phase mask. Valid choices: None, 'vortex', 'halfmoon-h', 'halfmoon-v', 'tophat'.
+    tophat_radius : float
+        Radius of the tophat mask. Default is 0.5. TODO: relate to cutoff frequency of the system.
+
+    Returns
+    -------
+    pupil : torch.Tensor
+        Pupil function of the special phase mask.
+
+    """
+    valid_names = [None, 'vortex', 'halfmoon-h', 'halfmoon-v', 'tophat']
+    if name not in valid_names:
+        raise ValueError(f'Invalid name for the special pupil {name}, choose one of the following: {valid_names}')
+    kx, ky = create_pupil_mesh(n_pixels=n_pix_pupil)
+    if name is None:
+        phase_mask = torch.zeros(n_pix_pupil, n_pix_pupil)
+    elif name == 'vortex':
+        phase_mask = torch.atan2(kx, ky)
+    elif name == 'halfmoon-h':
+        phase_mask = torch.zeros(n_pix_pupil, n_pix_pupil)
+        phase_mask[0: n_pix_pupil // 2, :] = torch.pi
+    elif name == 'halfmoon-v':
+        phase_mask = torch.zeros(n_pix_pupil, n_pix_pupil)
+        phase_mask[:, 0: n_pix_pupil // 2] = torch.pi
+    elif name == 'tophat':
+        inner_disk = kx ** 2 + ky ** 2 - tophat_radius ** 2
+        phase_mask = torch.where(inner_disk > 0, torch.pi, 0)
+    pupil = torch.exp(1j * phase_mask).to(torch.complex64)
+    return pupil

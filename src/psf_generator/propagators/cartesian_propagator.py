@@ -12,7 +12,7 @@ import torch
 
 from .propagator import Propagator
 from ..utils.czt import custom_ifft2
-from ..utils.zernike import create_zernike_aberrations
+from ..utils.zernike import create_zernike_aberrations, create_special_pupil
 
 
 class CartesianPropagator(Propagator, ABC):
@@ -21,6 +21,7 @@ class CartesianPropagator(Propagator, ABC):
     """
     def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
                  zernike_coefficients=None,
+                 special_phase_mask=None,
                  wavelength=632, na=1.3, fov=1000, refractive_index=1.5,
                  defocus_min=0, defocus_max=0, n_defocus=1,
                  sz_correction=True, apod_factor=False, envelope=None,
@@ -36,6 +37,9 @@ class CartesianPropagator(Propagator, ABC):
                          n_g=n_g, n_g0=n_g0, t_g=t_g, t_g0=t_g0,
                          n_i=n_i, t_i0=t_i0)
         self.sz_correction = sz_correction
+
+        # special phase mask
+        self.special_phase_mask = special_phase_mask
 
         # Physical parameters
         self.k = 2 * torch.pi / self.wavelength
@@ -79,7 +83,9 @@ class CartesianPropagator(Propagator, ABC):
 
     def _zernike_aberrations(self):
         """Compute Zernike aberrations that will be applied on the pupil."""
-        aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='cartesian')
+        zernike_aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='cartesian')
+        special_aberrations = create_special_pupil(self.n_pix_pupil, name=self.special_phase_mask)
+        aberrations = zernike_aberrations * special_aberrations
         return aberrations.to(self.device)
 
     def compute_focus_field(self):

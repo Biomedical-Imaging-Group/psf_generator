@@ -19,6 +19,7 @@ if __name__ == "__main__":
     n_defocus = 200
     e0x = 1
     e0y = 0
+    mask = 'vortex'
 
     kwargs = {
         'n_pix_pupil': n_pix_pupil,
@@ -35,9 +36,9 @@ if __name__ == "__main__":
 
     # define propagators
     propagators = [
-        ScalarCartesianPropagator(**kwargs),
+        ScalarCartesianPropagator(special_phase_mask=mask, **kwargs),
         ScalarSphericalPropagator(**kwargs),
-        VectorialCartesianPropagator(e0x=e0x, e0y=e0y, **kwargs),
+        VectorialCartesianPropagator(e0x=e0x, e0y=e0y, special_phase_mask=mask, **kwargs),
         VectorialSphericalPropagator(e0x=e0x, e0y=e0y, **kwargs),
     ]
 
