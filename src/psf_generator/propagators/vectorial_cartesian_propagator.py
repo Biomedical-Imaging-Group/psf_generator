@@ -12,7 +12,7 @@ from ..utils.zernike import create_pupil_mesh
 
 class VectorialCartesianPropagator(CartesianPropagator):
     """
-    TODO: add desscription and formulae
+    TODO: add description and formulae
     """
     def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
                  zernike_coefficients=None,
