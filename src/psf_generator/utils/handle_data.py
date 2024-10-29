@@ -19,7 +19,7 @@ import numpy as np
 import skimage.io as skio
 import torch
 
-from utils.misc import convert_tensor_to_array
+from src.psf_generator.utils.misc import convert_tensor_to_array
 
 
 def load_image(filepath: str):
