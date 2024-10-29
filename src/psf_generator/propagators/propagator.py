@@ -45,8 +45,9 @@ class Propagator(ABC):
         # Zernike coefficients
         if zernike_coefficients is None:
             zernike_coefficients = [0]
-        self.zernike_coefficients = torch.tensor(zernike_coefficients)
-
+        if not isinstance(zernike_coefficients, torch.Tensor):
+            zernike_coefficients = torch.tensor(zernike_coefficients)
+        self.zernike_coefficients = zernike_coefficients
         # All distances are in nanometers
         # wavelength
         self.wavelength = wavelength

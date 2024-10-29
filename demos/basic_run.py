@@ -6,6 +6,7 @@ How to call them and visualize the generated PSF.
 """
 import os
 
+import torch
 from src.psf_generator.propagators import *
 from src.psf_generator.utils.plots import plot_psf_intensity_maps
 
@@ -20,11 +21,13 @@ if __name__ == "__main__":
     e0x = 1
     e0y = 0
     mask = 'vortex'
+    zernike_coefficients = torch.ones(5)
 
     kwargs = {
         'n_pix_pupil': n_pix_pupil,
         'n_pix_psf': n_pix_psf,
         'wavelength': wavelength,
+        'zernike_coefficients': zernike_coefficients,
         'na': na,
         'fov': fov,
         'defocus_min': -defocus,
