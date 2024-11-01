@@ -96,13 +96,19 @@ def index_to_nl(index: int) -> tuple[int, int]:
 
 def create_zernike_aberrations(zernike_coefficients: torch.Tensor, n_pix_pupil: int, mesh_type: str) -> torch.Tensor:
     """
-    Create Zernike aberrations for the pupil function in the Cartesian case.
+    Create Zernike aberrations for the pupil function.
 
-    For Scalar or Vectorial Cartesian cases, Zernike aberrations can be added to the pupil function.
-    Given the Zernike coefficients as a 1D Tensor of length `n_zernike`, a stack of the first `n_zernike`
+    Arbitrary Zernike aberrations can be applied to the Cartesian propagator.
+
+    How it works:
+    - Given the Zernike coefficients as a 1D Tensor of length `n_zernike`, a stack of the first `n_zernike`
     Zernike polynomials are constructed.
-    Then, the coefficients and the polynomials are multiplied and summed accordingly to create a phase mask.
-    Finally, we create the complex field to be multiple with the existing  pupil function to add this aberration.
+    - Then, the coefficients and the polynomials are multiplied and summed accordingly to create a phase mask.
+    Finally, we create the complex field to be multiple with the existing pupil function to add this aberration.
+
+    For the Spherical case, only the axis-symmetric Zernike polynomials (i.e. only dependent on the radius `rho` not the
+    angle `phi`), such as _defocus_ and 'primary spherical', can be applied due to the axis-symmetric assumption of the
+    spherical propagator. See `Spherical_propagators.py` for details.
 
     Parameters
     ----------
@@ -132,7 +138,7 @@ def create_zernike_aberrations(zernike_coefficients: torch.Tensor, n_pix_pupil: 
             n, l = index_to_nl(index=i)
             curr_coefficient = zernike_coefficients[i]
             if l != 0 and curr_coefficient != 0:
-                print("Warning: Zernike coefficients for l != 0 are not supported in spherical coordinates.")
+                print("Warning: Zernike polynomials that are not axis-symmetric are not supported in spherical coordinates.")
             elif l == 0:
                 zernike_phase += curr_coefficient * zernike_nl(n=n, l=l, rho=rho, phi=phi)
     else:
@@ -144,7 +150,6 @@ def create_zernike_aberrations(zernike_coefficients: torch.Tensor, n_pix_pupil: 
 def create_special_pupil(n_pix_pupil: int, name: str = 'flat', tophat_radius: float = 0.5) -> torch.Tensor:
     """
     Special phase masks not included in the space spanned by the Zernike polynomials.
-    TODO: only applicable in the Cartesian case?
 
     The supported special phase masks are:
     - None <-> flat phase, Gaussian beam
@@ -152,6 +157,8 @@ def create_special_pupil(n_pix_pupil: int, name: str = 'flat', tophat_radius: fl
     - `halfmoon-h` <-> horizontal halfmoon beam
     - `halfmoon-v` <-> vertical halfmoon beam
     - `tophat` <-> tophat beam
+
+    These special masks only applies in the Cartesian case.
 
     Parameters
     ----------
