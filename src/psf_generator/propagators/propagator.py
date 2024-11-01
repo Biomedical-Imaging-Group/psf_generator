@@ -88,8 +88,8 @@ class Propagator(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def _zernike_aberrations(self) -> torch.Tensor:
-        """Zernike aberrations that will be applied on the pupil."""
+    def _aberrations(self) -> torch.Tensor:
+        """Aberrations that will be applied on the pupil."""
         raise NotImplementedError
 
     @abstractmethod

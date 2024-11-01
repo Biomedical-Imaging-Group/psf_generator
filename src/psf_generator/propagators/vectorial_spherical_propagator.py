@@ -59,7 +59,7 @@ class VectorialSphericalPropagator(SphericalPropagator):
         single_field = torch.ones(self.n_pix_pupil).to(self.device)
         input_field = torch.stack((self.e0x * single_field, self.e0y * single_field),
                            dim=0).to(torch.complex64)
-        return input_field * self._zernike_aberrations()
+        return input_field * self._aberrations()
 
     def compute_focus_field(self) -> torch.Tensor:
         """

@@ -81,8 +81,8 @@ class CartesianPropagator(Propagator, ABC):
                                        ).reshape(-1, 1, 1, 1).to(self.device)
         self.defocus_filters = torch.exp(1j * self.k * s_zz * defocus_range)
 
-    def _zernike_aberrations(self):
-        """Compute Zernike aberrations that will be applied on the pupil."""
+    def _aberrations(self):
+        """Compute aberrations that will be applied on the pupil."""
         zernike_aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='cartesian')
         special_aberrations = create_special_pupil(self.n_pix_pupil, name=self.special_phase_mask)
         aberrations = zernike_aberrations * special_aberrations
