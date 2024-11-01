@@ -39,7 +39,7 @@ class ScalarSphericalPropagator(SphericalPropagator):
 
         """
         input_field = torch.ones(self.n_pix_pupil).to(torch.complex64).to(self.device)
-        return input_field * self._zernike_aberrations()
+        return input_field * self._aberrations()
 
 
     def compute_focus_field(self) -> torch.Tensor:
