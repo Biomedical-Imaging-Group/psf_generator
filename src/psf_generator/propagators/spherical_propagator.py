@@ -17,7 +17,11 @@ from ..utils.zernike import create_zernike_aberrations
 
 class SphericalPropagator(Propagator, ABC):
     r"""
-    TODO: add description and formulae
+    The spherical propagator makes the assumption that the input field (pupil) is axis-symmetric (rotational-invariant).
+    In other words, the input field is function of only radius and not dependent on the angle:
+
+    .. math:: \mathbf{e}_{\infty}(\theta, \phi) = \mathbf{e}_{\infty}(\theta).
+
     """
     def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
                  zernike_coefficients=None,
