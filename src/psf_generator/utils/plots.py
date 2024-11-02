@@ -50,9 +50,9 @@ def colorbar(mappable, cbar_ticks: tp.Union[str, tp.List, None] = 'auto'):
     return cbar
 
 
-def _compute_intensity_of_psf(input_image: np.ndarray) -> np.ndarray:
+def _compute_psf_intensity(input_image: np.ndarray) -> np.ndarray:
     """
-    Compute the intensity of the PSF from the electric field.
+    Compute the intensity of a complex field.
 
     The input array must be 4D with this convention:
     - dim one: z axis, or defocus slices.
@@ -61,92 +61,198 @@ def _compute_intensity_of_psf(input_image: np.ndarray) -> np.ndarray:
 
     The intensity is computed as follows:
 
-    .. math:: I = \sqrt{\sum_{i=1}^{N_e} |e_i(x, y, z)|^2}, \quad N_e = 1 \, \mathrm{or} \, 3.
+    .. math:: I = \sum_{i=1}^{N_e} |e_i(x, y, z)|^2, \quad N_e = 1 \, \mathrm{or} \, 3.
 
     Parameters
     ----------
     input_image : np.ndarray
-        Scalar or vectorial electric field. 4D array.
+        Scalar or vectorial complex field. 4D array.
 
     Returns
     -------
     output : np.ndarray
-        Intensity of the PSF. 3D array.
+        Intensity of the field. 4D array.
 
     """
     if input_image.ndim != 4:
         raise ValueError(f'The input image must be 4D instead of {input_image.ndim}')
     else:
-        return np.sqrt(np.sum(np.abs(input_image[:, :, :, :]) ** 2, axis=1))
+        intensity = np.sum(np.abs(input_image) ** 2, axis=1)
+        return intensity[:, np.newaxis, :, :]
 
 
-def plot_psf_intensity_maps(
-        psf_image: tp.Union[torch.Tensor, np.ndarray],
+def plot_pupil(
+        pupil_image: tp.Union[torch.Tensor, np.ndarray],
         name_of_propagator: str,
-        z_slice_number: int = None,
-        x_slice_number: int = None,
-        y_slice_number: int = None,
-        cmap: str = 'viridis',
-        filepath: str = None,
+        filepath: str = None
 ):
     """
-    Plot three orthogonal slices of the 3D intensity map of the PSF.
+    Plot the modulus and phase of a scalar or vectorial pupil for the Cartesian propagator.
 
     Parameters
     ----------
-    psf_image : torch.Tensor
-        Computed PSF from one of the four propagators. Direct output of the propagator.
+    pupil_image : torch.Tensor or np.ndarray
+        Pupil image to plot.
     name_of_propagator : str
         Name of the propagator.
-    z_slice_number : int, optional
-        Slice number at the z-axis for x-y planes. Default is the middle slice.
-    x_slice_number : int, optional
-        Slice number at the x-axis for y-z planes. Default is the middle slice.
-    y_slice_number: int, optional
-        Slice number at the y-axis for x-z planes. Default is the middle slice.
-    cmap : str, optional
-        colormap. Default is 'viridis'.
-    filepath : str, optional
-        Path to save the plot. Default is None and figure is not saved.
+    filepath: str, optional
+        Path to save the plot. Default is None, no file is saved.
 
     """
+    # convert to numpy array
+    pupil_array = convert_tensor_to_array(pupil_image)
+    # compute modulus and phase
+    pupil_modulus = np.abs(pupil_array)
+    pupil_phase = np.angle(pupil_array)
+    pupil_list = [pupil_modulus, pupil_phase]
+
+    if pupil_array.ndim == 2:
+        nrows = 1
+        pupil_list = [x[np.newaxis, :, :] for x in pupil_list]
+        row_titles = ['']
+    elif pupil_array.ndim == 3:
+        nrows = pupil_array.shape[0]
+        row_titles = [r'$E_x$', r'$E_y$', r'$E_z$']
+    else:
+        raise ValueError(f'Pupil should be either 2D or 3D, not {pupil_array.ndim}')
+
+    ncols = 2
+    cmaps = ['inferno', 'twilight']
+    col_titles = ['modulus', 'phase']
+    figure, axes = plt.subplots(nrows, ncols, figsize=(ncols * _FIG_SIZE, nrows * _FIG_SIZE))
+    if nrows == 1:
+        axes = axes.reshape(1, -1)
+    axes = axes.T
+    for (col_index, axis), pupil, cmap, title in zip(enumerate(axes), pupil_list, cmaps, col_titles):
+        cbar_min = np.min(pupil)
+        cbar_max = np.max(pupil)
+        norm = plt.Normalize(cbar_min, cbar_max)
+        for (row_index, ax), image, row_title in zip(enumerate(axis), pupil, row_titles):
+            im = ax.imshow(image, norm=norm, cmap=cmap)
+            colorbar(im, cbar_ticks=[cbar_min, cbar_max])
+            x_ticks = [0, image.shape[1]]
+            xtick_labels = x_ticks
+            ax.set_xticks(x_ticks)
+            ax.set_xticklabels(xtick_labels, fontsize=_TICK_SIZE)
+            y_ticks = [0, image.shape[0]]
+            ax.set_yticks(y_ticks)
+            ytick_labels = y_ticks
+            ax.set_yticklabels(ytick_labels, fontsize=_TICK_SIZE)
+            if row_index == 0:
+                ax.set_title(title, fontsize=_TITLE_SIZE)
+            if nrows > 1 and col_index == 0:
+                ax.text(-0.1, 0.5, row_title, fontsize=_TITLE_SIZE, verticalalignment='center',
+                        rotation=90, transform=ax.transAxes)
+                plt.subplots_adjust(left=0.05)
+
+    plt.suptitle(f'Pupil properties ({name_of_propagator})', fontsize=_SUP_TITLE_SIZE)
+    figure.tight_layout()
+    if filepath:
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        figure.savefig(filepath)
+    plt.show()
+
+
+def plot_psf(
+        psf_image: tp.Union[torch.Tensor, np.ndarray],
+        name_of_propagator: str,
+        quantity: str = 'modulus',
+        z_slice_number: int = None,
+        x_slice_number: int = None,
+        y_slice_number: int = None,
+        filepath: str = None
+):
+    """
+    Plot the intensity or modulus or phase of a PSF, applicable to all four propagators.
+
+    Parameters
+    ----------
+    psf_image : torch.Tensor or np.ndarray
+        PSF image to plot.
+    name_of_propagator : str
+        Name of the propagator.
+    quantity : str, optional
+        Quantity of the PSF to plot. Default is 'modulus'. Valid choices are 'modulus', 'phase', 'intensity'.
+    z_slice_number : int, optional
+        Z slice number for the x-y plane.
+    x_slice_number : int, optional
+        X slice number for the y-z plane.
+    y_slice_number : int, optional
+        Y slice number for the x-z plane.
+    filepath : str, optional
+        Path to save the plot. Default is None, no file is saved.
+
+    """
+    # convert to numpy array
     psf_array = convert_tensor_to_array(psf_image)
-    psf_intensity = _compute_intensity_of_psf(psf_array)
-    number_of_z_slices, number_of_electric_field_components, number_of_pixel_x, number_of_pixel_y = psf_image.shape
+    # check and compute quantity
+    valid_choices = ['modulus', 'phase', 'intensity']
+    if quantity == 'modulus':
+        psf_quantity = np.abs(psf_array)
+        cmap = 'inferno'
+    elif quantity == 'phase':
+        psf_quantity = np.angle(psf_array)
+        cmap = 'twilight'
+    elif quantity == 'intensity':
+        psf_quantity = _compute_psf_intensity(psf_array)
+        cmap = 'inferno'
+    else:
+        raise ValueError(f'quantity {quantity} is not supported, choose from {valid_choices}')
+
+    number_of_pixel_z, dim, number_of_pixel_x, number_of_pixel_y = psf_quantity.shape
     if z_slice_number is None:
-        z_slice_number = int(number_of_z_slices // 2)
+        z_slice_number = int(number_of_pixel_z // 2)
     if x_slice_number is None:
         x_slice_number = int(number_of_pixel_x // 2)
     if y_slice_number is None:
         y_slice_number = int(number_of_pixel_y // 2)
 
-    image_list = [psf_intensity[z_slice_number, :, :],
-                  psf_intensity[:, x_slice_number, :].T,
-                  psf_intensity[:, :, y_slice_number].T]
-    nrows = 1
-    ncols = 3
-    titles = [f'x-y plane at z={z_slice_number}/{number_of_z_slices} slices',
-              f'y-z plane at x={x_slice_number}/{number_of_pixel_x} slices',
-              f'x-z plane at y={y_slice_number}/{number_of_pixel_y} slices']
+    psf_quantity = psf_quantity.swapaxes(0, 1)
+    if dim == 1:
+        row_titles = ['']
+    elif dim == 3:
+        row_titles = [r'$E_x$', r'$E_y$', r'$E_z$']
+    else:
+        raise ValueError(f'Number of channels of the PSF should be 1 or 3, not {dim}')
+    psf_list = [
+                   psf_quantity[:, z_slice_number, :, :],
+                   psf_quantity[:, :, x_slice_number, :],
+                   psf_quantity[:, :, :, y_slice_number]
+                  ]
 
-    cbar_min = min([np.min(img) for img in image_list])
-    cbar_max = max([np.max(img) for img in image_list])
-
+    nrows = dim
+    ncols = len(psf_list)
+    col_titles = [
+                  f'x-y plane at z={z_slice_number}/{number_of_pixel_z} slices',
+                  f'y-z plane at x={x_slice_number}/{number_of_pixel_x} slices',
+                  f'x-z plane at y={y_slice_number}/{number_of_pixel_y} slices'
+    ]
+    cbar_min = min(np.min(psf) for psf in psf_list)
+    cbar_max = max(np.max(psf) for psf in psf_list)
+    norm = plt.Normalize(cbar_min, cbar_max)
     figure, axes = plt.subplots(nrows, ncols, figsize=(ncols * _FIG_SIZE, nrows * _FIG_SIZE))
-    for ax, img, title in zip(axes, image_list, titles):
-        norm = plt.Normalize(cbar_min, cbar_max)
-        im = ax.imshow(img, norm=norm, cmap=cmap)
-        colorbar(im, cbar_ticks=[cbar_min, cbar_max])
-        ax.set_title(title, fontsize=_TITLE_SIZE)
-        x_ticks = [0, img.shape[1]]
-        xtick_labels = x_ticks
-        ax.set_xticks(x_ticks)
-        ax.set_xticklabels(xtick_labels, fontsize=_TICK_SIZE)
-        y_ticks = [0, img.shape[0]]
-        ax.set_yticks(y_ticks)
-        ytick_labels = y_ticks
-        ax.set_yticklabels(ytick_labels, fontsize=_TICK_SIZE)
-    plt.suptitle(f'PSF intensity maps at three orthogonal planes ({name_of_propagator})', fontsize=_SUP_TITLE_SIZE)
+    if dim == 1:
+        axes = axes.reshape(1, -1)
+    axes = axes.T
+    for (col_index, axis), psf, col_title in zip(enumerate(axes), psf_list, col_titles):
+        for (row_index, ax), image, row_title, in zip(enumerate(axis), psf, row_titles):
+            im = ax.imshow(image, norm = norm, cmap=cmap)
+            colorbar(im, cbar_ticks=[cbar_min, cbar_max])
+            if row_index == 0:
+                ax.set_title(col_title, fontsize=_TITLE_SIZE)
+            if dim > 1 and col_index == 0:
+                ax.text(-0.1, 0.5, row_title, fontsize=_TITLE_SIZE, verticalalignment='center',
+                        rotation=90, transform=ax.transAxes)
+                plt.subplots_adjust(left=0.05)
+            x_ticks = [0, image.shape[1]]
+            xtick_labels = x_ticks
+            ax.set_xticks(x_ticks)
+            ax.set_xticklabels(xtick_labels, fontsize=_TICK_SIZE)
+            y_ticks = [0, image.shape[0]]
+            ax.set_yticks(y_ticks)
+            ytick_labels = y_ticks
+            ax.set_yticklabels(ytick_labels, fontsize=_TICK_SIZE)
+    plt.suptitle(f'{quantity} of PSF at three orthogonal planes ({name_of_propagator})', fontsize=_SUP_TITLE_SIZE)
     figure.tight_layout()
     if filepath:
         os.makedirs(os.path.dirname(filepath), exist_ok=True)

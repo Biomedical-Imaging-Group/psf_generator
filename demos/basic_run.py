@@ -8,7 +8,7 @@ import os
 
 import torch
 from src.psf_generator.propagators import *
-from src.psf_generator.utils.plots import plot_psf_intensity_maps
+from src.psf_generator.utils.plots import plot_pupil, plot_psf
 
 if __name__ == "__main__":
     n_pix_pupil = 127
@@ -47,7 +47,13 @@ if __name__ == "__main__":
 
     for propagator in propagators:
         name = propagator.get_name()
+        pupil = propagator.get_input_field()
         field = propagator.compute_focus_field()
-        filepath = os.path.join('results', 'plots', f'{name}_psf.png')
-        plot_psf_intensity_maps(field, name, filepath=filepath)
-
+        base_path = os.path.join('results', 'plots')
+        if 'cartesian' in name:
+            filepath = os.path.join(base_path, f'{name}_pupil.png')
+            plot_pupil(pupil, name, filepath=filepath)
+        quantities = ['modulus', 'phase', 'intensity']
+        for quantity in quantities:
+            filepath = os.path.join(base_path, f'{name}_psf_{quantity}.png')
+            plot_psf(field, name, quantity, filepath=filepath)
