@@ -50,6 +50,25 @@ def colorbar(mappable, cbar_ticks: tp.Union[str, tp.List, None] = 'auto'):
     return cbar
 
 
+def apply_disk_mask(img):
+    """Apply a disk mask to a square image."""
+    img = img.copy()
+    # check if square
+    if img.shape[0] != img.shape[1]:
+        raise ValueError('Can not apply disk mask on a non-square image')
+    # create mask
+    size = img.shape[0]
+    mask = np.zeros((size, size))
+    i = np.linspace(0, size, size)
+    j = np.linspace(0, size, size)
+    ii, jj = np.meshgrid(i, j, indexing='ij')
+    disk = (ii - size / 2) ** 2 + (jj - size / 2) ** 2 <= (size / 2) ** 2
+    mask[disk] = 1
+    # apply mask, set values outside the mask to nan
+    img = np.where(mask, img, np.nan)
+    return img
+
+
 def _compute_psf_intensity(input_image: np.ndarray) -> np.ndarray:
     """
     Compute the intensity of a complex field.
@@ -128,7 +147,7 @@ def plot_pupil(
         cbar_max = np.max(pupil)
         norm = plt.Normalize(cbar_min, cbar_max)
         for (row_index, ax), image, row_title in zip(enumerate(axis), pupil, row_titles):
-            im = ax.imshow(image, norm=norm, cmap=cmap)
+            im = ax.imshow(apply_disk_mask(image), norm=norm, cmap=cmap)
             colorbar(im, cbar_ticks=[cbar_min, cbar_max])
             x_ticks = [0, image.shape[1]]
             xtick_labels = x_ticks
