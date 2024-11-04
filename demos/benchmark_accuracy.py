@@ -1,0 +1,79 @@
+import math
+import os
+import sys
+
+import numpy as np
+import torch
+from psf_generator.utils.handle_data import save_stats_as_csv
+from torch.special import bessel_j1
+
+module_path = os.path.abspath(os.path.join('')) + '/src/'
+if module_path not in sys.path:
+    sys.path.insert(0, module_path)
+
+from src.psf_generator import ScalarCartesianPropagator, ScalarSphericalPropagator
+
+def benchmark_scalar_accuracy_on_airy_disk(
+        n_pix_psf: int = 201,
+        wavelength: float = 632,
+        na: float = 0.9,
+        fov: int = 3000,
+        refractive_index: float = 1.5
+):
+    """Benchmark the accuracy of the two scalar propagators compared to an Airy disk against the size of the pupil."""
+    # define parameters
+    kwargs = {
+        'n_pix_psf': n_pix_psf,
+        'wavelength': wavelength,
+        'na': na,
+        'fov': fov,
+        'refractive_index': refractive_index
+    }
+
+    # define ground truth: Airy disk
+    airy_disk_function = lambda x: torch.where(x > 1e-6, 2 * bessel_j1(x) / x, 1 - x ** 2 / 8)
+    x = torch.linspace(- fov / 2, fov / 2, n_pix_psf)
+    xx, yy = torch.meshgrid(x, x, indexing='ij')
+    rr = torch.sqrt(xx ** 2 + yy ** 2)
+    k = 2 * math.pi / wavelength
+    airy_disk_analytic = airy_disk_function(k * rr * na / refractive_index)
+
+    # define propagators
+    propagator_types = [
+        ScalarCartesianPropagator,
+        ScalarSphericalPropagator
+    ]
+    # test parameters
+    list_of_pixels = [int(math.pow(2, exponent)) for exponent in range(5, 13)]
+    number_of_repetitions = 10
+    devices = ["cpu", "cuda:0"]
+    # file path to save statistics
+    path = os.path.join('results', 'data', 'benchmark_accuracy')
+
+    for device in devices:
+        if 'cuda' in device:
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
+            else:
+                continue
+        for propagator_type in propagator_types:
+            average_accuracy_list = []
+            for n_pix in list_of_pixels:
+                print(device, propagator_type.__name__, n_pix)
+                accuracy_list = []
+                for _ in range(number_of_repetitions):
+                    propagator = propagator_type(n_pix_pupil=n_pix, device=device, **kwargs)
+                    psf = propagator.compute_focus_field()
+                    accuracy = np.square(psf - airy_disk_analytic).mean()
+                    accuracy_list.append(accuracy)
+                average_accuracy_list.append((n_pix, sum(accuracy_list) / number_of_repetitions))
+            # save stats
+
+            device_name = 'gpu' if 'cuda' in device else 'cpu'
+            filename = f'{propagator_type.get_name()}_{device_name}'
+            filepath = os.path.join(path, filename + '.csv')
+            save_stats_as_csv(filepath, average_accuracy_list)
+
+
+if __name__ == "__main__":
+    benchmark_scalar_accuracy_on_airy_disk()
