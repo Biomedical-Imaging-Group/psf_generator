@@ -279,7 +279,14 @@ def plot_psf(
     plt.show()
 
 
-def plot_benchmark_results(results: list, labels: list, title: str, filepath: str = None):
+def plot_benchmark_results(
+        results: list,
+        quantity: str,
+        labels: list,
+        title: str,
+        plot_type: str = 'loglog',
+        filepath: str = None
+):
     """
     Plot results of the benchmarking.
 
@@ -287,10 +294,14 @@ def plot_benchmark_results(results: list, labels: list, title: str, filepath: st
     ----------
     results : list
         List that contains tuples of the variable to be benchmarked and the resulting value.
+    quantity: str
+        Quantity on the x-axis of the plot. Choose from 'pupil' or 'psf'.
     labels : str
         Label/name of the data.
     title : str
         Title of the figure.
+    plot_type: str, optional
+        Type of plot, choose from 'loglog' and 'semilog'
     filepath : str, optional
         Path to save the figure. Default is None and figure is not saved.
 
@@ -303,11 +314,19 @@ def plot_benchmark_results(results: list, labels: list, title: str, filepath: st
             ls = 'solid'
         else:
             ls = 'dashed'
-        ax.loglog(x, y, base=2, label=label, ls=ls, marker='.', markersize=markersize, lw=lw, color=color)
+        if plot_type == 'loglog':
+            ax.loglog(x, y, label=label, ls=ls, marker='.', markersize=markersize, lw=lw, color=color)
+            ax.set_yscale("log", base=10)
+            ax.set_ylabel('Time / s', fontsize=_LABEL_SIZE)
+        elif plot_type == 'semilog':
+            ax.semilogx(x, y, label=label, ls=ls, marker='.', markersize=markersize, lw=lw, color=color)
+            ax.set_ylabel('Accuracy (MSE)', fontsize=_LABEL_SIZE)
+        ax.set_xscale("log", base=2)
+
     ax.legend(fontsize=_TICK_SIZE)
     ax.set_title(title, fontsize=_TITLE_SIZE)
-    ax.set_xlabel('Numerical size of the pupil / pixels', fontsize=_LABEL_SIZE)
-    ax.set_ylabel('Time / s', fontsize=_LABEL_SIZE)
+    ax.set_xlabel(f'Numerical size of the {quantity} / pixels', fontsize=_LABEL_SIZE)
+
     plt.grid(color='gray', ls='dotted', lw=lw)
     figure.tight_layout()
     if filepath:

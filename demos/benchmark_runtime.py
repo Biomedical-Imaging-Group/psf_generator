@@ -71,7 +71,7 @@ def benchmark_runtime_on_size(
                     propagator.compute_focus_field()
                     runtime = time() - start_time
                     runtime_list.append(runtime)
-                average_runtime_list.append((n_pix_pupil, sum(runtime_list) / number_of_repetitions))
+                average_runtime_list.append((n_pix, sum(runtime_list) / number_of_repetitions))
             # save stats
 
             device_name = 'gpu' if 'cuda' in device else 'cpu'

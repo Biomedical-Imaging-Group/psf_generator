@@ -28,7 +28,7 @@ def compare_runtime(quantity: str):
             labels.append(f'{file}_{device_name}')
             results.append(load_stats_from_csv(os.path.join(folder, f'{file}_{device_name}_{quantity}.csv')))
 
-    plot_benchmark_results(results, labels, title, filepath)
+    plot_benchmark_results(results=results, quantity=quantity, labels=labels, title=title, plot_type='loglog', filepath=filepath)
 
 
 def compare_accuracy():
@@ -48,7 +48,7 @@ def compare_accuracy():
             labels.append(f'{file}_{device_name}')
             results.append(load_stats_from_csv(os.path.join(folder, f'{file}_{device_name}.csv')))
 
-    plot_benchmark_results(results, labels, title, filepath)
+    plot_benchmark_results(results=results, quantity='pupil', labels=labels, title=title, plot_type='semilog', filepath=filepath)
 
 if __name__ == "__main__":
     for quantity in ['pupil', 'psf']:
