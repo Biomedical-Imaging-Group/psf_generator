@@ -1,5 +1,5 @@
 """
-Benchmark runtime of the two scalar propagators on CPU and GPU for a range of number of pixels of the pupil or PSF.
+Benchmark runtime of the four propagators on CPU and GPU for a range of number of pixels of the pupil or PSF.
 
 The other parameters are fixed and only the one slice (focal plane) is computed.
 
@@ -47,7 +47,7 @@ def benchmark_runtime_on_size(
     number_of_repetitions = 10
     devices = ["cpu", "cuda:0"]
     # file path to save statistics
-    path = os.path.join('results', 'data')
+    path = os.path.join('results', 'data', 'benchmark_runtime')
 
     for device in devices:
         if 'cuda' in device:
@@ -81,4 +81,5 @@ def benchmark_runtime_on_size(
 
 
 if __name__ == "__main__":
-    benchmark_runtime_on_size('psf')
+    for quantity in ['pupil', 'psf']:
+        benchmark_runtime_on_size(quantity=quantity)
