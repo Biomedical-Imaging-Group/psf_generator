@@ -19,7 +19,7 @@ def compare_runtime(quantity: str):
     ]
     device_names = ['cpu', 'gpu']
     title = f'Runtime benchmark against {quantity} sizes'
-    filepath = os.path.join('results', 'plots', 'benchmark_runtime', 'benchmark_runtime_plot.png')
+    filepath = os.path.join('results', 'plots', 'benchmark_runtime', f'benchmark_runtime_{quantity}_plot.png')
     results = []
     labels = []
     for propagator in propagators:
