@@ -43,6 +43,12 @@ class VectorialCartesianPropagator(CartesianPropagator):
     def get_name(cls) -> str:
         return 'vectorial_cartesian'
 
+    def _get_args(self) -> dict:
+        args = super()._get_args()
+        args['e0x'] = self.e0x
+        args['e0y'] = self.e0y
+        return args
+
     def get_input_field(self) -> torch.Tensor:
         r"""
         Compute the corresponding input field.
