@@ -6,6 +6,6 @@ docs/_build
 *.csv
 *.npy
 *.txt
-*.yaml
+*.json
 !requirements.txt
 *.egg-info/

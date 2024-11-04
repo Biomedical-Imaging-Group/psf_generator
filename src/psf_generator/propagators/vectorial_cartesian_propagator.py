@@ -5,6 +5,7 @@ The propagator for the vectorial field in the Cartesian coordinates.
 """
 
 import torch
+import typing as tp
 
 from .cartesian_propagator import CartesianPropagator
 from ..utils.zernike import create_pupil_mesh
@@ -43,10 +44,10 @@ class VectorialCartesianPropagator(CartesianPropagator):
     def get_name(cls) -> str:
         return 'vectorial_cartesian'
 
-    def _get_args(self) -> dict:
+    def _get_args(self) -> tp.Dict:
         args = super()._get_args()
-        args['e0x'] = self.e0x
-        args['e0y'] = self.e0y
+        args['e0x'] = str(self.e0x)
+        args['e0y'] = str(self.e0y)
         return args
 
     def get_input_field(self) -> torch.Tensor:

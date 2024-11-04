@@ -4,12 +4,13 @@
 The abstract propagator class.
 
 """
+import json
 import os
-
 from abc import ABC, abstractmethod
 
 import torch
-import yaml
+
+from ..utils.misc import convert_tensor_to_array
 
 
 class Propagator(ABC):
@@ -123,45 +124,44 @@ class Propagator(ABC):
     def _get_args(self) -> dict:
         """Get the parameters of the propagator."""
         args = {
-                'n_pix_pupil': self.n_pix_pupil,
-                'n_pix_psf': self.n_pix_psf,
-                'device': self.device,
-                'zernike_coefficients': (self.zernike_coefficients).detach().clone().cpu().numpy().tolist(),
-                'wavelength': self.wavelength,
-                'na': self.na,
-                'fov': self.fov,
-                'refractive_index': self.refractive_index,
-                'defocus_min': self.defocus_min,
-                'defocus_max': self.defocus_max,
-                'n_defocus': self.n_defocus,
-                'apod_factor': self.apod_factor,
-                'envelope': self.envelope,
-                'gibson_lanni': self.gibson_lanni,
-                'z_p': self.z_p,
-                'n_s': self.n_s,
-                'n_g': self.n_g,
-                'n_g0': self.n_g0,
-                't_g': self.t_g,
-                't_g0': self.t_g0,
-                'n_i': self.n_i,
-                't_i0': self.t_i0,
-                't_i': self.t_i
+            'n_pix_pupil': self.n_pix_pupil,
+            'n_pix_psf': self.n_pix_psf,
+            'device': self.device,
+            'zernike_coefficients': convert_tensor_to_array(self.zernike_coefficients).tolist(),
+            'wavelength': self.wavelength,
+            'na': self.na,
+            'fov': self.fov,
+            'refractive_index': self.refractive_index,
+            'defocus_min': self.defocus_min,
+            'defocus_max': self.defocus_max,
+            'n_defocus': self.n_defocus,
+            'apod_factor': self.apod_factor,
+            'envelope': self.envelope,
+            'gibson_lanni': self.gibson_lanni,
+            'z_p': self.z_p,
+            'n_s': self.n_s,
+            'n_g': self.n_g,
+            'n_g0': self.n_g0,
+            't_g': self.t_g,
+            't_g0': self.t_g0,
+            'n_i': self.n_i,
+            't_i0': self.t_i0,
+            't_i': self.t_i
         }
         return args
 
-    def save_parameters(self, yaml_path: str = None):
+    def save_parameters(self, json_filepath: str):
         """
-        Save the parameters of the propagator as a txt or yaml file.
+        Save the parameters of the propagator as a JSON file.
 
         Parameters
         ----------
-        yaml_path : str, optional
-            Path to save the yaml file. Default is None, no file is saved.
+        json_filepath : str, optional
+            Path to save the attributes in a JSON file
 
         """
         args = self._get_args()
-
-        if yaml_path is not None:
-            with open(yaml_path, 'w') as yaml_file:
-                yaml.dump(args, yaml_file)
+        os.makedirs(os.path.dirname(json_filepath), exist_ok=True)
+        with open(json_filepath, 'w') as file:
+            json.dump(args, file, indent=2)
 
