@@ -6,7 +6,7 @@ How to call them and visualize the generated PSF.
 """
 import os
 
-import torch
+from psf_generator.utils.handle_data import save_as_npy
 from src.psf_generator.propagators import *
 from src.psf_generator.utils.plots import plot_pupil, plot_psf
 
@@ -37,6 +37,12 @@ if __name__ == "__main__":
         'gibson_lanni': True,
     }
 
+    # define base file path
+    base_plot_path = os.path.join('results', 'plots', 'fields')
+    os.makedirs(base_plot_path, exist_ok=True)
+    base_data_path = os.path.join('results', 'data', 'fields')
+    os.makedirs(base_data_path, exist_ok=True)
+
     # define propagators
     propagators = [
         ScalarCartesianPropagator(special_phase_mask=mask, **kwargs),
@@ -49,11 +55,18 @@ if __name__ == "__main__":
         name = propagator.get_name()
         pupil = propagator.get_input_field()
         field = propagator.compute_focus_field()
-        base_path = os.path.join('results', 'plots')
+        # save data
+        for data, data_name in zip([pupil, field], ['pupil', 'psf']):
+            filepath = os.path.join(base_data_path, f'{name}_{data_name}.npy')
+            save_as_npy(filepath, data)
+        json_filepath = os.path.join(base_data_path, f'{name}_params.json')
+        propagator.save_parameters(json_filepath)
+        # plot results
         if 'cartesian' in name:
-            filepath = os.path.join(base_path, f'{name}_pupil.png')
+            filepath = os.path.join(base_plot_path, f'{name}_pupil.png')
             plot_pupil(pupil, name, filepath=filepath)
+
         quantities = ['modulus', 'phase', 'intensity']
         for quantity in quantities:
-            filepath = os.path.join(base_path, f'{name}_psf_{quantity}.png')
+            filepath = os.path.join(base_plot_path, f'{name}_psf_{quantity}.png')
             plot_psf(field, name, quantity, filepath=filepath)
