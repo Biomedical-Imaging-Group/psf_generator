@@ -1,4 +1,4 @@
-
+exclude = ['docs']
 
 lint.select = [
     "ALL",
