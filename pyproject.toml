@@ -1,5 +1,5 @@
 [project]
-name = "psf_generator"
+name = "psf-generator"
 version = "0.0.1"
 dependencies = [
     "matplotlib>=3.6.1",
