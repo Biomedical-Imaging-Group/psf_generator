@@ -19,9 +19,9 @@ if __name__ == "__main__":
     defocus = 4000
     n_defocus = 200
     e0x = 1
-    e0y = 0
+    e0y = 1j
     mask = 'vortex'
-    zernike_coefficients = torch.ones(5)
+    zernike_coefficients = None
 
     kwargs = {
         'n_pix_pupil': n_pix_pupil,
@@ -34,7 +34,7 @@ if __name__ == "__main__":
         'defocus_max': defocus,
         'n_defocus': n_defocus,
         'apod_factor': False,
-        'gibson_lanni': True,
+        'gibson_lanni': False,
     }
 
     # define base file path
