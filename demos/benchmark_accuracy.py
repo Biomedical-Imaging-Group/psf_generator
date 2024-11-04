@@ -20,7 +20,10 @@ def benchmark_scalar_accuracy_on_airy_disk(
         fov: int = 3000,
         refractive_index: float = 1.5
 ):
-    """Benchmark the accuracy of the two scalar propagators compared to an Airy disk against the size of the pupil."""
+    """
+    Benchmark the accuracy of the two scalar propagators compared to an Airy disk against the size of the pupil.
+    The accuracy is measured by the mean squared error.
+    """
     # define parameters
     kwargs = {
         'n_pix_psf': n_pix_psf,
