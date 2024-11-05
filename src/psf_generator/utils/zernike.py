@@ -4,6 +4,8 @@
 A collection of functions related to Zernike polynomials.
 
 """
+import warnings
+
 import numpy as np
 import torch
 from scipy.special import binom
@@ -138,7 +140,8 @@ def create_zernike_aberrations(zernike_coefficients: torch.Tensor, n_pix_pupil: 
             n, l = index_to_nl(index=i)
             curr_coefficient = zernike_coefficients[i]
             if l != 0 and curr_coefficient != 0:
-                print("Warning: Zernike polynomials that are not axis-symmetric are not supported in spherical coordinates.")
+                warnings.warn("Warning: Zernike polynomials that are not axis-symmetric \
+                                are not supported in spherical coordinates!")
             elif l == 0:
                 zernike_phase += curr_coefficient * zernike_nl(n=n, l=l, rho=rho, phi=phi)
     else:
@@ -176,8 +179,6 @@ def create_special_pupil(n_pix_pupil: int, name: str = 'flat', tophat_radius: fl
 
     """
     valid_names = [None, 'vortex', 'halfmoon-h', 'halfmoon-v', 'tophat']
-    if name not in valid_names:
-        raise ValueError(f'Invalid name for the special pupil {name}, choose one of the following: {valid_names}')
     kx, ky = create_pupil_mesh(n_pixels=n_pix_pupil)
     if name is None:
         phase_mask = torch.zeros(n_pix_pupil, n_pix_pupil)
@@ -192,5 +193,7 @@ def create_special_pupil(n_pix_pupil: int, name: str = 'flat', tophat_radius: fl
     elif name == 'tophat':
         inner_disk = kx ** 2 + ky ** 2 - tophat_radius ** 2
         phase_mask = torch.where(inner_disk > 0, torch.pi, 0)
+    else:
+        raise ValueError(f'Invalid name for the special pupil {name}, choose one of the following: {valid_names}')
     pupil = torch.exp(1j * phase_mask).to(torch.complex64)
     return pupil
