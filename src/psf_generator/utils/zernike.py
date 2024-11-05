@@ -161,6 +161,8 @@ def create_special_pupil(n_pix_pupil: int, name: str = 'flat', tophat_radius: fl
     - `halfmoon-v` <-> vertical halfmoon beam
     - `tophat` <-> tophat beam
 
+    Notes
+    -----
     These special masks only applies in the Cartesian case.
 
     Parameters

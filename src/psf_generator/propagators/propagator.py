@@ -154,6 +154,11 @@ class Propagator(ABC):
         """
         Save the parameters of the propagator as a JSON file.
 
+        Notes
+        -----
+        - Zernike coefficients are converted to a list
+        - complex numbers, e.g. e0x or e0y, are converted to a string
+
         Parameters
         ----------
         json_filepath : str, optional
