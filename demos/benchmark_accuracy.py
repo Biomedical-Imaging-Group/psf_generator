@@ -49,7 +49,7 @@ def benchmark_scalar_accuracy_on_airy_disk(
         ScalarSphericalPropagator
     ]
     # test parameters
-    list_of_pixels = [int(math.pow(2, exponent) + 1) for exponent in range(5, 13)]
+    list_of_pixels = [int(math.pow(2, exponent) + 1) for exponent in range(4, 13)]
     number_of_repetitions = 10
     devices = ["cpu", "cuda:0"]
     # file path to save statistics

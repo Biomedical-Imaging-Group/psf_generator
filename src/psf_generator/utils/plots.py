@@ -315,7 +315,7 @@ def plot_benchmark_results(
         else:
             ls = 'dashed'
         if plot_type == 'loglog':
-            ax.loglog(x, y, label=label, ls=ls, marker='.', markersize=markersize, lw=lw, color=color)
+            ax.loglog(x[1:], y[1:], label=label, ls=ls, marker='.', markersize=markersize, lw=lw, color=color)
             ax.set_yscale("log", base=10)
             ax.set_ylabel('Time / s', fontsize=_LABEL_SIZE)
         elif plot_type == 'semilog':

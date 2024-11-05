@@ -22,7 +22,7 @@ from src.psf_generator.utils.handle_data import save_stats_as_csv
 
 def benchmark_runtime_on_size(
         quantity: str,
-        n_pix_pupil: int = 127,
+        n_pix_pupil: int = 201,
         n_pix_psf: int = 201,
         wavelength: float = 632,
         na: float = 0.9,
@@ -43,7 +43,7 @@ def benchmark_runtime_on_size(
         VectorialSphericalPropagator,
     ]
     # test parameters
-    list_of_pixels = [int(math.pow(2, exponent)) for exponent in range(5, 13)]
+    list_of_pixels = [int(math.pow(2, exponent)) for exponent in range(4, 13)]
     number_of_repetitions = 10
     devices = ["cpu", "cuda:0"]
     # file path to save statistics
