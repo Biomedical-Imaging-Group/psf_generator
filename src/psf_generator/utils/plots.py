@@ -279,12 +279,11 @@ def plot_psf(
     plt.show()
 
 
-def plot_benchmark_results(
+def plot_runtime_benchmark_results(
         results: list,
         quantity: str,
         labels: list,
         title: str,
-        plot_type: str = 'loglog',
         filepath: str = None
 ):
     """
@@ -300,8 +299,6 @@ def plot_benchmark_results(
         Label/name of the data.
     title : str
         Title of the figure.
-    plot_type: str, optional
-        Type of plot, choose from 'loglog' and 'semilog'
     filepath : str, optional
         Path to save the figure. Default is None and figure is not saved.
 
@@ -314,14 +311,10 @@ def plot_benchmark_results(
             ls = 'solid'
         else:
             ls = 'dashed'
-        if plot_type == 'loglog':
-            ax.loglog(x[1:], y[1:], label=label, ls=ls, marker='.', markersize=markersize, lw=lw, color=color)
-            ax.set_yscale("log", base=10)
-            ax.set_ylabel('Time / s', fontsize=_LABEL_SIZE)
-        elif plot_type == 'semilog':
-            ax.semilogx(x, y, label=label, ls=ls, marker='.', markersize=markersize, lw=lw, color=color)
-            ax.set_ylabel('Accuracy (MSE)', fontsize=_LABEL_SIZE)
+        ax.loglog(x[1:], y[1:], label=label, ls=ls, marker='.', markersize=markersize, lw=lw, color=color)
         ax.set_xscale("log", base=2)
+        ax.set_yscale("log", base=10)
+        ax.set_ylabel('Time / s', fontsize=_LABEL_SIZE)
 
     ax.legend(fontsize=_TICK_SIZE)
     ax.set_title(title, fontsize=_TITLE_SIZE)
@@ -334,3 +327,32 @@ def plot_benchmark_results(
         figure.savefig(filepath)
     plt.show()
 
+
+def plot_accuracy_benchmark_results(
+        results: list,
+        labels: list,
+        title: str,
+        filepath: str = None
+):
+    figure, ax = plt.subplots(1, 1, figsize=(_FIG_SIZE * 1.5, _FIG_SIZE))
+    colors = ['red', 'blue']
+    for result, label, color in zip(results, labels, colors):
+        x, y = zip(*result)
+        ls = 'solid'
+        ax.semilogx(x, y, base=2, label=label, ls=ls, marker='.', markersize=markersize, lw=lw, color=color)
+
+    ax.legend(fontsize=_TICK_SIZE)
+    ax.set_title(title, fontsize=_TITLE_SIZE)
+    ax.set_xlabel('Numerical size of the pupil / pixels', fontsize=_LABEL_SIZE)
+    ax.set_ylabel('Accuracy (MSE)', fontsize=_LABEL_SIZE)
+    xticks = [entry - 1 for entry in x]
+    ax.set_xticks(xticks)
+    xticklabels = xticks
+    ax.set_xticklabels(xticks)
+
+    plt.grid(color='gray', ls='dotted', lw=lw)
+    figure.tight_layout()
+    if filepath:
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        figure.savefig(filepath)
+    plt.show()

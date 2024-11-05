@@ -4,6 +4,7 @@ import sys
 
 import numpy as np
 import torch
+from matplotlib import pyplot as plt
 from psf_generator.utils.handle_data import save_stats_as_csv
 from torch.special import bessel_j1
 
@@ -20,7 +21,8 @@ def benchmark_scalar_accuracy_on_airy_disk(
         wavelength: float = 632,
         na: float = 0.9,
         fov: int = 3000,
-        refractive_index: float = 1.5
+        refractive_index: float = 1.5,
+        debug: bool = False
 ):
     """
     Benchmark the accuracy of the two scalar propagators compared to an Airy disk against the size of the pupil.
@@ -49,36 +51,40 @@ def benchmark_scalar_accuracy_on_airy_disk(
         ScalarSphericalPropagator
     ]
     # test parameters
-    list_of_pixels = [int(math.pow(2, exponent) + 1) for exponent in range(4, 13)]
+    list_of_pixels = [int(math.pow(2, exponent) + 1) for exponent in range(5, 13)]
     number_of_repetitions = 10
-    devices = ["cpu", "cuda:0"]
     # file path to save statistics
     path = os.path.join('results', 'data', 'benchmark_accuracy')
 
-    for device in devices:
-        if 'cuda' in device:
-            if torch.cuda.is_available():
-                torch.cuda.synchronize()
-            else:
-                continue
-        for propagator_type in propagator_types:
-            average_accuracy_list = []
-            for n_pix in list_of_pixels:
-                print(device, propagator_type.__name__, n_pix)
-                accuracy_list = []
-                for _ in range(number_of_repetitions):
-                    propagator = propagator_type(n_pix_pupil=n_pix, device=device, **kwargs)
-                    psf = convert_tensor_to_array(propagator.compute_focus_field())
-                    psf /= np.max(np.abs(psf))
-                    accuracy = np.sqrt(np.sum(np.abs(psf - airy_disk_analytic) ** 2))
-                    accuracy_list.append(accuracy)
-                average_accuracy_list.append((n_pix, sum(accuracy_list) / number_of_repetitions))
-            # save stats
 
-            device_name = 'gpu' if 'cuda' in device else 'cpu'
-            filename = f'{propagator_type.get_name()}_{device_name}'
-            filepath = os.path.join(path, filename + '.csv')
-            save_stats_as_csv(filepath, average_accuracy_list)
+    for propagator_type in propagator_types:
+        average_accuracy_list = []
+        for n_pix in list_of_pixels:
+            print(propagator_type.__name__, n_pix)
+            accuracy_list = []
+            for _ in range(number_of_repetitions):
+                if 'cartesian' in propagator_type.get_name():
+                    propagator = propagator_type(n_pix_pupil=n_pix, sz_correction=False, **kwargs)
+                elif 'spherical' in propagator_type.get_name():
+                    propagator = propagator_type(n_pix_pupil=n_pix, cos_factor=True, **kwargs)
+                else:
+                    raise ValueError('incorrect propagator name')
+                psf = convert_tensor_to_array(propagator.compute_focus_field())
+                psf /= np.max(np.abs(psf))
+                accuracy = np.sqrt(np.sum(np.abs(psf - airy_disk_analytic) ** 2))
+                if debug:
+                    fig, axes = plt.subplots(1, 3)
+                    norm = plt.Normalize(0.0, 1.0)
+                    for ax, image in zip(axes, [psf.squeeze(), airy_disk_analytic, psf.squeeze() - airy_disk_analytic]):
+                        ax.imshow(np.abs(image), norm=norm, cmap='inferno')
+                    plt.show()
+                    print(accuracy)
+                accuracy_list.append(accuracy)
+            average_accuracy_list.append((n_pix, sum(accuracy_list) / number_of_repetitions))
+        # save stats
+        filename = f'{propagator_type.get_name()}'
+        filepath = os.path.join(path, filename + '.csv')
+        save_stats_as_csv(filepath, average_accuracy_list)
 
 
 if __name__ == "__main__":
