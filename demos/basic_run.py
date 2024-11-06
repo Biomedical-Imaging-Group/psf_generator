@@ -1,7 +1,7 @@
 """
 Example usage of all the propagators.
 
-How to call them and visualize the generated PSF.
+How to call them, visualize the results and save data.
 
 """
 import os
@@ -55,10 +55,11 @@ if __name__ == "__main__":
         name = propagator.get_name()
         pupil = propagator.get_input_field()
         field = propagator.compute_focus_field()
-        # save data
+        # save data as .npy
         for data, data_name in zip([pupil, field], ['pupil', 'psf']):
             filepath = os.path.join(base_data_path, f'{name}_{data_name}.npy')
             save_as_npy(filepath, data)
+        # save parameters
         json_filepath = os.path.join(base_data_path, f'{name}_params.json')
         propagator.save_parameters(json_filepath)
         # plot results
