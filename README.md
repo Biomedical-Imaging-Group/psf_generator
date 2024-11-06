@@ -93,6 +93,8 @@ By default, the three orthogonal planes are the central slice in each dimension.
 
 If you would like to save the plot as a `.png` file, simply specify a proper `filepath`.
 
+**Note**: `plot_pupil` only supports Cartesian propagators.
+
 ## Save data
 To save or load the original data of pupil or PSF along with the input parameters to a desired destination (`filepath`)
 for further analysis:
