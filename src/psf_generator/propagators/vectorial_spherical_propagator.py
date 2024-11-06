@@ -111,12 +111,12 @@ class VectorialSphericalPropagator(SphericalPropagator):
         Returns
         -------
         field: torch.Tensor
-            output PSF
+            Output PSF.
 
         Notes
         -----
         This involves expensive evaluations of Bessel functions.
-        We compute it independently of defocus and handle defocus via batching with vmap().
+        We compute it independently of defocus and handle defocus via batching with `vmap()`.
 
         """
         input_field = self.get_input_field()
@@ -143,7 +143,7 @@ class VectorialSphericalPropagator(SphericalPropagator):
             sin_t: torch.Tensor,
             cos_t: torch.Tensor,
     ) -> torch.Tensor:
-        """
+        r"""
         Compute the PSF at defocus.
 
         Parameters
@@ -151,13 +151,13 @@ class VectorialSphericalPropagator(SphericalPropagator):
         defocus_term: torch.Tensor
             TODO: What is it?
         J0: torch.Tensor
-            Bessel function J0
+            Bessel function of the first kind of order 0 :math:`J_0`.
         J1: torch.Tensor
-            Bessel function J1
+            Bessel function of the first kind of order 1 :math:`J_1`.
         J2: torch.Tensor
-            Bessel function J2
+            Bessel function of the first kind of order 2 :math:`J_2`.
         input_field: torch.Tensor
-            input pupil field
+            Input pupil field.
         sin_t: torch.Tensor
             shape: (n_thetas, )
         cos_t: torch.Tensor
@@ -166,7 +166,7 @@ class VectorialSphericalPropagator(SphericalPropagator):
         Returns
         -------
         PSF_field: torch.Tensor
-            output field
+            Output field.
 
         """
         field_x, field_y = input_field[0, :], input_field[1, :]

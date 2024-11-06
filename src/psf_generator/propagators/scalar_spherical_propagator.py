@@ -58,18 +58,18 @@ class ScalarSphericalPropagator(SphericalPropagator):
         Parameters
         ----------
         self.thetas : torch.Tensor
-            Angles of sampling of size: (n_thetas, )
+            Angles of sampling of size `(n_thetas, )`.
         self.rs : torch.Tensor
-            Radii of sampling of size (n_radii, )
+            Radii of sampling of size `(n_radii, )`.
         self.correction_factor : torch.Tensor
-            Correction factor of shape: (n_thetas, )
+            Correction factor of shape `(n_thetas, )`.
         J0 : torch.Tensor
-            Bessel function J0 of shape: (n_theta, n_radii)
+            Bessel function of the first kind of order 0 :math:`J_0`. Shape: `(n_theta, n_radii)`.
 
         Returns
         -------
         field: torch.Tensor
-            output field
+            Output field.
 
         Notes
         -----
@@ -101,16 +101,16 @@ class ScalarSphericalPropagator(SphericalPropagator):
         defocus_term :
             TODO: what is it?
         J0 : torch.Tensor
-            Bessel function J0
+            Bessel function of the first kind of order 0 :math:`J_0`.
         input_field : torch.Tensor
-            input pupil field
+            Input pupil field.
         sin_t : torch.Tensor
             TODO: what is it? of shape: (n_thetas, )
 
         Returns
         -------
         field: torch.Tensor
-            output field at defocus of shape: (n_channels=1, size_x, size_y)
+            Output field at defocus. Shape: `(n_channels=1, size_x, size_y)`.
 
         Notes
         -----
