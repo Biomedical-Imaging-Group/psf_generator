@@ -15,16 +15,73 @@ from ..utils.misc import convert_tensor_to_array
 
 class Propagator(ABC):
     r"""
-    TODO: add description
+    Base class propagator.
+
+    Parameters
+    ----------
+    n_pix_pupil : int
+        Number of pixels (size) of the pupil (always a square image).
+    n_pix_psf : int
+        Number of pixels (size) of the PSF (always a square image).
+    device : str
+        Computational backend. Choose from 'cpu' and 'gpu'.
+    zernike_coefficients : np.ndarray or torch.tensor
+        Zernike coefficients of length 'K' of the chosen first 'K' modes.
+    wavelength : float
+        Wavelength of light, in nanometer.
+    na : float
+        Numerical aperture.
+    fov : float
+        Size of the square field of view of the PSF plane, in micrometer.
+    refractive_index : float
+        TODO: Refractive index of the lens?
+    defocus_min : float
+        Extend of the defocus along the optical(z)-axis on one side of the focal plane in micrometer.
+    defocus_max : float
+        Extend of the defocus along the optical(z)-axis on the other side of the focal plane in micrometer.
+    n_defocus : int
+        Number of z-stack.
+    apod_factor : bool
+        Apply apodization factor or not.
+    envelope : float
+        Size :math:`k_{\mathrm{env}}` of the Gaussian envolope :math:`A(\mathbf{s}) = \mathrm{e}^{-(k^2_x+k^2_y)/k_\mathrm{env}^2}`.
+    gibson_lanni : bool
+        Apply Gibnson-Lanni aberration or not.
+    z_p : float
+        TODO: what is it?
+    n_s : float
+        Refractive index of the sample.
+    n_g : float
+        Refractive index of the cover slip.
+    n_g0 : float
+        Design condition of the refractive index of the cover slip.
+    t_g : float
+        Thickness of the sample.
+    t_g0 : float
+        Design condition of the thickness of the sample.
+    n_i : float
+        Refractive index of the immersion medium.
+    t_i0 : float
+        Design condition of the thickness of the immersion medium.
+    t_i : float
+        Thickness of the immersion medium. It is computed from
+        :math:`t_i = z_p - z + n_i \left( -\frac{z_p}{n_s} - \frac{t_g}{n_g} + \frac{t_g^0}{n_g^0} + \frac{t_i^0}{n_i^0} \right)`.
+
+    Notes
+    -----
+    `(z_p, n_s, n_g, n_g0, t_g, t_g0, n_i, t_i0, t_i)` are coefficients related to the aberrations due to refractive
+    index mismatch between stratified layers of the microscope.
+    These aberration is compute by method `self.compute_optical_path`.
+
     """
     def __init__(self,
                  n_pix_pupil: int =128,
                  n_pix_psf: int = 128,
                  device: str = 'cpu',
                  zernike_coefficients=None,
-                 wavelength: int = 632,
+                 wavelength: float = 632,
                  na: float = 1.3,
-                 fov: int = 2000,
+                 fov: float = 2000,
                  refractive_index: float = 1.5,
                  defocus_min: float = 0.0,
                  defocus_max: float = 0.0,
@@ -40,40 +97,24 @@ class Propagator(ABC):
                  t_g0: float = 170e3,
                  n_i: float = 1.5,
                  t_i0: float = 100e3):
-        # number of pixels (size) of the pupil, assuming square image
         self.n_pix_pupil = n_pix_pupil
-        # number of pixels (size) of the psf, assuming square image
         self.n_pix_psf = n_pix_psf
-        # device: "cpu" or "gpu"
         self.device = device
-        # Zernike coefficients
         if zernike_coefficients is None:
             zernike_coefficients = [0]
         if not isinstance(zernike_coefficients, torch.Tensor):
             zernike_coefficients = torch.tensor(zernike_coefficients)
         self.zernike_coefficients = zernike_coefficients
-        # All distances are in nanometers
-        # wavelength
         self.wavelength = wavelength
-        # numerical aperture
         self.na = na
-        # size of the field-of-view
         self.fov = fov
-        # refractive index
         self.refractive_index = refractive_index
-        # minimal distance of defocus
         self.defocus_min = defocus_min
-        # maximal distance of defocus
         self.defocus_max = defocus_max
-        # number of steps for defocus
         self.n_defocus = n_defocus
-        # whether to apply apodization factor
         self.apod_factor = apod_factor
-        # envelope of the PSF intensity
         self.envelope = envelope
-        # whether to apply Gibson-Lanni aberration
         self.gibson_lanni = gibson_lanni
-        # constants in the Gibson-Lanni aberration formula
         self.z_p = z_p
         self.n_s = n_s
         self.n_g = n_g
@@ -107,7 +148,13 @@ class Propagator(ABC):
         raise NotImplementedError
 
     def compute_optical_path(self, sin_t: torch.Tensor) -> torch.Tensor:
-        """Compute the optical path following Eq. (3.45) in [1].
+        r"""Compute the optical path following Eq. (3.45) in [1]
+
+        .. math::
+
+            W(\mathbf{s}) &= k \left( t_s \sqrt{n_s^2 - n_i^2 \sin \theta} + t_i \sqrt{n_i^2 - n_i^2 \sin \theta} -t_i^* \sqrt{\left.n_i^*\right.^2 - n_i^2 \sin \theta} \right. \\
+            & \quad \left. + t_g \sqrt{n_g^2 - n_i^2 \sin \theta} - t_g^* \sqrt{\left.n_g^*\right.^2 - n_i^2 \sin \theta}\right).
+
 
         References
         ----------
@@ -162,7 +209,7 @@ class Propagator(ABC):
         Parameters
         ----------
         json_filepath : str, optional
-            Path to save the attributes in a JSON file
+            Path to save the attributes in a JSON file.
 
         """
         args = self._get_args()
