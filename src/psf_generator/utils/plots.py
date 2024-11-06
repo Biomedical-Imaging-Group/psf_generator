@@ -287,7 +287,7 @@ def plot_runtime_benchmark_results(
         filepath: str = None
 ):
     """
-    Plot results of the benchmarking.
+    Plot results of the runtime benchmarking.
 
     Parameters
     ----------
@@ -334,6 +334,22 @@ def plot_accuracy_benchmark_results(
         title: str,
         filepath: str = None
 ):
+    """
+    Plot results of the accuracy benchmarking.
+
+    Parameters
+    ----------
+    results : list
+        List that contains tuples of the variable to be benchmarked and the resulting value.
+    labels : str
+        Label/name of the data.
+    title : str
+        Title of the figure.
+    filepath : str, optional
+        Path to save the figure. Default is None and figure is not saved.
+    -------
+
+    """
     figure, ax = plt.subplots(1, 1, figsize=(_FIG_SIZE * 1.5, _FIG_SIZE))
     colors = ['red', 'blue']
     for result, label, color in zip(results, labels, colors):
