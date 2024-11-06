@@ -13,7 +13,22 @@ from ..utils.zernike import create_pupil_mesh
 
 class ScalarCartesianPropagator(CartesianPropagator):
     r"""
-    TODO: add description and formulae
+    Propagator for the scalar approximation of the Richard's-Wolf integral in Cartesian parameterization.
+
+    The scalar approximation is
+
+    .. math::
+            \boldsymbol{e}_{\infty}(\mathbf{s}) = \boldsymbol{e}_{\textrm{inc}}(\mathbf{s}).
+
+    The Equation to compute the eletric field is
+
+    .. math::
+            E(\boldsymbol{\rho})
+            = -\frac{\mathrm{i}fk}{2\pi}\iint\limits_{s_x^2 + s_y^2 \leq s_{max}^2} \frac{\boldsymbol{e}_{\infty}(s_x,s_y)}{s_z}
+             \mathrm{e}^{\mathrm{i} ks_z z} \mathrm{e}^{\mathrm{i} k (s_x x + s_y y)} ds_x ds_y.
+
+    The focus field is the 2D Fourier transform of :math:`\frac{\boldsymbol{e}_{\infty}(s_x,s_y)}{s_z}\mathrm{e}^{\mathrm{i} k s_z z}`.
+
     """
 
     @classmethod

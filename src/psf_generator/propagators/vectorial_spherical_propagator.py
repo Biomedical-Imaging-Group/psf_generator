@@ -17,7 +17,43 @@ from ..utils.integrate import simpsons_rule
 
 class VectorialSphericalPropagator(SphericalPropagator):
     r"""
-    TODO: add description and formulae
+    Propagator for the vectorial case of the Richard's-Wolf integral in spherical parameterization.
+
+    The equation to compute the electric field is
+
+    .. math::
+            \mathbf{E}(\boldsymbol{\rho}) =
+            - \frac{\mathrm{i} fk}{2}
+            \begin{bmatrix}
+                {2}^y\sin2\varphi\\
+                - I_{2}^x\sin2\varphi + [I_{0}^y + I_{2}^y\cos2\varphi]\\
+                -2\mathrm{i} I_{1}^x\cos\varphi  - 2\mathrm{i} I_{1}^y\sin\varphi
+            \end{bmatrix},
+
+    where
+
+    .. math::
+            I_{0}^a (\rho,z) =
+            \int_0^{\theta_{\max}} \boldsymbol{e}_{\textrm{inc}^a}(\theta)\sin\theta (\cos\theta+1)
+            J_0(k\rho\sin\theta)\mathrm{e}^{\mathrm{i} kz\cos\theta}d\theta,
+
+            I_{1}^a (\rho,z)=
+            \int_0^{\theta_{\max}} \boldsymbol{e}_{\textrm{inc}^a}(\theta)\sin^2\theta
+            J_1(k\rho\sin\theta)\mathrm{e}^{\mathrm{i} kz\cos\theta}d\theta,
+
+            I_{2}^a (\rho,z) =
+            \int_0^{\theta_{\max}} \boldsymbol{e}_{\textrm{inc}^a}(\theta)\sin\theta (\cos\theta-1)
+            J_2(k\rho\sin\theta)\mathrm{e}^{\mathrm{i} kz\cos\theta}d\theta,
+
+    where :math:`a\in\{x,y\}, \boldsymbol{e}_{\textrm{inc}}(\theta) =
+    [\boldsymbol{e}_{\textrm{inc}}^x(\theta), \boldsymbol{e}_{\textrm{inc}}^y(\theta), 0]`.
+
+    Notes
+    -----
+    The voctorial propagators have two addtional arguments apart from those inherited form the base propagator:
+    - `self.e0x` TODO: explain
+    - `self.e0y` TODO: explain
+
     """
     def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
                  zernike_coefficients=None,

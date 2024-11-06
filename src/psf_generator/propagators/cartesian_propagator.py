@@ -16,8 +16,14 @@ from ..utils.zernike import create_zernike_aberrations, create_special_pupil
 
 
 class CartesianPropagator(Propagator, ABC):
-    r"""
-    TODO: add description and formulae
+    """
+    Intermediate calss for propagators with Cartesian parameterization.
+
+    Notes
+    -----
+    Apart from parameters inherited from the base class, there is one additional
+    `sz_correction`. TODO: add explanation.
+
     """
     def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
                  zernike_coefficients=None,

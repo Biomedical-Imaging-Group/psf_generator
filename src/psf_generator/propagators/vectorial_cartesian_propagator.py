@@ -12,8 +12,40 @@ from ..utils.zernike import create_pupil_mesh
 
 
 class VectorialCartesianPropagator(CartesianPropagator):
-    """
-    TODO: add description and formulae
+    r"""
+    Propagator for the vectorial case of the Richard's-Wolf integral in Cartesian parameterization.
+
+    In the vectorial model, the far field :math:`\boldsymbol{e}_{\infty}` depends on the vectorial incident field
+    :math:`\boldsymbol{e}_{\textrm{inc}} = [\boldsymbol{e}_{\textrm{inc}}^x, \boldsymbol{e}_{\textrm{inc}}^y, 0]`
+    as follows:
+
+    .. math::
+            \boldsymbol{e}_{\infty}(\theta,\phi) =
+             \begin{bmatrix}
+                (\cos\theta+1)+(\cos\theta-1)\cos2\phi \\
+                (\cos\theta-1)\sin2\phi \\
+                -2 \cos\phi \sin\theta
+             \end{bmatrix} \frac{\boldsymbol{e}_{\textrm{inc}}^x}{2} +
+             \begin{bmatrix}
+                (\cos\theta-1)\sin2\phi  \\
+                (\cos\theta+1)-(\cos\theta-1)\cos2\phi \\
+                - 2 \sin\phi \sin\theta
+             \end{bmatrix} \frac{\boldsymbol{e}_{\textrm{inc}}^y}{2}.
+
+    The equation to compute the electric field is
+
+    .. math::
+            \mathbf{E}(\boldsymbol{\rho})
+            = -\frac{\mathrm{i} fk}{2\pi}\iint\limits_{s_x^2+s_y^2 \leq s_{M}^2}
+            \frac{\boldsymbol{e}_{\infty}(s_x, s_y) \mathrm{e}^{\mathrm{i} kz}}{s_z}
+            \mathrm{e}^{\mathrm{i} k(s_x x + s_y y)} ds_x ds_y.
+
+    Notes
+    -----
+    The voctorial propagators have two addtional arguments apart from those inherited form the base propagator:
+    - `self.e0x` TODO: explain
+    - `self.e0y` TODO: explain
+
     """
     def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
                  zernike_coefficients=None,

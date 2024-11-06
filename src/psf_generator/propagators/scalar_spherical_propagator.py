@@ -16,7 +16,17 @@ from .spherical_propagator import SphericalPropagator
 
 class ScalarSphericalPropagator(SphericalPropagator):
     r"""
-    TODO: add description and formulae
+    Propagator for the scalar approximation of the Richard's-Wolf integral in spherical parameterization.
+
+    The Equation to compute the eletric field is
+
+    .. math::
+            E(\boldsymbol{\rho})
+                = -\mathrm{i}fk \int_0^{\theta_{max}} d\theta \mathrm{e}_{\infty}(\theta)
+                J_0(k \rho \sin \theta) \mathrm{e}^{\mathrm{i} kz\cos\theta} \sin\theta,
+
+    where :math:`J_0` is the Bessel function of first kind and order 0.
+
     """
     @classmethod
     def get_name(cls) -> str:
