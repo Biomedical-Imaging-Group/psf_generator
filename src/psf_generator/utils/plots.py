@@ -361,7 +361,8 @@ def plot_accuracy_benchmark_results(
     ax.set_title(title, fontsize=_TITLE_SIZE)
     ax.set_xlabel('Numerical size of the pupil / pixels', fontsize=_LABEL_SIZE)
     ax.set_ylabel('Accuracy (MSE)', fontsize=_LABEL_SIZE)
-    xticks = [entry - 1 for entry in x]
+    xs, _ = zip(*results[0])
+    xticks = [entry - 1 for entry in xs]
     ax.set_xticks(xticks)
     xticklabels = xticks
     ax.set_xticklabels(xticks)
