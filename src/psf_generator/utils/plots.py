@@ -10,7 +10,7 @@ import numpy as np
 import torch
 
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from .misc import convert_tensor_to_array
+from misc import convert_tensor_to_array
 
 _FIG_SIZE = 6
 _SUP_TITLE_SIZE = 18
