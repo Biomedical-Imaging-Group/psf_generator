@@ -355,12 +355,13 @@ def plot_accuracy_benchmark_results(
     for result, label, color in zip(results, labels, colors):
         x, y = zip(*result)
         ls = 'solid'
-        ax.semilogx(x, y, base=2, label=label, ls=ls, marker='.', markersize=markersize, lw=lw, color=color)
-
+        ax.loglog(x, y, label=label, ls=ls, marker='.', markersize=markersize, lw=lw, color=color)
+    ax.set_xscale("log", base=2)
+    ax.set_yscale("log", base=10)
     ax.legend(fontsize=_TICK_SIZE)
     ax.set_title(title, fontsize=_TITLE_SIZE)
     ax.set_xlabel('Numerical size of the pupil / pixels', fontsize=_LABEL_SIZE)
-    ax.set_ylabel('Accuracy (MSE)', fontsize=_LABEL_SIZE)
+    ax.set_ylabel('Error', fontsize=_LABEL_SIZE)
     xs, _ = zip(*results[0])
     xticks = [entry - 1 for entry in xs]
     ax.set_xticks(xticks)
