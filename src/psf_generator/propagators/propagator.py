@@ -152,12 +152,12 @@ class Propagator(ABC):
 
         .. math::
 
-            W(\mathbf{s}) &=
-             k \left( t_s \sqrt{n_s^2 - n_i^2 \sin^2 \theta}
-             + t_i \sqrt{n_i^2 - n_i^2 \sin^2 \theta}
-             -t_i^* \sqrt{\left.n_i^*\right.^2 - n_i^2 \sin^2 \theta} \right. \\
-            & \quad \left. + t_g \sqrt{n_g^2 - n_i^2 \sin^2 \theta}
-            - t_g^* \sqrt{\left.n_g^*\right.^2 - n_i^2 \sin^2 \theta}\right).
+                W(\mathbf{s}) &=
+                 k \left( t_s \sqrt{n_s^2 - n_i^2 \sin^2 \theta}
+                 + t_i \sqrt{n_i^2 - n_i^2 \sin^2 \theta}
+                 -t_i^* \sqrt{\left.n_i^*\right.^2 - n_i^2 \sin^2 \theta} \right. \\
+                & \quad \left. + t_g \sqrt{n_g^2 - n_i^2 \sin^2 \theta}
+                - t_g^* \sqrt{\left.n_g^*\right.^2 - n_i^2 \sin^2 \theta}\right).
 
 
         References
