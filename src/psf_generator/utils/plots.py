@@ -101,7 +101,7 @@ def _compute_psf_intensity(input_image: np.ndarray) -> np.ndarray:
 
 
 def plot_pupil(
-        pupil_image: tp.Union[torch.Tensor, np.ndarray],
+        pupil: tp.Union[torch.Tensor, np.ndarray],
         name_of_propagator: str,
         filepath: str = None
 ):
@@ -110,7 +110,7 @@ def plot_pupil(
 
     Parameters
     ----------
-    pupil_image : torch.Tensor or np.ndarray
+    pupil : torch.Tensor or np.ndarray
         Pupil image to plot.
     name_of_propagator : str
         Name of the propagator.
@@ -119,7 +119,7 @@ def plot_pupil(
 
     """
     # convert to numpy array
-    pupil_array = convert_tensor_to_array(pupil_image)
+    pupil_array = convert_tensor_to_array(pupil)
     # compute modulus and phase
     pupil_modulus = np.abs(pupil_array)
     pupil_phase = np.angle(pupil_array)
@@ -173,7 +173,7 @@ def plot_pupil(
 
 
 def plot_psf(
-        psf_image: tp.Union[torch.Tensor, np.ndarray],
+        psf: tp.Union[torch.Tensor, np.ndarray],
         name_of_propagator: str,
         quantity: str = 'modulus',
         z_slice_number: int = None,
@@ -186,7 +186,7 @@ def plot_psf(
 
     Parameters
     ----------
-    psf_image : torch.Tensor or np.ndarray
+    psf : torch.Tensor or np.ndarray
         PSF image to plot.
     name_of_propagator : str
         Name of the propagator.
@@ -203,7 +203,7 @@ def plot_psf(
 
     """
     # convert to numpy array
-    psf_array = convert_tensor_to_array(psf_image)
+    psf_array = convert_tensor_to_array(psf)
     # check and compute quantity
     valid_choices = ['modulus', 'phase', 'intensity']
     if quantity == 'modulus':

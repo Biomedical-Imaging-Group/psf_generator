@@ -79,12 +79,13 @@ For a convenient visual check, we provide two functions
 - `plot_psf`: modulus, phase and intensity of the PSF at three orthogonal planes (xy, yz, and xz)
 
 Here is an example
+
 ```python
 from psf_generator.utils.plots import plot_pupil, plot_psf
 
 name = my_propagator.get_name()
-plot_pupil(pupil_image=pupil, name_of_propagator=name, filepath=None)
-plot_psf(psf_image=psf, name_of_propagator=name, quantity='modulus', filepath=None)
+plot_pupil(pupil=pupil, name_of_propagator=name, filepath=None)
+plot_psf(psf=psf, name_of_propagator=name, quantity='modulus', filepath=None)
 ```
 
 For PSF, you need to specify which quantity to plot by passing the keyword 'modulus' or 'phase' or 'intensity' to the
@@ -131,7 +132,6 @@ Check 'demos/' for more examples.
 from psf_generator.propagators import VectorialCartesianPropagator
 from psf_generator.utils.plots import plot_pupil, plot_psf
 
-
 if __name__ == "__main__":
     kwargs = {
         'n_pix_pupil': 201,
@@ -152,9 +152,9 @@ if __name__ == "__main__":
     psf = my_propagator.compute_focus_field()
 
     # visualize the modulus and phase of the pupil
-    plot_pupil(pupil_image=pupil, name_of_propagator=my_propagator.get_name(), filepath=None)
+    plot_pupil(pupil=pupil, name_of_propagator=my_propagator.get_name())
 
     # visualize the modulus, phase and intensity of the PSF
     for quantity in ['modulus', 'phase', 'intensity']:
-        plot_psf(psf_image=psf, name_of_propagator=my_propagator.get_name(), quantity=quantity, filepath=None)
+        plot_psf(psf=psf, name_of_propagator=my_propagator.get_name(), quantity=quantity)
 ```
