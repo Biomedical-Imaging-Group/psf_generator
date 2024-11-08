@@ -1,18 +1,39 @@
 # Copyright Biomedical Imaging Group, EPFL 2024
 
 r"""
-A collection of Newton-Cotes quadrature rules for numerical integration in 1D.
+A collection of numerical integration rules in 1D.
 
-The definition of the integral :math:`I(x)` of a function :math:`f(x)` over an interval :math:`[a, b]` is
+We provide two common rules written in PyTorch: `trapezoid` and `simpson`, equivalent to their counterparts in
+`scipy.integrate`.
 
-.. math:: I(x) = \int_{a}^{b} f(x) dx
+How it works is briefly explained here:
 
-The integrand is evaluated at `N` equally-spaced points on :math:`[a, b]`, resulting in a step size of
-:math:`h = \frac{1}{N - 1}`.
-We vectorize the integration along dimension `dim = 1` to allow multiple integrals to be evaluated in parallel.
+We would like to compute the integral :math:`I = \int_{a}^{b} f(x) dx` of a function :math:`f(x)` over an interval
+:math:`[a, b]`.
+We partition :math:`[a, b]` into :math:`n` equidistant sub-intervals by :math:`N=n+1` nots
+:math:`a \leq x_0 < x_1 < \ldots < x_n \leq b`, in other words, :math:`x_k = a + kh, k=0, \ldots, n` with stepsize
+:math:`h=\frac{b - a}{n}`.
+
+The composite trapezoid rule
+
+.. math::  T_n = \frac{h}{2}\left(f(a) + 2\sum_{k=1}^{n-1}f(x_k) + f(b)\right).
+
+The composite Simpson's rule
+
+.. math:: S_n = \frac{h}{6}\left(f(a) + 4\sum_{k=1}^{n-1}f{x_{k+\frac{1}{2}}} + 2\sum_{k=1}^{n-1}f(x_k) + f(b)\right),
+
+where :math:`x_{k+\frac{1}{2}} = \frac{x_k + x_{k+1}}{2}`.
+
+In implementation, trapezoid is written exactly as its formula.
+Simpson's rule requires the function value of the midpoint which is not provided, we view the partition stepsize as
+:math:`h = 2\frac{b - a}{n}` and the odd nots as the midpoint instead.
+The formula then becomes
+
+.. math:: S_n = \frac{h}{3}\left(f(a) + 4\sum_{k=1}^{n/2}f(x_{2k-1}) + 2\sum_{k=1}^{n/2-1}f(x_{2k}) + f(b)\right).
+
 """
 
-__all__ = ['riemann_rule', 'trapezoid_rule', 'simpsons_rule', 'richard1_rule', 'richard2_rule', 'richard3_rule']
+__all__ = ['trapezoid_rule', 'simpsons_rule']
 
 import warnings
 
@@ -40,55 +61,40 @@ def is_power_of_two(k: int) -> bool:
     k = int(k)
     return (k & (k - 1) == 0) and k != 0
 
-
-def riemann_rule(fs: torch.Tensor, dx: float) -> torch.Tensor:
-    """
-    Riemann quadrature rule of precision :math:`O(h)`.
-
-    Parameters
-    ----------
-    fs : torch.Tensor
-        The integrand evaluations of shape (N, number_of_integrals).
-    dx : float
-        Bin width or step size for evaluation :math:`h = 1 / (N - 1)`.
-
-    Returns
-    -------
-    output: torch.Tensor
-        Integral evaluated by Riemann rule of shape (num_integrals,).
-
-    """
-    return torch.sum(fs, dim=0) * dx
-
 def trapezoid_rule(fs: torch.Tensor, dx: float) -> torch.Tensor:
-    """
-    Trapezoid rule of precision :math:`O(h^2)`.
+    r"""
+    Composite trapezoid rule.
 
     Parameters
     ----------
     fs : torch.Tensor
         The integrand evaluations of shape (N, number_of_integrals).
     dx : float
-        Bin width or step size for evaluation :math:`h = 1 / (N - 1)`.
+        Step size.
 
     Returns
     -------
     output: torch.Tensor
-        Integral evaluated by trapezoid rule of shape (num_integrals,).
+        Integral evaluated by trapezoid rule of shape (num_integrals,)..
+
+    Notes
+    -----
+    - :math:`h = \frac{b - a}{N - 1}`.
+    - .. [1] https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.trapezoid.html#scipy.integrate.trapezoid
 
     """
-    return 0.5 * (fs[0] + 2.0 * torch.sum(fs[1:-1], dim=0) + fs[-1,:]) * dx
+    return 0.5 * (fs[0] + 2.0 * torch.sum(fs[1:-1], dim=0) + fs[-1]) * dx
 
 def simpsons_rule(fs: torch.Tensor, dx: float) -> torch.Tensor:
-    """
-    Simpson's rule of precision :math:`O(h^4)`.
+    r"""
+    Composite Simpson's rule.
 
     Parameters
     ----------
     fs : torch.Tensor
         The integrand evaluations of shape (N, number_of_integrals).
     dx : float
-        Bin width or step size for evaluation :math:`h = 1 / (N - 1)`.
+        Step size.
 
     Returns
     -------
@@ -97,114 +103,12 @@ def simpsons_rule(fs: torch.Tensor, dx: float) -> torch.Tensor:
 
     Notes
     -----
-    Simpson's rule only works correctly with grids of odd sizes (i.e. N == 2*K + 1)!
+    - :math:`h = \frac{b - a}{N - 1}`.
+    - Simpson's rule only works correctly with grids of odd sizes (i.e. :math:`N = 2^K + 1`).
+    - .. [2] https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.simpson.html#scipy.integrate.simpson
 
     """
     if fs.shape[0] % 2 == 0:
         warnings.warn("Pupil size is not an odd number! The computed \
                       integral will not have high-order accuracy.")
-    return (fs[0] + 2 * torch.sum(fs[1:-1], dim=0) + 2 * torch.sum(fs[1:-1:2], dim=0) + fs[-1]) * dx / 3.0
-
-def richard1_rule(fs: torch.Tensor, dx: float) -> torch.Tensor:
-    """
-    Romberg integration truncated at 1 step.
-
-    Equivalent to Simpson's rule with precision :math:`O(h^4)` when the grid size is set appropriately.
-
-    Parameters
-    ----------
-    fs : torch.Tensor
-        The integrand evaluations of shape (N, number_of_integrals).
-    dx : float
-        Bin width or step size for evaluation :math:`h = 1 / (N - 1)`.
-
-    Returns
-    -------
-    output: torch.Tensor
-        Integral evaluated by Richard's rule of 4th-order precision of shape (num_integrals,).
-
-    Notes
-    -----
-    This method only achieves higher-order convergence when the number of grid points is N == 2**K + 1.
-
-    """
-    if not is_power_of_two(fs.shape[0] - 1):
-        warnings.warn("Pupil shape is not of the form (2 ** K + 1)! The computed \
-                      integral will not have high-order accuracy.")
-
-    I0 = trapezoid_rule(fs, dx)
-    I1 = trapezoid_rule(fs[::2], dx*2)
-    return I0 + (I0 - I1) / 3.0
-
-def richard2_rule(fs: torch.Tensor, dx: float) -> torch.Tensor:
-    """
-    Romberg integration truncated at 2 steps.
-
-    Equivalent to two levels of Richardson extrapolation of precision :math:`O(h^6)`.
-
-    Parameters
-    ----------
-    fs : torch.Tensor
-        The integrand evaluations of shape (N, number_of_integrals).
-    dx : float
-        Bin width or step size for evaluation :math:`h = 1 / (N - 1)`.
-
-    Returns
-    -------
-    output: torch.Tensor
-        Integral evaluated by Richard's rule of 6th-order precision of shape (num_integrals,).
-
-    Notes
-    -----
-    This method only achieves higher-order convergence when the number of grid points is N == 2**K + 1.
-
-    """
-    if not is_power_of_two(fs.shape[0] - 1):
-        warnings.warn("Pupil shape is not of the form (2 ** K + 1)! The computed \
-                      integral will not have high-order accuracy.")
-
-    I0 = trapezoid_rule(fs, dx)
-    I1 = trapezoid_rule(fs[::2], dx*2)
-    I2 = trapezoid_rule(fs[::4], dx*4)
-    I00 =  I0 + (I0 - I1) / 3.0
-    I01 =  I1 + (I1 - I2) / 3.0
-    return I00 + (I00 - I01) / 15.0
-
-def richard3_rule(fs: torch.Tensor, dx: float) -> torch.Tensor:
-    """
-    Romberg integration truncated at 3 steps.
-    Equivalent to three levels of Richardson extrapolation of precision :math:`O(h^8)`.
-
-    Parameters
-    ----------
-    fs : torch.Tensor
-        The integrand evaluations of shape (N, number_of_integrals).
-    dx : float
-        Bin width or step size for evaluation :math:`h = 1 / (N - 1)`.
-
-    Returns
-    -------
-    output: torch.Tensor
-        Integral evaluated by Richard's rule of 8th-order precision of shape (num_integrals,).
-
-    Notes
-    -----
-    This method only achieves higher-order convergence when the number of grid points is N == 2**K + 1.
-
-    """
-    if not is_power_of_two(fs.shape[0] - 1):
-        warnings.warn("Pupil shape is not of the form (2 ** K + 1)! The computed \
-                      integral will not have high-order accuracy.")
-
-    I0 = trapezoid_rule(fs, dx)
-    I1 = trapezoid_rule(fs[::2], dx*2)
-    I2 = trapezoid_rule(fs[::4], dx*4)
-    I3 = trapezoid_rule(fs[::8], dx*8)
-    I00 =  I0 + (I0 - I1) / 3.0
-    I01 =  I1 + (I1 - I2) / 3.0
-    I02 =  I2 + (I2 - I3) / 3.0
-
-    I000 = I00 + (I00 - I01) / 15.0
-    I001 = I01 + (I01 - I02) / 15.0
-
-    return I000 + (I000 - I001) / 63.0
+    return (fs[0] + 4 * torch.sum(fs[1:-1:2], dim=0) + 2 * torch.sum(fs[2:-1:2], dim=0) + fs[-1]) * dx / 3.0
