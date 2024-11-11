@@ -119,6 +119,6 @@ class ScalarSphericalPropagator(SphericalPropagator):
 
         """
         integrand = J0 * (input_field * defocus_term * self.correction_factor * sin_t)[:, None]  # [n_theta, n_radii]
-        field = self.quadrature_rule(fs=integrand, dx=self.dtheta)
+        field = self.integrator(fs=integrand, dx=self.dtheta)
         field = field[self.rr_indices].unsqueeze(0)
         return field / math.sqrt(self.refractive_index)

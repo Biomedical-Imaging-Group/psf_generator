@@ -39,7 +39,7 @@ class SphericalPropagator(Propagator, ABC):
                  gibson_lanni=False, z_p=1e3, n_s=1.3,
                  n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3,
                  n_i=1.5, t_i0=100e3,
-                 quadrature_rule=simpsons_rule):
+                 integrator=simpsons_rule):
         super().__init__(n_pix_pupil=n_pix_pupil, n_pix_psf=n_pix_psf, device=device,
                          zernike_coefficients=zernike_coefficients,
                          wavelength=wavelength, na=na, fov=fov, refractive_index=refractive_index,
@@ -86,7 +86,7 @@ class SphericalPropagator(Propagator, ABC):
             self.correction_factor *= cos_t
 
         # integration method for the Bessel functions
-        self.quadrature_rule = quadrature_rule
+        self.integrator = integrator
 
     def _aberrations(self) -> torch.Tensor:
         """Compute Zernike aberrations that will be applied on the pupil."""

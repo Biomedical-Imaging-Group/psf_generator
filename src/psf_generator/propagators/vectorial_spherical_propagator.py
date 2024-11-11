@@ -64,7 +64,7 @@ class VectorialSphericalPropagator(SphericalPropagator):
                  gibson_lanni=False, z_p=1e3, n_s=1.3,
                  n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3,
                  n_i=1.5, t_i0=100e3,
-                 quadrature_rule=simpsons_rule):
+                 integrator=simpsons_rule):
         super().__init__(n_pix_pupil=n_pix_pupil, n_pix_psf=n_pix_psf, device=device,
                          zernike_coefficients=zernike_coefficients,
                          wavelength=wavelength, na=na, fov=fov, refractive_index=refractive_index,
@@ -73,7 +73,7 @@ class VectorialSphericalPropagator(SphericalPropagator):
                          gibson_lanni=gibson_lanni, z_p=z_p, n_s=n_s,
                          n_g=n_g, n_g0=n_g0, t_g=t_g, t_g0=t_g0,
                          n_i=n_i, t_i0=t_i0,
-                         quadrature_rule=quadrature_rule)
+                         integrator=integrator)
 
         self.e0x = e0x
         self.e0y = e0y
@@ -177,7 +177,7 @@ class VectorialSphericalPropagator(SphericalPropagator):
         for bessel, factor in zip([J0, J1, J2], factors):
             for field in [field_x, field_y]:
                 I_term = fixed_factor * factor
-                item = self.quadrature_rule(fs=bessel * (field * I_term)[:, None], dx=self.dtheta)
+                item = self.integrator(fs=bessel * (field * I_term)[:, None], dx=self.dtheta)
                 item = item[self.rr_indices]
                 Is.append(item)
         Ix0, Iy0, Ix1, Iy1, Ix2, Iy2 = Is
