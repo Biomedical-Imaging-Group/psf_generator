@@ -50,7 +50,7 @@ class VectorialSphericalPropagator(SphericalPropagator):
 
     Notes
     -----
-    The voctorial propagators have two addtional arguments apart from those inherited form the base propagator:
+    The vectorial propagators have two additional arguments apart from those inherited form the base propagator:
     - `self.e0x` TODO: explain
     - `self.e0y` TODO: explain
 

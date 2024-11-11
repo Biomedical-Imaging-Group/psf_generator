@@ -17,7 +17,7 @@ from ..utils.zernike import create_zernike_aberrations
 
 class SphericalPropagator(Propagator, ABC):
     r"""
-    Intermediate calss for propagators with spherical parameterization.
+    Intermediate class for propagators with spherical parameterization.
 
     Notes
     -----
