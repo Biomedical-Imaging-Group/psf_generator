@@ -1,3 +1,4 @@
+import inspect
 import math
 import os
 import sys
@@ -9,12 +10,18 @@ from psf_generator.utils.handle_data import save_stats_as_csv
 from torch.special import bessel_j1
 
 from psf_generator.utils.misc import convert_tensor_to_array
+import psf_generator.utils.integrate as integrate
 
 module_path = os.path.abspath(os.path.join('')) + '/src/'
 if module_path not in sys.path:
     sys.path.insert(0, module_path)
 
 from src.psf_generator import ScalarCartesianPropagator, ScalarSphericalPropagator
+
+
+def _get_all_integrators():
+    functions = inspect.getmembers(integrate, inspect.isfunction)
+    return filter(lambda x: x[0] in integrate.__all__, functions)
 
 def benchmark_scalar_accuracy_on_airy_disk(
         n_pix_psf: int = 201,
@@ -57,31 +64,39 @@ def benchmark_scalar_accuracy_on_airy_disk(
 
 
     for propagator_type in propagator_types:
-        accuracy_list = []
-        for n_pix in list_of_pixels:
-            print(propagator_type.__name__, n_pix)
-
-            if 'cartesian' in propagator_type.get_name():
-                propagator = propagator_type(n_pix_pupil=n_pix, sz_correction=False, **kwargs)
-            elif 'spherical' in propagator_type.get_name():
-                propagator = propagator_type(n_pix_pupil=n_pix, cos_factor=True, **kwargs)
+        propagator_name = propagator_type.get_name()
+        for quadrature_name, integrator in _get_all_integrators():
+            if 'cartesian' in propagator_name:
+                if quadrature_name == 'simpsons_rule':
+                    filename = f'{propagator_type.get_name()}'
+                else:
+                    continue
             else:
-                raise ValueError('incorrect propagator name')
-            psf = convert_tensor_to_array(propagator.compute_focus_field())
-            psf /= np.max(np.abs(psf))
-            accuracy = np.sqrt(np.sum(np.abs(psf - airy_disk_analytic) ** 2))
-            if debug:
-                fig, axes = plt.subplots(1, 3)
-                norm = plt.Normalize(0.0, 1.0)
-                for ax, image in zip(axes, [psf.squeeze(), airy_disk_analytic, psf.squeeze() - airy_disk_analytic]):
-                    ax.imshow(np.abs(image), norm=norm, cmap='inferno')
-                plt.show()
-                print(accuracy)
-            accuracy_list.append((n_pix, accuracy))
-        # save stats
-        filename = f'{propagator_type.get_name()}'
-        filepath = os.path.join(path, filename + '.csv')
-        save_stats_as_csv(filepath, accuracy_list)
+                filename = f'{propagator_type.get_name()}_{quadrature_name}'
+            accuracy_list = []
+            for n_pix in list_of_pixels:
+                if 'cartesian' in propagator_type.get_name():
+                    propagator = propagator_type(n_pix_pupil=n_pix, sz_correction=False, **kwargs)
+                elif 'spherical' in propagator_type.get_name():
+                    propagator = propagator_type(n_pix_pupil=n_pix, cos_factor=True, integrator=integrator, **kwargs)
+                else:
+                    raise ValueError('incorrect propagator name')
+                print(propagator_name, n_pix, quadrature_name)
+                psf = convert_tensor_to_array(propagator.compute_focus_field())
+                psf /= np.max(np.abs(psf))
+                accuracy = np.sqrt(np.sum(np.abs(psf - airy_disk_analytic) ** 2))
+                if debug:
+                    fig, axes = plt.subplots(1, 3)
+                    norm = plt.Normalize(0.0, 1.0)
+                    for ax, image in zip(axes, [psf.squeeze(), airy_disk_analytic, psf.squeeze() - airy_disk_analytic]):
+                        ax.imshow(np.abs(image), norm=norm, cmap='inferno')
+                    plt.show()
+                    print(accuracy)
+                accuracy_list.append((n_pix, accuracy))
+
+            # save stats
+            filepath = os.path.join(path, f'{filename}.csv')
+            save_stats_as_csv(filepath, accuracy_list)
 
 
 if __name__ == "__main__":

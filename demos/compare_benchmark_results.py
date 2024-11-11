@@ -2,6 +2,7 @@
 Visualize the benchmark result of runtime and accuracy.
 
 """
+import glob
 import os
 
 from src.psf_generator.propagators import *
@@ -33,18 +34,17 @@ def compare_runtime(quantity: str):
 
 def compare_accuracy():
     folder = os.path.join('results', 'data', 'benchmark_accuracy')
-    propagators = [
-        ScalarCartesianPropagator,
-        ScalarSphericalPropagator
-    ]
     title = 'Accuracy benchmark against pupil sizes'
     filepath = os.path.join('results', 'plots', 'benchmark_accuracy', 'benchmark_accuracy_plot.png')
     results = []
     labels = []
-    for propagator in propagators:
-        file = propagator.get_name()
-        labels.append(f'{file}')
-        results.append(load_stats_from_csv(os.path.join(folder, f'{file}.csv')))
+    for file in sorted(glob.glob(os.path.join(folder, '*.csv'))):
+        label = os.path.basename(file).removesuffix('.csv').removeprefix('scalar_')
+        if label != 'cartesian':
+            parts = label.split('_')
+            label = f'{parts[0]}, {parts[1]} {parts[2]}'
+        labels.append(label)
+        results.append(load_stats_from_csv(file))
 
     plot_accuracy_benchmark_results(results=results, labels=labels, title=title, filepath=filepath)
 
