@@ -119,7 +119,7 @@ def plot_pupil(
 
     """
     # convert to numpy array
-    pupil_array = convert_tensor_to_array(pupil)
+    pupil_array = convert_tensor_to_array(pupil).squeeze()
     # compute modulus and phase
     pupil_modulus = np.abs(pupil_array)
     pupil_phase = np.angle(pupil_array)

@@ -53,7 +53,7 @@ if __name__ == "__main__":
 
     for propagator in propagators:
         name = propagator.get_name()
-        pupil = propagator.get_input_field()
+        pupil = propagator.get_pupil()
         field = propagator.compute_focus_field()
         # save data as .npy
         for data, data_name in zip([pupil, field], ['pupil', 'psf']):

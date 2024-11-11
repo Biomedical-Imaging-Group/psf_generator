@@ -44,7 +44,7 @@ def test_pupil(propagator_type, pupil_shape):
         kwargs.update({'e0x': 1.0, 'e0y': 0.0})
 
     propagator = propagator_type(**kwargs)
-    pupil = propagator.get_input_field()
+    pupil = propagator.get_pupil()
     assert tuple(pupil.shape) == pupil_shape
 
     filepath = os.path.join('results', 'data', f'{propagator.get_name()}_pupil_base.npy')
