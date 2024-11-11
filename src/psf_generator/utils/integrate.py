@@ -80,7 +80,10 @@ def trapezoid_rule(fs: torch.Tensor, dx: float) -> torch.Tensor:
     Notes
     -----
     - :math:`h = \frac{b - a}{N - 1}`.
-    - .. [1] https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.trapezoid.html#scipy.integrate.trapezoid
+
+    References
+    ----------
+    .. [1] https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.trapezoid.html#scipy.integrate.trapezoid
 
     """
     return 0.5 * (fs[0] + 2.0 * torch.sum(fs[1:-1], dim=0) + fs[-1]) * dx
@@ -105,7 +108,10 @@ def simpsons_rule(fs: torch.Tensor, dx: float) -> torch.Tensor:
     -----
     - :math:`h = \frac{b - a}{N - 1}`.
     - Simpson's rule only works correctly with grids of odd sizes (i.e. :math:`N = 2^K + 1`).
-    - .. [2] https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.simpson.html#scipy.integrate.simpson
+
+    References
+    ----------
+    .. [2] https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.simpson.html#scipy.integrate.simpson
 
     """
     if fs.shape[0] % 2 == 0:
