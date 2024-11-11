@@ -91,16 +91,15 @@ class CartesianPropagator(Propagator, ABC):
         """Compute aberrations that will be applied on the pupil."""
         zernike_aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='cartesian')
         special_aberrations = create_special_pupil(self.n_pix_pupil, name=self.special_phase_mask)
-        aberrations = zernike_aberrations * special_aberrations
+        aberrations = zernike_aberrations * special_aberrations * self.correction_factor
         return aberrations.to(self.device)
 
     def compute_focus_field(self):
         """Compute the electric field at the focal plane."""
-        input_field = self.get_input_field()
-        field = custom_ifft2(input_field * self.correction_factor * self.defocus_filters,
-                                  shape_out=(self.n_pix_psf, self.n_pix_psf),
-                                  k_start=-self.zoom_factor * torch.pi,
-                                  k_end=self.zoom_factor * torch.pi,
-                                  norm='forward', fftshift_input=True, include_end=True) * (self.ds * self.s_max) ** 2
+        field = custom_ifft2(self.get_pupil()  * self.defocus_filters,
+                              shape_out=(self.n_pix_psf, self.n_pix_psf),
+                              k_start=-self.zoom_factor * torch.pi,
+                              k_end=self.zoom_factor * torch.pi,
+                              norm='forward', fftshift_input=True, include_end=True) * (self.ds * self.s_max) ** 2
         return field / (2 * math.pi * math.sqrt(self.refractive_index))
 

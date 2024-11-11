@@ -105,7 +105,7 @@ class VectorialCartesianPropagator(CartesianPropagator):
         kx, ky = create_pupil_mesh(n_pixels=self.n_pix_pupil)
         single_field = (kx ** 2 + ky ** 2 <= 1).to(torch.complex64)
         input_field = torch.stack((self.e0x * single_field, self.e0y * single_field),
-                           dim=0).to(self.device) * self._aberrations()
+                           dim=0).to(self.device)
 
         field_x, field_y = input_field[0, :, :], input_field[1, :, :]
         e_inf_x = ((cos_theta + 1.0) + (cos_theta - 1.0) * cos_2phi) * field_x \

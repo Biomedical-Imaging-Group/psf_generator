@@ -139,13 +139,17 @@ class Propagator(ABC):
 
     @abstractmethod
     def get_input_field(self) -> torch.Tensor:
-        """Get the corresponding pupil as the input field of propagator."""
+        """Get the input field of propagator."""
         raise NotImplementedError
 
     @abstractmethod
     def compute_focus_field(self) -> torch.Tensor:
         """Compute the output field of the propagator at focal plane."""
         raise NotImplementedError
+
+    def get_pupil(self) -> torch.Tensor:
+        """Get the pupil function."""
+        return self.get_input_field() * self._aberrations()
 
     def compute_optical_path(self, sin_t: torch.Tensor) -> torch.Tensor:
         r"""Compute the optical path following Eq. (3.45) in [1]
