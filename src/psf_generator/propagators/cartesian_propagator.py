@@ -17,7 +17,7 @@ from ..utils.zernike import create_zernike_aberrations, create_special_pupil
 
 class CartesianPropagator(Propagator, ABC):
     """
-    Intermediate calss for propagators with Cartesian parameterization.
+    Intermediate class for propagators with Cartesian parameterization.
 
     Notes
     -----
