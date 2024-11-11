@@ -49,7 +49,7 @@ class ScalarSphericalPropagator(SphericalPropagator):
 
         """
         input_field = torch.ones(self.n_pix_pupil).to(torch.complex64).to(self.device)
-        return input_field * self._aberrations()
+        return input_field
 
 
     def compute_focus_field(self) -> torch.Tensor:
@@ -77,21 +77,20 @@ class ScalarSphericalPropagator(SphericalPropagator):
         We compute it independently of defocus and handle defocus via batching with vmap().
 
         """
-        input_field = self.get_input_field()
 
         sin_t = torch.sin(self.thetas)
         bessel_arg = self.k * self.rs[None, :] * sin_t[:, None]
         J0 = bessel_j0(bessel_arg)
 
         batched_compute_field_at_defocus = vmap(self._compute_psf_at_defocus, in_dims=(0, None, None, None))
-        return batched_compute_field_at_defocus(self.defocus_filters, J0, input_field, sin_t)
+        return batched_compute_field_at_defocus(self.defocus_filters, J0, self.get_pupil(), sin_t)
 
 
     def _compute_psf_at_defocus(
             self,
             defocus_term,
             J0: torch.Tensor,
-            input_field: torch.Tensor,
+            pupil: torch.Tensor,
             sin_t: torch.Tensor,
     ) -> torch.Tensor:
         """Compute PSF at defocus.
@@ -102,8 +101,8 @@ class ScalarSphericalPropagator(SphericalPropagator):
             TODO: what is it?
         J0 : torch.Tensor
             Bessel function of the first kind of order 0 :math:`J_0`.
-        input_field : torch.Tensor
-            Input pupil field.
+        pupil : torch.Tensor
+            Pupil function.
         sin_t : torch.Tensor
             TODO: what is it? of shape: (n_thetas, )
 
@@ -118,7 +117,7 @@ class ScalarSphericalPropagator(SphericalPropagator):
         of E(r) onto the xy image grid.
 
         """
-        integrand = J0 * (input_field * defocus_term * self.correction_factor * sin_t)[:, None]  # [n_theta, n_radii]
+        integrand = J0 * (pupil * defocus_term * sin_t)[:, None]  # [n_theta, n_radii]
         field = self.integrator(fs=integrand, dx=self.dtheta)
         field = field[self.rr_indices].unsqueeze(0)
         return field / math.sqrt(self.refractive_index)

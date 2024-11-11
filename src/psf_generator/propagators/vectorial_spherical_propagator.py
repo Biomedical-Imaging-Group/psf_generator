@@ -102,7 +102,7 @@ class VectorialSphericalPropagator(SphericalPropagator):
         single_field = torch.ones(self.n_pix_pupil).to(self.device)
         input_field = torch.stack((self.e0x * single_field, self.e0y * single_field),
                            dim=0).to(torch.complex64)
-        return input_field * self._aberrations()
+        return input_field
 
     def compute_focus_field(self) -> torch.Tensor:
         """
@@ -119,7 +119,6 @@ class VectorialSphericalPropagator(SphericalPropagator):
         We compute it independently of defocus and handle defocus via batching with `vmap()`.
 
         """
-        input_field = self.get_input_field()
 
         sin_t = torch.sin(self.thetas)
         cos_t = torch.cos(self.thetas)
@@ -130,7 +129,7 @@ class VectorialSphericalPropagator(SphericalPropagator):
 
         batched_compute_field_at_defocus = vmap(self._compute_psf_at_defocus,
                                                 in_dims=(0, None, None, None, None, None, None))
-        return batched_compute_field_at_defocus(self.defocus_filters, J0, J1, J2, input_field, sin_t, cos_t)
+        return batched_compute_field_at_defocus(self.defocus_filters, J0, J1, J2, self.get_pupil(), sin_t, cos_t)
 
 
     def _compute_psf_at_defocus(
@@ -139,7 +138,7 @@ class VectorialSphericalPropagator(SphericalPropagator):
             J0: torch.Tensor,
             J1: torch.Tensor,
             J2: torch.Tensor,
-            input_field: torch.Tensor,
+            pupil: torch.Tensor,
             sin_t: torch.Tensor,
             cos_t: torch.Tensor,
     ) -> torch.Tensor:
@@ -156,8 +155,8 @@ class VectorialSphericalPropagator(SphericalPropagator):
             Bessel function of the first kind of order 1 :math:`J_1`.
         J2: torch.Tensor
             Bessel function of the first kind of order 2 :math:`J_2`.
-        input_field: torch.Tensor
-            Input pupil field.
+        pupil: torch.Tensor
+            Pupil function.
         sin_t: torch.Tensor
             shape: (n_thetas, )
         cos_t: torch.Tensor
@@ -169,10 +168,10 @@ class VectorialSphericalPropagator(SphericalPropagator):
             Output field.
 
         """
-        field_x, field_y = input_field[0, :], input_field[1, :]
+        field_x, field_y = pupil[0, :], pupil[1, :]
 
         Is = []
-        fixed_factor = sin_t * defocus_term * self.correction_factor
+        fixed_factor = sin_t * defocus_term
         factors = [(cos_t + 1.0), sin_t, (cos_t - 1.0)]
         for bessel, factor in zip([J0, J1, J2], factors):
             for field in [field_x, field_y]:
