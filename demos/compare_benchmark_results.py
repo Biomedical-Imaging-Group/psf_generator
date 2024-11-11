@@ -142,6 +142,8 @@ def compare_accuracy():
     labels = []
     for file in sorted(glob.glob(os.path.join(folder, '*.csv'))):
         label = os.path.basename(file).removesuffix('.csv').removeprefix('scalar_')
+        if label not in ('cartesian', 'spherical_simpsons_rule'):
+            continue
         if label != 'cartesian':
             parts = label.split('_')
             label = f'{parts[0]}, {parts[1]} {parts[2]}'
