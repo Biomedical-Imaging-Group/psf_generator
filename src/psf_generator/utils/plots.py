@@ -103,7 +103,10 @@ def _compute_psf_intensity(input_image: np.ndarray) -> np.ndarray:
 def plot_pupil(
         pupil: tp.Union[torch.Tensor, np.ndarray],
         name_of_propagator: str,
-        filepath: str = None
+        filepath: str = None,
+        show_cbar_ticks: bool = False,
+        show_image_ticks: bool = False,
+        show_titles: bool = False
 ):
     """
     Plot the modulus and phase of a scalar or vectorial pupil for the Cartesian propagator.
@@ -116,6 +119,12 @@ def plot_pupil(
         Name of the propagator.
     filepath: str, optional
         Path to save the plot. Default is None, no file is saved.
+    show_titles : bool, optional
+        Whether to show the titles on the first row. Default is False.
+    show_image_ticks : bool, optional
+        Whether to show ticks. Default is False.
+    show_cbar_ticks : bool, optional
+        Whether to show the ticks for the colorbar. Default is False.
 
     """
     # convert to numpy array
@@ -146,18 +155,26 @@ def plot_pupil(
         cbar_min = np.min(pupil)
         cbar_max = np.max(pupil)
         norm = plt.Normalize(cbar_min, cbar_max)
+        if show_cbar_ticks:
+            cbar_ticks = [cbar_min, cbar_max]
+        else:
+            cbar_ticks = None
         for (row_index, ax), image, row_title in zip(enumerate(axis), pupil, row_titles):
             im = ax.imshow(apply_disk_mask(image), norm=norm, cmap=cmap)
-            colorbar(im, cbar_ticks=[cbar_min, cbar_max])
-            x_ticks = [0, image.shape[1]]
-            xtick_labels = x_ticks
-            ax.set_xticks(x_ticks)
-            ax.set_xticklabels(xtick_labels, fontsize=_TICK_SIZE)
-            y_ticks = [0, image.shape[0]]
-            ax.set_yticks(y_ticks)
-            ytick_labels = y_ticks
-            ax.set_yticklabels(ytick_labels, fontsize=_TICK_SIZE)
-            if row_index == 0:
+            colorbar(im, cbar_ticks=cbar_ticks)
+            if show_image_ticks:
+                x_ticks = [0, image.shape[1]]
+                xtick_labels = x_ticks
+                ax.set_xticks(x_ticks)
+                ax.set_xticklabels(xtick_labels, fontsize=_TICK_SIZE)
+                y_ticks = [0, image.shape[0]]
+                ax.set_yticks(y_ticks)
+                ytick_labels = y_ticks
+                ax.set_yticklabels(ytick_labels, fontsize=_TICK_SIZE)
+            else:
+                ax.set_xticks([])
+                ax.set_yticks([])
+            if show_titles and row_index == 0:
                 ax.set_title(title, fontsize=_TITLE_SIZE)
             if nrows > 1 and col_index == 0:
                 ax.text(-0.1, 0.5, row_title, fontsize=_TITLE_SIZE, verticalalignment='center',
@@ -179,7 +196,11 @@ def plot_psf(
         z_slice_number: int = None,
         x_slice_number: int = None,
         y_slice_number: int = None,
-        filepath: str = None
+        filepath: str = None,
+        show_cbar_ticks: bool = False,
+        show_image_ticks: bool = False,
+        show_titles: bool = False
+
 ):
     """
     Plot the intensity or modulus or phase of a PSF, applicable to all four propagators.
@@ -200,6 +221,12 @@ def plot_psf(
         Y slice number for the x-z plane.
     filepath : str, optional
         Path to save the plot. Default is None, no file is saved.
+    show_titles : bool, optional
+        Whether to show the titles on the first row. Default is False.
+    show_image_ticks : bool, optional
+        Whether to show ticks. Default is False.
+    show_cbar_ticks : bool, optional
+        Whether to show the ticks for the colorbar. Default is False.
 
     """
     # convert to numpy array
@@ -249,6 +276,10 @@ def plot_psf(
     cbar_min = min(np.min(psf) for psf in psf_list)
     cbar_max = max(np.max(psf) for psf in psf_list)
     norm = plt.Normalize(cbar_min, cbar_max)
+    if show_cbar_ticks:
+        cbar_ticks = [cbar_min, cbar_max]
+    else:
+        cbar_ticks = None
     figure, axes = plt.subplots(nrows, ncols, figsize=(ncols * _FIG_SIZE, nrows * _FIG_SIZE))
     if dim == 1:
         axes = axes.reshape(1, -1)
@@ -256,21 +287,25 @@ def plot_psf(
     for (col_index, axis), psf, col_title in zip(enumerate(axes), psf_list, col_titles):
         for (row_index, ax), image, row_title, in zip(enumerate(axis), psf, row_titles):
             im = ax.imshow(image, norm = norm, cmap=cmap)
-            colorbar(im, cbar_ticks=[cbar_min, cbar_max])
-            if row_index == 0:
+            colorbar(im, cbar_ticks=cbar_ticks)
+            if show_titles and row_index == 0:
                 ax.set_title(col_title, fontsize=_TITLE_SIZE)
             if dim > 1 and col_index == 0:
                 ax.text(-0.1, 0.5, row_title, fontsize=_TITLE_SIZE, verticalalignment='center',
                         rotation=90, transform=ax.transAxes)
                 plt.subplots_adjust(left=0.05)
-            x_ticks = [0, image.shape[1]]
-            xtick_labels = x_ticks
-            ax.set_xticks(x_ticks)
-            ax.set_xticklabels(xtick_labels, fontsize=_TICK_SIZE)
-            y_ticks = [0, image.shape[0]]
-            ax.set_yticks(y_ticks)
-            ytick_labels = y_ticks
-            ax.set_yticklabels(ytick_labels, fontsize=_TICK_SIZE)
+            if show_image_ticks:
+                x_ticks = [0, image.shape[1]]
+                xtick_labels = x_ticks
+                ax.set_xticks(x_ticks)
+                ax.set_xticklabels(xtick_labels, fontsize=_TICK_SIZE)
+                y_ticks = [0, image.shape[0]]
+                ax.set_yticks(y_ticks)
+                ytick_labels = y_ticks
+                ax.set_yticklabels(ytick_labels, fontsize=_TICK_SIZE)
+            else:
+                ax.set_xticks([])
+                ax.set_yticks([])
     plt.suptitle(f'{quantity} of PSF at three orthogonal planes ({name_of_propagator})', fontsize=_SUP_TITLE_SIZE)
     figure.tight_layout()
     if filepath:
