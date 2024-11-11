@@ -36,15 +36,11 @@ myst_dmath_double_inline = True
 extensions = [
     'sphinx.builders.html',
     'sphinx.ext.autodoc',
-    "sphinx.ext.autosectionlabel",
-    'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.intersphinx',
-    'sphinx.ext.napoleon',
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
     'sphinxcontrib.bibtex',
-    'sphinx_proof',
     'myst_parser',
     'autoapi.extension',
 ]
@@ -62,6 +58,12 @@ master_doc = 'index'
 pygments_style = 'sphinx'
 
 bibtex_bibfiles = ['bibliography.bib']
+
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
+    'torch': ('https://pytorch.org/docs/main/', None)
+}
 
 # -- Options for HTML output -------------------------------------------------
 
