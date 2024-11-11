@@ -65,14 +65,14 @@ def benchmark_scalar_accuracy_on_airy_disk(
 
     for propagator_type in propagator_types:
         propagator_name = propagator_type.get_name()
-        for quadrature_name, integrator in _get_all_integrators():
+        for integrator_name, integrator in _get_all_integrators():
             if 'cartesian' in propagator_name:
-                if quadrature_name == 'simpsons_rule':
+                if integrator_name == 'simpsons_rule':
                     filename = f'{propagator_type.get_name()}'
                 else:
                     continue
             else:
-                filename = f'{propagator_type.get_name()}_{quadrature_name}'
+                filename = f'{propagator_type.get_name()}_{integrator_name}'
             accuracy_list = []
             for n_pix in list_of_pixels:
                 if 'cartesian' in propagator_type.get_name():
@@ -81,7 +81,7 @@ def benchmark_scalar_accuracy_on_airy_disk(
                     propagator = propagator_type(n_pix_pupil=n_pix, cos_factor=True, integrator=integrator, **kwargs)
                 else:
                     raise ValueError('incorrect propagator name')
-                print(propagator_name, n_pix, quadrature_name)
+                print(propagator_name, n_pix, integrator_name)
                 psf = convert_tensor_to_array(propagator.compute_focus_field())
                 psf /= np.max(np.abs(psf))
                 accuracy = np.sqrt(np.sum(np.abs(psf - airy_disk_analytic) ** 2))
