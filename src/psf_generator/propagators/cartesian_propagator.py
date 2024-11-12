@@ -89,10 +89,10 @@ class CartesianPropagator(Propagator, ABC):
 
     def _aberrations(self):
         """Compute aberrations that will be applied on the pupil."""
-        zernike_aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='cartesian')
-        special_aberrations = create_special_pupil(self.n_pix_pupil, name=self.special_phase_mask)
+        zernike_aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='cartesian').to(self.device)
+        special_aberrations = create_special_pupil(self.n_pix_pupil, name=self.special_phase_mask).to(self.device)
         aberrations = zernike_aberrations * special_aberrations * self.correction_factor
-        return aberrations.to(self.device)
+        return aberrations
 
     def compute_focus_field(self):
         """Compute the electric field at the focal plane."""

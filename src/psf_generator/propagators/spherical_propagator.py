@@ -90,6 +90,6 @@ class SphericalPropagator(Propagator, ABC):
 
     def _aberrations(self) -> torch.Tensor:
         """Compute Zernike aberrations that will be applied on the pupil."""
-        zernike_aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='spherical')
+        zernike_aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='spherical').to(self.device)
         aberrations = zernike_aberrations * self.correction_factor
-        return aberrations.to(self.device)
+        return aberrations
