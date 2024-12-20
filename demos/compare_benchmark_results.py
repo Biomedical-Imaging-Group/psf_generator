@@ -6,12 +6,13 @@ import glob
 import os
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 from src.psf_generator.propagators import *
 from src.psf_generator.utils.handle_data import load_stats_from_csv
 
 _FIG_SIZE = 6
-_TITLE_SIZE = 16
+_TITLE_SIZE = 14
 _LABEL_SIZE = 14
 _TICK_SIZE = 12
 lw = 1
@@ -39,18 +40,27 @@ def plot_accuracy_benchmark_results(
         Path to save the figure. Default is None and figure is not saved.
 
     """
-    figure, ax = plt.subplots(1, 1, figsize=(_FIG_SIZE * 1.5, _FIG_SIZE))
-    colors = ['red', 'blue']
+    figure, ax = plt.subplots(1, 1, figsize=(_FIG_SIZE, _FIG_SIZE))
+    colors = ['red', 'green', 'blue']
+    xs = np.array([8, 16, 32, 64, 128, 256, 512, 1024]) + 1
+    h2 = results[0][0][1] * (xs / xs[0]) ** (-2)
+    h1 = results[1][0][1] * (xs / xs[0]) ** (-1)
+    h4 = results[-1][0][1] * (xs / xs[0]) ** (-4)
+    n_terms = len(xs)
     for result, label, color in zip(results, labels, colors):
         x, y = zip(*result)
-        ax.loglog(x, y, label=label, ls='solid', marker='.', markersize=markersize, lw=lw, color=color)
+        ax.loglog(x[:n_terms], y[:n_terms], label=label, ls='solid', marker='.', markersize=markersize, lw=lw, color=color)
+
+    ax.loglog(xs[:n_terms], h1, label='$O(h)$', ls='dotted', lw=lw, color='green')
+    ax.loglog(xs[:n_terms], h2, label='$O(h^2)$', ls='dotted', lw=lw, color='red')
+    ax.loglog(xs[:n_terms], h4, label='$O(h^4)$', ls='dotted', lw=lw, color='blue')
     ax.set_xscale("log", base=2)
     ax.set_yscale("log", base=10)
     ax.set_title(title, fontsize=_TITLE_SIZE)
-    ax.set_xlabel('Numerical size of the pupil / pixels', fontsize=_LABEL_SIZE)
+    ax.set_xlabel('Pupil size', fontsize=_LABEL_SIZE)
     ax.set_ylabel('Error', fontsize=_LABEL_SIZE)
     xs, _ = zip(*results[0])
-    xticks = [entry - 1 for entry in xs]
+    xticks = [entry - 1 for entry in xs[:n_terms]]
     ax.set_xticks(xticks)
     ax.set_xticklabels(xticks)
     ax.legend(fontsize=_TICK_SIZE)
@@ -68,6 +78,7 @@ def plot_runtime_benchmark_results(
         quantity: str,
         labels: list,
         title: str,
+        letter: str,
         filepath: str = None
 ):
     """
@@ -83,26 +94,32 @@ def plot_runtime_benchmark_results(
         Label/name of the data.
     title : str
         Title of the figure.
+    letter: str
+        Labeling for the figure, e.g. '(a)'.
     filepath : str, optional
         Path to save the figure. Default is None and figure is not saved.
 
     """
-    figure, ax = plt.subplots(1, 1, figsize=(_FIG_SIZE*1.5, _FIG_SIZE))
-    colors = ['red', 'red', 'blue', 'blue', 'orange', 'orange', 'green', 'green']
+    figure, ax = plt.subplots(1, 1, figsize=(_FIG_SIZE, 0.6*_FIG_SIZE))
+    colors = ['red', 'blue', 'red', 'blue']
     for result, label, color in zip(results, labels, colors):
         x, y = zip(*result)
-        if 'cpu' in label:
-            ls = 'solid'
+        if 'scalar' in label:
+            ls = 'dotted'
         else:
-            ls = 'dashed'
-        ax.loglog(x[1:], y[1:], label=label, ls=ls, marker='.', markersize=markersize, lw=lw, color=color)
+            ls = 'solid'
+        ax.loglog(x[1:7], y[1:7], label=label.replace("_", " "), ls=ls, marker='.', markersize=markersize, lw=lw, color=color)
         ax.set_xscale("log", base=2)
         ax.set_yscale("log", base=10)
-        ax.set_ylabel('Time / s', fontsize=_LABEL_SIZE)
+        ax.set_yticks([1e-3, 1e-2, 1e-1])
+        ax.set_xticks([32, 64, 128, 256, 512, 1024])
+        ax.set_xticklabels([32, 64, 128, 256, 512, 1024])
+        ax.set_ylabel('Time (s)', fontsize=_LABEL_SIZE)
 
     ax.legend(fontsize=_TICK_SIZE)
     ax.set_title(title, fontsize=_TITLE_SIZE)
-    ax.set_xlabel(f'Numerical size of the {quantity} / pixels', fontsize=_LABEL_SIZE)
+    ax.set_xlabel(f'{quantity.title()} size', fontsize=_LABEL_SIZE)
+    ax.text(0.05, 0.05, letter, color='black', fontsize=_LABEL_SIZE, transform=ax.transAxes)
 
     plt.grid(color='gray', ls='dotted', lw=lw)
     figure.tight_layout()
@@ -112,7 +129,7 @@ def plot_runtime_benchmark_results(
     plt.show()
 
 
-def compare_runtime(quantity: str):
+def compare_runtime(quantity: str, device_name: str, letter: str):
     folder = os.path.join('results', 'data', 'benchmark_runtime')
     propagators = [
         ScalarCartesianPropagator,
@@ -120,29 +137,27 @@ def compare_runtime(quantity: str):
         VectorialCartesianPropagator,
         VectorialSphericalPropagator,
     ]
-    device_names = ['cpu', 'gpu']
-    title = f'Runtime benchmark against {quantity} sizes'
-    filepath = os.path.join('results', 'plots', 'benchmark_runtime', f'benchmark_runtime_{quantity}_plot.png')
+    title = f'Runtime benchmark ({device_name.upper()})'
+    filepath = os.path.join('results', 'plots', 'benchmark_runtime', f'benchmark_runtime_{quantity}_{device_name}.pdf')
     results = []
     labels = []
     for propagator in propagators:
-        for device_name in device_names:
-            file = propagator.get_name()
-            labels.append(f'{file}_{device_name}')
-            results.append(load_stats_from_csv(os.path.join(folder, f'{file}_{device_name}_{quantity}.csv')))
+        file = propagator.get_name()
+        labels.append(f'{file}')
+        results.append(load_stats_from_csv(os.path.join(folder, f'{file}_{device_name}_{quantity}.csv')))
 
-    plot_runtime_benchmark_results(results=results, quantity=quantity, labels=labels, title=title, filepath=filepath)
+    plot_runtime_benchmark_results(results=results, quantity=quantity, labels=labels, title=title, letter=letter, filepath=filepath)
 
 
 def compare_accuracy():
     folder = os.path.join('results', 'data', 'benchmark_accuracy')
-    title = 'Accuracy benchmark against pupil sizes'
+    title = 'Accuracy benchmark'
     filepath = os.path.join('results', 'plots', 'benchmark_accuracy', 'benchmark_accuracy_plot.png')
     results = []
     labels = []
     for file in sorted(glob.glob(os.path.join(folder, '*.csv'))):
         label = os.path.basename(file).removesuffix('.csv').removeprefix('scalar_')
-        if label not in ('cartesian', 'spherical_simpsons_rule'):
+        if label not in ('cartesian', 'spherical_riemann_rule', 'spherical_simpsons_rule'):
             continue
         if label != 'cartesian':
             parts = label.split('_')
@@ -153,6 +168,8 @@ def compare_accuracy():
     plot_accuracy_benchmark_results(results=results, labels=labels, title=title, filepath=filepath)
 
 if __name__ == "__main__":
-    for quantity in ['pupil', 'psf']:
-        compare_runtime(quantity=quantity)
+    letters = ['(a)', '(b)']
+    for quantity in ['pupil']:
+        for device_name, letter in zip(['cpu', 'gpu'], letters):
+            compare_runtime(quantity=quantity, device_name=device_name, letter=letter)
     compare_accuracy()
