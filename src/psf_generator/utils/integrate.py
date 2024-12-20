@@ -33,7 +33,7 @@ The formula then becomes
 
 """
 
-__all__ = ['trapezoid_rule', 'simpsons_rule']
+__all__ = ['riemann_rule', 'simpsons_rule']
 
 import warnings
 
@@ -60,6 +60,25 @@ def is_power_of_two(k: int) -> bool:
     """
     k = int(k)
     return (k & (k - 1) == 0) and k != 0
+
+def riemann_rule(fs: torch.Tensor, dx: float) -> torch.Tensor:
+    """
+    Riemann quadrature rule of precision :math:`O(h)`.
+
+    Parameters
+    ----------
+    fs : torch.Tensor
+        The integrand evaluations of shape (N, number_of_integrals).
+    dx : float
+        Bin width or step size for evaluation :math:`h = 1 / (N - 1)`.
+
+    Returns
+    -------
+    output: torch.Tensor
+        Integral evaluated by Riemann rule of shape (num_integrals,).
+
+    """
+    return torch.sum(fs, dim=0) * dx
 
 def trapezoid_rule(fs: torch.Tensor, dx: float) -> torch.Tensor:
     r"""
