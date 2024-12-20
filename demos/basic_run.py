@@ -7,8 +7,8 @@ How to call them, visualize the results and save data.
 import os
 
 from psf_generator.utils.handle_data import save_as_npy
-from src.psf_generator.propagators import *
-from src.psf_generator.utils.plots import plot_pupil, plot_psf
+from psf_generator.propagators import ScalarCartesianPropagator, ScalarSphericalPropagator, VectorialCartesianPropagator, VectorialSphericalPropagator
+from psf_generator.utils.plots import plot_pupil, plot_psf
 
 if __name__ == "__main__":
     n_pix_pupil = 127
@@ -20,7 +20,7 @@ if __name__ == "__main__":
     n_defocus = 200
     e0x = 1
     e0y = 1j
-    mask = 'vortex'
+    mask = None
     zernike_coefficients = None
 
     kwargs = {
@@ -38,9 +38,9 @@ if __name__ == "__main__":
     }
 
     # define base file path
-    base_plot_path = os.path.join('results', 'plots', 'fields')
+    base_plot_path = os.path.join('results', 'plots')
     os.makedirs(base_plot_path, exist_ok=True)
-    base_data_path = os.path.join('results', 'data', 'fields')
+    base_data_path = os.path.join('results', 'data')
     os.makedirs(base_data_path, exist_ok=True)
 
     # define propagators

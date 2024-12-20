@@ -70,7 +70,7 @@ def apply_disk_mask(img):
 
 
 def _compute_psf_intensity(input_image: np.ndarray) -> np.ndarray:
-    """
+    r"""
     Compute the intensity of a complex field.
 
     The input array must be 4D with this convention:
@@ -291,8 +291,7 @@ def plot_psf(
             if show_titles and row_index == 0:
                 ax.set_title(col_title, fontsize=_TITLE_SIZE)
             if dim > 1 and col_index == 0:
-                ax.text(-0.1, 0.5, row_title, fontsize=_TITLE_SIZE, verticalalignment='center',
-                        rotation=90, transform=ax.transAxes)
+                ax.set_ylabel(row_title, fontsize=_LABEL_SIZE)
                 plt.subplots_adjust(left=0.05)
             if show_image_ticks:
                 x_ticks = [0, image.shape[1]]
