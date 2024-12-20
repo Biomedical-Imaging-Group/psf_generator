@@ -50,9 +50,10 @@ class VectorialSphericalPropagator(SphericalPropagator):
 
     Notes
     -----
-    The vectorial propagators have two additional arguments apart from those inherited form the base propagator:
-    - `self.e0x` TODO: explain
-    - `self.e0y` TODO: explain
+    The voctorial propagators have two addtional arguments apart from those inherited form the base propagator
+    to account for polarization:
+    - `self.e0x`: initial electric field component ex
+    - `self.e0y`: initial electric field component ey
 
     """
     def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
@@ -148,7 +149,7 @@ class VectorialSphericalPropagator(SphericalPropagator):
         Parameters
         ----------
         defocus_term: torch.Tensor
-            TODO: What is it?
+            Factor in the integrand corresponding to defocus.
         J0: torch.Tensor
             Bessel function of the first kind of order 0 :math:`J_0`.
         J1: torch.Tensor

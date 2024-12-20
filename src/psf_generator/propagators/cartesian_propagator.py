@@ -22,8 +22,11 @@ class CartesianPropagator(Propagator, ABC):
     Notes
     -----
     Apart from parameters inherited from the base class, there is one additional
-    `sz_correction`. TODO: add explanation.
-
+    `sz_correction`. This factor appears due to the cartesian parametrization inside 
+    the integral to compute, which affects the PSF for high-NA systems. 
+    Set it to `True` to apply the correction factor :math:`1/s_z` to the pupil function.
+    Set it to `False` to ignore the correction factor, to obtain low-NA analytic PSFs 
+    such as the Airy disk.
     """
     def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
                  zernike_coefficients=None,

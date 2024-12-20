@@ -22,11 +22,13 @@ class SphericalPropagator(Propagator, ABC):
     Notes
     -----
     - Apart from parameters inherited from the base class, there is one additional
-      `cos_factor`. TODO: add explanation.
+      `cos_factor`. This cosine factor is only here to make the spherical propagator
+      equivalent to the Cartesian propagator when sz_correction is set to False. 
+      This is useful to compute analytic low NA PSFs such as the Airy disk. 
 
 
-    - The spherical propagator makes the assumption that the input field (pupil) is axis-symmetric (rotational-invariant).
-      In other words, the input field is function of only radius and not dependent on the angle:
+    - The spherical propagator makes the assumption that the input field (pupil) is axisymmetric (rotational-invariant).
+      In other words, the input field is function of theta only and not dependent on the angle phi:
 
       .. math:: \mathbf{e}_{\infty}(\theta, \phi) = \mathbf{e}_{\infty}(\theta).
 
@@ -85,7 +87,7 @@ class SphericalPropagator(Propagator, ABC):
         if self.cos_factor:
             self.correction_factor *= cos_t
 
-        # integration method for the Bessel functions
+        # numerical integration method
         self.integrator = integrator
 
     def _aberrations(self) -> torch.Tensor:

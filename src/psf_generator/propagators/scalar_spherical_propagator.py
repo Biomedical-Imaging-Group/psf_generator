@@ -18,7 +18,7 @@ class ScalarSphericalPropagator(SphericalPropagator):
     r"""
     Propagator for the scalar approximation of the Richard's-Wolf integral in spherical parameterization.
 
-    The Equation to compute the eletric field is
+    The equation to compute the eletric field is
 
     .. math::
             E(\boldsymbol{\rho})
@@ -53,14 +53,14 @@ class ScalarSphericalPropagator(SphericalPropagator):
 
 
     def compute_focus_field(self) -> torch.Tensor:
-        """Compute the focus field for scalar spherical propagator.
+        r"""Compute the focus field for scalar spherical propagator.
 
         Parameters
         ----------
         self.thetas : torch.Tensor
-            Angles of sampling of size `(n_thetas, )`.
+            Angles of sampling of shape `(n_thetas, )`.
         self.rs : torch.Tensor
-            Radii of sampling of size `(n_radii, )`.
+            Radii of sampling of shape `(n_radii, )`.
         self.correction_factor : torch.Tensor
             Correction factor of shape `(n_thetas, )`.
         J0 : torch.Tensor
@@ -93,18 +93,18 @@ class ScalarSphericalPropagator(SphericalPropagator):
             pupil: torch.Tensor,
             sin_t: torch.Tensor,
     ) -> torch.Tensor:
-        """Compute PSF at defocus.
+        r"""Compute PSF at defocus.
 
         Parameters
         ----------
-        defocus_term :
-            TODO: what is it?
-        J0 : torch.Tensor
+        defocus_term:
+            Factor in the integrand corresponding to defocus.
+        J0: torch.Tensor
             Bessel function of the first kind of order 0 :math:`J_0`.
-        pupil : torch.Tensor
+        pupil: torch.Tensor
             Pupil function.
-        sin_t : torch.Tensor
-            TODO: what is it? of shape: (n_thetas, )
+        sin_t: torch.Tensor
+            Factor in the integrand of shape: `(n_thetas, )`.
 
         Returns
         -------

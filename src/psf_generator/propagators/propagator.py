@@ -34,11 +34,11 @@ class Propagator(ABC):
     fov : float
         Size of the square field of view of the PSF plane, in micrometer.
     refractive_index : float
-        TODO: Refractive index of the lens?
+        Refractive index of the propagation medium
     defocus_min : float
-        Extend of the defocus along the optical(z)-axis on one side of the focal plane in micrometer.
+        Extent of the defocus along the optical (z) axis on one side of the focal plane in micrometer.
     defocus_max : float
-        Extend of the defocus along the optical(z)-axis on the other side of the focal plane in micrometer.
+        Extent of the defocus along the optical (z) axis on the other side of the focal plane in micrometer.
     n_defocus : int
         Number of z-stack.
     apod_factor : bool
@@ -48,11 +48,11 @@ class Propagator(ABC):
     gibson_lanni : bool
         Apply Gibnson-Lanni aberration or not.
     z_p : float
-        TODO: what is it?
+        Depth of the focal plane in the sample. It is usually obtained experimentally by focusing on a point source at this depth. 
     n_s : float
         Refractive index of the sample.
     n_g : float
-        Refractive index of the cover slip.
+        Refractive index of the (glass) cover slip.
     n_g0 : float
         Design condition of the refractive index of the cover slip.
     t_g : float
@@ -71,7 +71,7 @@ class Propagator(ABC):
     -----
     `(z_p, n_s, n_g, n_g0, t_g, t_g0, n_i, t_i0, t_i)` are coefficients related to the aberrations due to refractive
     index mismatch between stratified layers of the microscope.
-    These aberration is compute by method `self.compute_optical_path`.
+    This aberration is computed by method `self.compute_optical_path`.
 
     """
     def __init__(self,
@@ -206,8 +206,8 @@ class Propagator(ABC):
         return args
 
     def save_parameters(self, json_filepath: str):
-        """
-        Save the parameters of the propagator as a JSON file.
+        r"""
+        Save the parameters of the propagator in a JSON file.
 
         Notes
         -----

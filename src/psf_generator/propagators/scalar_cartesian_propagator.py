@@ -13,14 +13,14 @@ from ..utils.zernike import create_pupil_mesh
 
 class ScalarCartesianPropagator(CartesianPropagator):
     r"""
-    Propagator for the scalar approximation of the Richard's-Wolf integral in Cartesian parameterization.
+    Propagator for the scalar approximation of the Richards-Wolf integral in Cartesian parameterization.
 
     The scalar approximation is
 
     .. math::
             \boldsymbol{e}_{\infty}(\mathbf{s}) = \boldsymbol{e}_{\textrm{inc}}(\mathbf{s}).
 
-    The Equation to compute the eletric field is
+    The equation to compute the eletric field is
 
     .. math::
             E(\boldsymbol{\rho})
