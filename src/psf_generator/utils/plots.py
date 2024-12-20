@@ -28,8 +28,8 @@ def colorbar(mappable, cbar_ticks: tp.Union[str, tp.List, None] = 'auto'):
     Parameters
     ----------
     mappable
-    cbar_ticks: None, or 'auto' or List of ticks.
-        If None, no ticks visible;
+    cbar_ticks : None or str or List of ticks
+        If None, no ticks visible
         If 'auto': ticks are determined automatically
         otherwise, set the ticks as given by cbar_ticks
     """
