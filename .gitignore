@@ -3,6 +3,8 @@ __pycache__/
 .idea/
 docs/_build
 *.png
+*.svg
+*.pdf
 *.csv
 *.npy
 *.txt
