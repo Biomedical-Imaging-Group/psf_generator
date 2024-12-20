@@ -6,6 +6,8 @@ pytest
 scikit-image
 scipy==1.9.1
 sphinx
+myst-nb
+pydata-sphinx-theme
 torch==1.13.1
 tqdm
 zernikepy
