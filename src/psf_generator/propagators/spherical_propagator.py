@@ -35,7 +35,7 @@ class SphericalPropagator(Propagator, ABC):
     """
     def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
                  zernike_coefficients=None,
-                 wavelength=632, na=1.3, fov=1000, refractive_index=1.5,
+                 wavelength=632, na=1.3, fov=1000, 
                  defocus_min=0, defocus_max=0, n_defocus=1,
                  apod_factor=False, envelope=None, cos_factor=False,
                  gibson_lanni=False, z_p=1e3, n_s=1.3,
@@ -44,7 +44,7 @@ class SphericalPropagator(Propagator, ABC):
                  integrator=simpsons_rule):
         super().__init__(n_pix_pupil=n_pix_pupil, n_pix_psf=n_pix_psf, device=device,
                          zernike_coefficients=zernike_coefficients,
-                         wavelength=wavelength, na=na, fov=fov, refractive_index=refractive_index,
+                         wavelength=wavelength, na=na, fov=fov, 
                          defocus_min=defocus_min, defocus_max=defocus_max, n_defocus=n_defocus,
                          apod_factor=apod_factor, envelope=envelope,
                          gibson_lanni=gibson_lanni, z_p=z_p, n_s=n_s,

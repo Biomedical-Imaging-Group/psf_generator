@@ -31,7 +31,7 @@ class CartesianPropagator(Propagator, ABC):
     def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
                  zernike_coefficients=None,
                  special_phase_mask=None,
-                 wavelength=632, na=1.3, fov=1000, refractive_index=1.5,
+                 wavelength=632, na=1.3, fov=1000, 
                  defocus_min=0, defocus_max=0, n_defocus=1,
                  sz_correction=True, apod_factor=False, envelope=None,
                  gibson_lanni=False, z_p=1e3, n_s=1.3,
@@ -39,7 +39,7 @@ class CartesianPropagator(Propagator, ABC):
                  n_i=1.5, n_i0=1.5, t_i0=100e3):
         super().__init__(n_pix_pupil=n_pix_pupil, n_pix_psf=n_pix_psf, device=device,
                          zernike_coefficients=zernike_coefficients,
-                         wavelength=wavelength, na=na, fov=fov, refractive_index=refractive_index,
+                         wavelength=wavelength, na=na, fov=fov, 
                          defocus_min=defocus_min, defocus_max=defocus_max, n_defocus=n_defocus,
                          apod_factor=apod_factor, envelope=envelope,
                          gibson_lanni=gibson_lanni, z_p=z_p, n_s=n_s,
@@ -55,7 +55,7 @@ class CartesianPropagator(Propagator, ABC):
         self.s_max = torch.tensor(self.na / self.n_i0)
 
          # Zoom factor to determine pixel size with custom FFT
-        self.zoom_factor = 2 * self.s_max * self.fov / self.wavelength \
+        self.zoom_factor = 2 * self.s_max * self.fov * self.refractive_index / self.wavelength \
              / (self.n_pix_pupil - 1)
 
         # Coordinates in pupil space s_x, s_y, s_z

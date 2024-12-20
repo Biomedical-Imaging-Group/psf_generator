@@ -79,7 +79,7 @@ class ScalarSphericalPropagator(SphericalPropagator):
         """
 
         sin_t = torch.sin(self.thetas)
-        bessel_arg = self.k * self.rs[None, :] * sin_t[:, None]
+        bessel_arg = self.k * self.rs[None, :] * sin_t[:, None] * self.refractive_index
         J0 = bessel_j0(bessel_arg)
 
         batched_compute_field_at_defocus = vmap(self._compute_psf_at_defocus, in_dims=(0, None, None, None))

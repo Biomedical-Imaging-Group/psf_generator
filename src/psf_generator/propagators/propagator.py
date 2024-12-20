@@ -33,8 +33,6 @@ class Propagator(ABC):
         Numerical aperture.
     fov : float
         Size of the square field of view of the PSF plane, in micrometer.
-    refractive_index : float
-        Refractive index of the propagation medium.
     defocus_min : float
         Extent of the defocus along the optical (z) axis on one side of the focal plane in micrometer.
     defocus_max : float
@@ -68,6 +66,8 @@ class Propagator(ABC):
         :math:`t_i = z_p - z + n_i \left( -\frac{z_p}{n_s} - \frac{t_g}{n_g} + \frac{t_g^0}{n_g^0} + \frac{t_i^0}{n_i^0} \right)`.
     t_i0 : float
         Design condition of the thickness of the immersion medium.
+    refractive_index : float
+        Refractive index of the propagation medium, i.e. sample if gibson_lanni=True, immersion oil otherwise.
 
     Notes
     -----
@@ -84,7 +84,6 @@ class Propagator(ABC):
                  wavelength: float = 632,
                  na: float = 1.3,
                  fov: float = 2000,
-                 refractive_index: float = 1.5,
                  defocus_min: float = 0.0,
                  defocus_max: float = 0.0,
                  n_defocus: int = 1,
@@ -111,7 +110,6 @@ class Propagator(ABC):
         self.wavelength = wavelength
         self.na = na
         self.fov = fov
-        self.refractive_index = refractive_index
         self.defocus_min = defocus_min
         self.defocus_max = defocus_max
         self.n_defocus = n_defocus
@@ -128,6 +126,10 @@ class Propagator(ABC):
         self.n_i0 = n_i0
         self.t_i0 = t_i0
         self.t_i = n_i * (t_g0 / n_g0 + t_i0 / self.n_i0 - t_g / n_g - z_p / n_s)
+        if gibson_lanni:
+            self.refractive_index = n_s
+        else:
+            self.refractive_index = 0.7
 
     @classmethod
     @abstractmethod
