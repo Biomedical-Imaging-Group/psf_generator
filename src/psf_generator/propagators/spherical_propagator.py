@@ -59,7 +59,7 @@ class SphericalPropagator(Propagator, ABC):
         self.rr_indices = rr_indices.to(self.device)  # to invert
 
         # Pupil coordinates
-        self.s_max = torch.tensor(self.na / self.refractive_index)
+        self.s_max = torch.tensor(self.na / self.n_i0)
         theta_max = torch.arcsin(self.s_max)
         num_thetas = self.n_pix_pupil
         thetas = torch.linspace(0, theta_max, num_thetas)
