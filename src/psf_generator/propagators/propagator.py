@@ -34,7 +34,7 @@ class Propagator(ABC):
     fov : float
         Size of the square field of view of the PSF plane, in micrometer.
     refractive_index : float
-        Refractive index of the propagation medium
+        Refractive index of the propagation medium.
     defocus_min : float
         Extent of the defocus along the optical (z) axis on one side of the focal plane in micrometer.
     defocus_max : float
@@ -61,11 +61,13 @@ class Propagator(ABC):
         Design condition of the thickness of the sample.
     n_i : float
         Refractive index of the immersion medium.
-    t_i0 : float
-        Design condition of the thickness of the immersion medium.
+    n_i0 : float
+        Design condition of the refractive index of the immersion medium.
     t_i : float
         Thickness of the immersion medium. It is computed from
         :math:`t_i = z_p - z + n_i \left( -\frac{z_p}{n_s} - \frac{t_g}{n_g} + \frac{t_g^0}{n_g^0} + \frac{t_i^0}{n_i^0} \right)`.
+    t_i0 : float
+        Design condition of the thickness of the immersion medium.
 
     Notes
     -----
@@ -96,6 +98,7 @@ class Propagator(ABC):
                  t_g: float = 170e3,
                  t_g0: float = 170e3,
                  n_i: float = 1.5,
+                 n_i0: float = 1.5,
                  t_i0: float = 100e3):
         self.n_pix_pupil = n_pix_pupil
         self.n_pix_psf = n_pix_psf
@@ -122,7 +125,7 @@ class Propagator(ABC):
         self.t_g = t_g
         self.t_g0 = t_g0
         self.n_i = n_i
-        self.n_i0 = refractive_index
+        self.n_i0 = n_i0
         self.t_i0 = t_i0
         self.t_i = n_i * (t_g0 / n_g0 + t_i0 / self.n_i0 - t_g / n_g - z_p / n_s)
 

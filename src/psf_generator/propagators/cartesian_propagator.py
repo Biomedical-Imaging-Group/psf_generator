@@ -36,7 +36,7 @@ class CartesianPropagator(Propagator, ABC):
                  sz_correction=True, apod_factor=False, envelope=None,
                  gibson_lanni=False, z_p=1e3, n_s=1.3,
                  n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3,
-                 n_i=1.5, t_i0=100e3):
+                 n_i=1.5, n_i0=1.5, t_i0=100e3):
         super().__init__(n_pix_pupil=n_pix_pupil, n_pix_psf=n_pix_psf, device=device,
                          zernike_coefficients=zernike_coefficients,
                          wavelength=wavelength, na=na, fov=fov, refractive_index=refractive_index,
@@ -44,7 +44,7 @@ class CartesianPropagator(Propagator, ABC):
                          apod_factor=apod_factor, envelope=envelope,
                          gibson_lanni=gibson_lanni, z_p=z_p, n_s=n_s,
                          n_g=n_g, n_g0=n_g0, t_g=t_g, t_g0=t_g0,
-                         n_i=n_i, t_i0=t_i0)
+                         n_i=n_i, n_i0=n_i0, t_i0=t_i0)
         self.sz_correction = sz_correction
 
         # special phase mask
@@ -52,7 +52,7 @@ class CartesianPropagator(Propagator, ABC):
 
         # Physical parameters
         self.k = 2 * torch.pi / self.wavelength
-        self.s_max = torch.tensor(self.na / self.refractive_index)
+        self.s_max = torch.tensor(self.na / self.n_i0)
 
          # Zoom factor to determine pixel size with custom FFT
         self.zoom_factor = 2 * self.s_max * self.fov / self.wavelength \
@@ -88,7 +88,7 @@ class CartesianPropagator(Propagator, ABC):
 
         defocus_range = torch.linspace(self.defocus_min, self.defocus_max, self.n_defocus,
                                        ).reshape(-1, 1, 1, 1).to(self.device)
-        self.defocus_filters = torch.exp(1j * self.k * s_zz * defocus_range)
+        self.defocus_filters = torch.exp(1j * self.k * s_zz * defocus_range * self.refractive_index)
 
     def _aberrations(self):
         """Compute aberrations that will be applied on the pupil."""

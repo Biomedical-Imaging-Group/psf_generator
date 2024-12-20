@@ -40,7 +40,7 @@ class SphericalPropagator(Propagator, ABC):
                  apod_factor=False, envelope=None, cos_factor=False,
                  gibson_lanni=False, z_p=1e3, n_s=1.3,
                  n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3,
-                 n_i=1.5, t_i0=100e3,
+                 n_i=1.5, n_i0=1.5, t_i0=100e3,
                  integrator=simpsons_rule):
         super().__init__(n_pix_pupil=n_pix_pupil, n_pix_psf=n_pix_psf, device=device,
                          zernike_coefficients=zernike_coefficients,
@@ -49,7 +49,7 @@ class SphericalPropagator(Propagator, ABC):
                          apod_factor=apod_factor, envelope=envelope,
                          gibson_lanni=gibson_lanni, z_p=z_p, n_s=n_s,
                          n_g=n_g, n_g0=n_g0, t_g=t_g, t_g0=t_g0,
-                         n_i=n_i, t_i0=t_i0)
+                         n_i=n_i, n_i0=n_i0, t_i0=t_i0)
         # PSF coordinates
         x = torch.linspace(-self.fov / 2, self.fov / 2, self.n_pix_psf)
         self.xx, self.yy = torch.meshgrid(x, x, indexing='ij')
@@ -71,8 +71,9 @@ class SphericalPropagator(Propagator, ABC):
         self.cos_factor = cos_factor
         self.k = 2.0 * math.pi / self.wavelength
         sin_t, cos_t = torch.sin(thetas), torch.cos(thetas)
+
         defocus_range = torch.linspace(self.defocus_min, self.defocus_max, self.n_defocus)
-        self.defocus_filters = torch.exp(1j * self.k * defocus_range[:,None] * cos_t[None,:]).to(self.device)   # [n_defocus, n_thetas]
+        self.defocus_filters = torch.exp(1j * self.k * defocus_range[:,None] * cos_t[None,:] * self.refractive_index).to(self.device)   # [n_defocus, n_thetas]
 
         self.correction_factor = torch.ones(self.n_pix_pupil).to(torch.complex64).to(self.device)
         if self.apod_factor:
@@ -87,7 +88,7 @@ class SphericalPropagator(Propagator, ABC):
         if self.cos_factor:
             self.correction_factor *= cos_t
 
-        # numerical integration method
+        # Numerical integration method
         self.integrator = integrator
 
     def _aberrations(self) -> torch.Tensor:
