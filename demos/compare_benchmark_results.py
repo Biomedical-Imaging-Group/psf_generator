@@ -12,8 +12,8 @@ from src.psf_generator.propagators import *
 from src.psf_generator.utils.handle_data import load_stats_from_csv
 
 _FIG_SIZE = 6
-_TITLE_SIZE = 14
-_LABEL_SIZE = 14
+_TITLE_SIZE = 12
+_LABEL_SIZE = 12
 _TICK_SIZE = 12
 lw = 1
 markersize = 6
@@ -79,6 +79,7 @@ def plot_runtime_benchmark_results(
         labels: list,
         title: str,
         letter: str,
+        show_legend: bool = True,
         filepath: str = None
 ):
     """
@@ -96,6 +97,8 @@ def plot_runtime_benchmark_results(
         Title of the figure.
     letter: str
         Labeling for the figure, e.g. '(a)'.
+    show_legend: bool, optional
+        Whether to show the legend. Default is True.
     filepath : str, optional
         Path to save the figure. Default is None and figure is not saved.
 
@@ -115,8 +118,8 @@ def plot_runtime_benchmark_results(
         ax.set_xticks([32, 64, 128, 256, 512, 1024])
         ax.set_xticklabels([32, 64, 128, 256, 512, 1024])
         ax.set_ylabel('Time (s)', fontsize=_LABEL_SIZE)
-
-    ax.legend(fontsize=_TICK_SIZE)
+    if show_legend:
+        ax.legend(fontsize=_TICK_SIZE)
     ax.set_title(title, fontsize=_TITLE_SIZE)
     ax.set_xlabel(f'{quantity.title()} size', fontsize=_LABEL_SIZE)
     ax.text(0.05, 0.05, letter, color='black', fontsize=_LABEL_SIZE, transform=ax.transAxes)
@@ -129,7 +132,7 @@ def plot_runtime_benchmark_results(
     plt.show()
 
 
-def compare_runtime(quantity: str, device_name: str, letter: str):
+def compare_runtime(quantity: str, device_name: str, letter: str, show_legend: bool = True):
     folder = os.path.join('results', 'data', 'benchmark_runtime')
     propagators = [
         ScalarCartesianPropagator,
@@ -137,7 +140,7 @@ def compare_runtime(quantity: str, device_name: str, letter: str):
         VectorialCartesianPropagator,
         VectorialSphericalPropagator,
     ]
-    title = f'Runtime benchmark ({device_name.upper()})'
+    title = f'{device_name.upper()}'
     filepath = os.path.join('results', 'plots', 'benchmark_runtime', f'benchmark_runtime_{quantity}_{device_name}.pdf')
     results = []
     labels = []
@@ -146,13 +149,14 @@ def compare_runtime(quantity: str, device_name: str, letter: str):
         labels.append(f'{file}')
         results.append(load_stats_from_csv(os.path.join(folder, f'{file}_{device_name}_{quantity}.csv')))
 
-    plot_runtime_benchmark_results(results=results, quantity=quantity, labels=labels, title=title, letter=letter, filepath=filepath)
+    plot_runtime_benchmark_results(results=results, quantity=quantity, labels=labels, title=title, letter=letter,
+                                   show_legend=show_legend, filepath=filepath)
 
 
 def compare_accuracy():
     folder = os.path.join('results', 'data', 'benchmark_accuracy')
-    title = 'Accuracy benchmark'
-    filepath = os.path.join('results', 'plots', 'benchmark_accuracy', 'benchmark_accuracy_plot.png')
+    title = ''
+    filepath = os.path.join('results', 'plots', 'benchmark_accuracy', 'benchmark_accuracy_plot.pdf')
     results = []
     labels = []
     for file in sorted(glob.glob(os.path.join(folder, '*.csv'))):
@@ -171,5 +175,6 @@ if __name__ == "__main__":
     letters = ['(a)', '(b)']
     for quantity in ['pupil']:
         for device_name, letter in zip(['cpu', 'gpu'], letters):
-            compare_runtime(quantity=quantity, device_name=device_name, letter=letter)
+            show_legend = True if device_name == 'cpu' else False
+            compare_runtime(quantity=quantity, device_name=device_name, letter=letter, show_legend=show_legend)
     compare_accuracy()
