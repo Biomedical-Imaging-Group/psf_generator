@@ -8,75 +8,97 @@ from matplotlib_scalebar.scalebar import ScaleBar
 from psf_generator.utils.handle_data import load_from_npy
 
 _FIG_SIZE = 8
-_FONT_SIZE = 30
+_BAR_SIZE = 40
+_FONT_SIZE = 28
+lw = 2
 
-def plot_amplitude(img, base_name, dx: float, v_range:list = None, show_scale_bar=False):
+def plot_amplitude(img, base_name, units: list, bar_value, v_range:list = None):
+    dx, dz = units
     fig, ax = plt.subplots(1, 1, figsize=(_FIG_SIZE, _FIG_SIZE))
+
     ax.set_xticks([])
     ax.set_yticks([])
+
     if v_range is not None:
         norm = plt.Normalize(v_range[0], v_range[1])
-        ax.imshow(img, cmap='inferno', norm=norm)
+        im = ax.imshow(img, cmap='inferno', norm=norm)
     else:
-        ax.imshow(img, cmap='inferno')
-    if show_scale_bar:
-        scalebar = ScaleBar(dx=dx, units="nm", pad=0.8,
-                            frameon=False, color='w', fixed_value=1000,
-                            font_properties={'size': _FONT_SIZE})
-        ax.add_artist(scalebar)
+        im = ax.imshow(img, cmap='inferno')
+    colorbar(im, cbar_ticks=None)
+    scalebar = ScaleBar(dx=dx, units="nm", pad=0.8, scale_loc='none',
+                        frameon=False, color='w', fixed_value=bar_value,
+                        rotation='horizontal',
+                        font_properties={'size': _BAR_SIZE})
+    ax.add_artist(scalebar)
+    if dz is not None:
+        scalebar2 = ScaleBar(dx=dz, units='nm', pad=0.8, scale_loc='none',
+                             frameon=False, color='w', fixed_value=bar_value,
+                             rotation='vertical',
+                             font_properties={'size': _BAR_SIZE})
+        ax.add_artist(scalebar2)
     fig.tight_layout()
     save_path = os.path.join(base_plot_path, base_name + '.svg')
     fig.savefig(save_path, format='svg')
 
-def plot_profiles(imgs, x_slice, base_name):
+def plot_profiles(imgs, base_name, phy_x, v_range):
     labels = ['scalar', 'vectorial']
-    fig, ax = plt.subplots(1, 1, figsize=(_FIG_SIZE, _FIG_SIZE))
+    fig, ax = plt.subplots(1, 1, figsize=(_FIG_SIZE*1.1, _FIG_SIZE))
     for img, label in zip(imgs, labels):
-        ax.plot(img[x_slice, :], label=label)
-        ax.set_xticks([])
-        ax.set_yticks([])
+        x_size = img.shape[1]
+        ax.plot(img[img.shape[0] // 2, :], label=label, lw=lw)
+        ax.set_xticks([0, x_size // 2, x_size])
+        ax.set_xticklabels([- phy_x // 2, 0, phy_x // 2], fontsize=_FONT_SIZE*1.5)
+        ax.set_yticks(v_range)
+        ax.set_yticklabels([0, v_range[1]], fontsize=_FONT_SIZE*1.5)
+        ax.axhline(ls='dashed', lw=lw, color='gray')
     ax.legend(fontsize=_FONT_SIZE)
     fig.tight_layout()
     save_path = os.path.join(base_plot_path, base_name + '.svg')
     fig.savefig(save_path, format='svg')
 
 def plot1():
-    z, y, x = 128, 128, 128
     imgs = {}
     vmins, vmaxs = [], []
     for name in psf_names:
         data_path = os.path.join(base_data_path, name + '_psf.npy')
         data = load_from_npy(data_path)
         amplitude = np.sqrt(np.sum(np.abs(data) ** 2, axis=1))
+        z = data.shape[0] // 2
+        y = data.shape[2] // 2
         imgs[name, 'z'] = amplitude[z, :, :]
         imgs[name, 'y'] = amplitude[:, :, y]
         vmins.append(min(np.min(imgs[name, 'z']), np.min(imgs[name, 'y'])))
         vmaxs.append(max(np.max(imgs[name, 'z']), np.max(imgs[name, 'y'])))
     # take the min and max of both xy and xz planes for both propagators
-    vmin = min(vmins)
-    vmax = max(vmaxs)
+    vmin = np.round(min(vmins), 2)
+    vmax = np.round(max(vmaxs), 2)
 
     for axis in ('z', 'y'):
-        plot_profiles([imgs[name, axis] for name in psf_names], x, f'{axis}_line_profile')
         for name in psf_names:
             json_path = os.path.join(base_data_path, name + '_params.json')
             with open(json_path) as file:
                 params = json.load(file)
             dx = params['fov'] / params['n_pix_psf']
-            if axis == 'z' and name == 'scalar_cartesian':
-                show_scale_bar = True
+            if axis == 'z':
+                phy_size = [params['fov'], params['fov']]
+                units = [dx, None]
             else:
-                show_scale_bar = False
-            plot_amplitude(img=imgs[name, axis], base_name=f'{name}_{axis}',dx=dx, v_range=[vmin, vmax], show_scale_bar=show_scale_bar)
+                phy_z = params['defocus_max'] - params['defocus_min']
+                dz = phy_z / params['n_defocus']
+                phy_size = [phy_z, params['fov']]
+                units = [dx, dz]
+            plot_amplitude(img=imgs[name, axis], base_name=f'{name}_{axis}', units=units,  bar_value=bar_value, v_range=[vmin, vmax])
+            plot_profiles([imgs[name, axis] for name in psf_names], base_name=f'{axis}_line_profile',
+                          phy_x=int(phy_size[1] / 1e3), v_range=[vmin, vmax])
 
 
 def plot2():
-    zs = [0, 128, -1]
     imgs = {}
     vmins, vmaxs = [], []
     for name in psf_names:
         data_path = os.path.join(base_data_path, name + '_psf.npy')
         data = load_from_npy(data_path)
+        zs = [data.shape[0]//4, data.shape[0]//2, data.shape[0]*3//4]
         amplitude = np.sqrt(np.sum(np.abs(data) ** 2, axis=1))
         for z in zs:
             imgs[name, z] = amplitude[z, :, :]
@@ -91,12 +113,14 @@ def plot2():
             with open(json_path) as file:
                 params = json.load(file)
             dx = params['fov'] / params['n_pix_psf']
-            plot_amplitude(img=imgs[name, z], base_name=f'{name}_z{z}', dx=dx, v_range=[vmin, vmax])
+            units = [dx, None]
+            plot_amplitude(img=imgs[name, z], base_name=f'{name}_z{z}', units=units, bar_value=bar_value, v_range=[vmin, vmax])
 
 
 if __name__ == "__main__":
     # define base file path
     exp_name = 'pure_gaussian_low_na_e0_1_0'
+    bar_value = 3000 if 'low_na' in exp_name else 600
     base_plot_path = os.path.join('results', 'plots', 'fields', exp_name)
     os.makedirs(base_plot_path, exist_ok=True)
 
