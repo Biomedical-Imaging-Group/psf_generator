@@ -21,7 +21,8 @@ lw = 1
 markersize = 6
 
 
-def colorbar(mappable, cbar_ticks: tp.Union[str, tp.List, None] = 'auto'):
+def colorbar(mappable, cbar_ticks: tp.Union[str, tp.List, None] = 'auto', tick_size: float = _TICK_SIZE,
+             cbar_labels: tp.List[str] = None):
     """
     colorbar with the option to add or remove ticks
 
@@ -32,6 +33,10 @@ def colorbar(mappable, cbar_ticks: tp.Union[str, tp.List, None] = 'auto'):
         If None, no ticks visible
         If 'auto': ticks are determined automatically
         otherwise, set the ticks as given by cbar_ticks
+    tick_size: float, optional
+        Fontsize of the tick labels.
+    cbar_labels: list[str], optional
+        Cbar labels. Default is None, use cbar ticks.
     """
     last_axes = plt.gca()
     ax = mappable.axes
@@ -45,7 +50,13 @@ def colorbar(mappable, cbar_ticks: tp.Union[str, tp.List, None] = 'auto'):
         cbar.set_ticks([])
     else:
         cbar.set_ticks(cbar_ticks)
-        cbar.set_ticklabels([f'{tick:.2f}' for tick in cbar_ticks], fontsize=_TICK_SIZE)
+        if cbar_labels is not None:
+            if len(cbar_labels) != len(cbar_ticks):
+                raise ValueError('The length of the cbar labels and ticks are different.')
+            else:
+                cbar.set_ticklabels(cbar_labels, fontsize=tick_size)
+        else:
+            cbar.set_ticklabels([f'{tick:.2f}' for tick in cbar_ticks], fontsize=tick_size)
     plt.sca(last_axes)
     return cbar
 

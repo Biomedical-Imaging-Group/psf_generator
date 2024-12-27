@@ -119,7 +119,7 @@ def plot2():
 
 if __name__ == "__main__":
     # define base file path
-    exp_name = 'pure_gaussian_low_na_e0_1_0'
+    exp_name = 'gl_gaussian_high_na_e0_1_1j'
     bar_value = 3000 if 'low_na' in exp_name else 600
     base_plot_path = os.path.join('results', 'plots', 'fields', exp_name)
     os.makedirs(base_plot_path, exist_ok=True)
