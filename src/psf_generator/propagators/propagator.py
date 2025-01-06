@@ -44,7 +44,7 @@ class Propagator(ABC):
     envelope : float
         Size :math:`k_{\mathrm{env}}` of the Gaussian envolope :math:`A(\mathbf{s}) = \mathrm{e}^{-(k^2_x+k^2_y)/k_\mathrm{env}^2}`.
     gibson_lanni : bool
-        Apply Gibnson-Lanni aberration or not.
+        Apply Gibson-Lanni aberration or not.
     z_p : float
         Depth of the focal plane in the sample. It is usually obtained experimentally by focusing on a point source at this depth. 
     n_s : float
