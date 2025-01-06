@@ -129,7 +129,7 @@ class Propagator(ABC):
         if gibson_lanni:
             self.refractive_index = n_s
         else:
-            self.refractive_index = 0.7
+            self.refractive_index = 1.0
 
     @classmethod
     @abstractmethod
