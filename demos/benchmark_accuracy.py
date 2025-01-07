@@ -67,10 +67,7 @@ def benchmark_scalar_accuracy_on_airy_disk(
         propagator_name = propagator_type.get_name()
         for integrator_name, integrator in _get_all_integrators():
             if 'cartesian' in propagator_name:
-                if integrator_name == 'simpsons_rule':
-                    filename = f'{propagator_type.get_name()}'
-                else:
-                    continue
+                filename = f'{propagator_type.get_name()}'
             else:
                 filename = f'{propagator_type.get_name()}_{integrator_name}'
             accuracy_list = []
