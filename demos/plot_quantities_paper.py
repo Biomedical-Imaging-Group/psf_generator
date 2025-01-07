@@ -13,7 +13,24 @@ _BAR_SIZE = 40
 _FONT_SIZE = 42
 lw = 2
 
-def plot_amplitude(img, base_name, units: list, bar_value, v_range:list = None):
+def plot_amplitude(img: np.ndarray, base_name: str, units: list, bar_value: float, v_range:list = None):
+    """
+    Plot amplitude of the PSF.
+
+    Parameters
+    ----------
+    img : np.ndarray
+        Image to plot.
+    base_name : str
+        name of the base path to the image data.
+    units : list
+        Pixel sizes in the both directions of the image.
+    bar_value : float
+        Physical length of the scale bars.
+    v_range : list, optional
+        Min and Max values of the colorbar. Default is None, in which case the image is not normalized.
+
+    """
     dx, dz = units
     fig, ax = plt.subplots(1, 1, figsize=(_FIG_SIZE, _FIG_SIZE))
 
@@ -41,7 +58,22 @@ def plot_amplitude(img, base_name, units: list, bar_value, v_range:list = None):
     save_path = os.path.join(base_plot_path, base_name + '.svg')
     fig.savefig(save_path, format='svg')
 
-def plot_profiles(imgs, base_name, phy_x, v_range):
+def plot_profiles(imgs: list, base_name: str, phy_x: float, v_range: list):
+    """
+    Plot line profiles of the images.
+
+    Parameters
+    ----------
+    imgs : list
+        List of images to extract line profiles from.
+    base_name : str
+        name of the base path to the image data.
+    phy_x : float
+        Physical length of the axis along which the line is drawn.
+    v_range : list
+        Min and Max values of the colorbar. Default is None, in which case the image is not normalized.
+
+    """
     labels = ['scalar', 'vectorial']
     fig, ax = plt.subplots(1, 1, figsize=(_FIG_SIZE*1.1, _FIG_SIZE))
     for img, label in zip(imgs, labels):
@@ -58,7 +90,20 @@ def plot_profiles(imgs, base_name, phy_x, v_range):
     fig.savefig(save_path, format='svg')
 
 
-def plot_phase(phase: np.ndarray, base_name, normalize: bool):
+def plot_phase(phase: np.ndarray, base_name: str, normalize: bool):
+    """
+    Plot the phase image.
+
+    Parameters
+    ----------
+    phase : np.ndarray
+        Phase image to plot.
+    base_name : str
+        name of the base path to the image data.
+    normalize : bool
+        Whether to normalize the value of the image.
+
+    """
     fig, ax = plt.subplots(1, 1, figsize=(_FIG_SIZE, _FIG_SIZE))
     if normalize:
         cbar_min, cbar_max = -np.pi, np.pi
@@ -79,6 +124,15 @@ def plot_phase(phase: np.ndarray, base_name, normalize: bool):
     fig.savefig(save_path, format='svg')
 
 def plot_vec_phases(normalize: bool = True):
+    """
+    Plot the phases of a given pupil image.
+
+    Parameters
+    ----------
+    normalize: bool, optional
+        Whether to normalize the value of the image. Default is True.
+
+    """
     for name in psf_names:
         data_path = os.path.join(base_data_path, name + '_pupil.npy')
         data = np.squeeze(load_from_npy(data_path))
@@ -89,6 +143,15 @@ def plot_vec_phases(normalize: bool = True):
 
 
 def plot1(plot_profile: bool = True):
+    """
+    PLot the amplitude and the line profiles of given PSFs.
+
+    Parameters
+    ----------
+    plot_profile: bool, optional
+        Whether to plot the line profile figure. Default is True.
+
+    """
     imgs = {}
     vmins, vmaxs = [], []
     for name in psf_names:
@@ -129,6 +192,11 @@ def plot1(plot_profile: bool = True):
 
 
 def plot2():
+    """
+    Plot the xy planes at 3 z-positions of a given PSF.
+    Useful for showing astigmatism.
+
+    """
     imgs = {}
     vmins, vmaxs = [], []
     for name in psf_names:
