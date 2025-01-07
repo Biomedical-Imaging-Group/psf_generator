@@ -34,6 +34,6 @@ classifiers = [
 [project.urls]
 Homepage = "https://example.com"
 Documentation = "https://readthedocs.org"
-Repository = "https://github.com/me/spam.git"
-"Bug Tracker" = "https://github.com/me/spam/issues"
-Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
+Repository = "https://github.com/Biomedical-Imaging-Group/PSF-Generator.git"
+"Bug Tracker" = "https://github.com/Biomedical-Imaging-Group/PSF-Generator/issues"
+Changelog = "https://github.com/Biomedical-Imaging-Group/PSF-Generator/CHANGELOG.md"
