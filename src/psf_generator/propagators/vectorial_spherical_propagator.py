@@ -8,7 +8,7 @@ import math
 import typing as tp
 
 import torch
-from torch import vmap
+from functorch import vmap
 from torch.special import bessel_j0, bessel_j1
 
 from .spherical_propagator import SphericalPropagator
