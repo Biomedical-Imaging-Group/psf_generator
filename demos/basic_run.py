@@ -5,21 +5,22 @@ How to call them, visualize the results and save data.
 
 """
 import os
+import math
 
 from psf_generator.utils.handle_data import save_as_npy
-from psf_generator.propagators import ScalarCartesianPropagator, ScalarSphericalPropagator, VectorialCartesianPropagator, VectorialSphericalPropagator
-from psf_generator.utils.plots import plot_pupil, plot_psf
+from src.psf_generator.propagators import *
+from src.psf_generator.utils.plots import plot_pupil, plot_psf
 
 if __name__ == "__main__":
     n_pix_pupil = 127
     n_pix_psf = 256
-    na = 1.4
-    wavelength = 632
+    na = 1.3
+    wavelength = 600
     fov = 2000
     defocus = 4000
-    n_defocus = 200
-    e0x = 1
-    e0y = 1j
+    n_defocus = 256
+    e0x = math.sqrt(2) / 2
+    e0y = e0x * 1j
     mask = None
     zernike_coefficients = None
 
@@ -38,9 +39,9 @@ if __name__ == "__main__":
     }
 
     # define base file path
-    base_plot_path = os.path.join('results', 'plots')
+    base_plot_path = os.path.join('results', 'plots', 'fields')
     os.makedirs(base_plot_path, exist_ok=True)
-    base_data_path = os.path.join('results', 'data')
+    base_data_path = os.path.join('results', 'data', 'fields')
     os.makedirs(base_data_path, exist_ok=True)
 
     # define propagators
