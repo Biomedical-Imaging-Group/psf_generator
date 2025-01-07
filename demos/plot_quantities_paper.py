@@ -9,7 +9,7 @@ from psf_generator.utils.handle_data import load_from_npy
 
 _FIG_SIZE = 8
 _BAR_SIZE = 40
-_FONT_SIZE = 28
+_FONT_SIZE = 42
 lw = 2
 
 def plot_amplitude(img, base_name, units: list, bar_value, v_range:list = None):
@@ -45,11 +45,11 @@ def plot_profiles(imgs, base_name, phy_x, v_range):
     fig, ax = plt.subplots(1, 1, figsize=(_FIG_SIZE*1.1, _FIG_SIZE))
     for img, label in zip(imgs, labels):
         x_size = img.shape[1]
-        ax.plot(img[img.shape[0] // 2, :], label=label, lw=lw)
+        ax.plot(img[:, img.shape[0] // 2], label=label, lw=lw)
         ax.set_xticks([0, x_size // 2, x_size])
-        ax.set_xticklabels([- phy_x // 2, 0, phy_x // 2], fontsize=_FONT_SIZE*1.5)
+        ax.set_xticklabels([- phy_x // 2, 0, phy_x // 2], fontsize=_FONT_SIZE)
         ax.set_yticks(v_range)
-        ax.set_yticklabels([0, v_range[1]], fontsize=_FONT_SIZE*1.5)
+        ax.set_yticklabels([0, v_range[1]], fontsize=_FONT_SIZE)
         ax.axhline(ls='dashed', lw=lw, color='gray')
     ax.legend(fontsize=_FONT_SIZE)
     fig.tight_layout()
@@ -67,6 +67,8 @@ def plot1():
         y = data.shape[2] // 2
         imgs[name, 'z'] = amplitude[z, :, :]
         imgs[name, 'y'] = amplitude[:, :, y]
+        print(f'energy of xy slice for {name}: {np.sum(imgs[name, "z"])}')
+        print(f'energy of xz slice for {name}: {np.sum(imgs[name, "y"])}')
         vmins.append(min(np.min(imgs[name, 'z']), np.min(imgs[name, 'y'])))
         vmaxs.append(max(np.max(imgs[name, 'z']), np.max(imgs[name, 'y'])))
     # take the min and max of both xy and xz planes for both propagators
@@ -87,9 +89,11 @@ def plot1():
                 dz = phy_z / params['n_defocus']
                 phy_size = [phy_z, params['fov']]
                 units = [dx, dz]
-            plot_amplitude(img=imgs[name, axis], base_name=f'{name}_{axis}', units=units,  bar_value=bar_value, v_range=[vmin, vmax])
-            plot_profiles([imgs[name, axis] for name in psf_names], base_name=f'{axis}_line_profile',
-                          phy_x=int(phy_size[1] / 1e3), v_range=[vmin, vmax])
+            plot_amplitude(img=imgs[name, axis], base_name=f'{name}_{axis}', units=units,  bar_value=bar_value,
+                           v_range=[vmin, vmax])
+            if plot_profile:
+                plot_profiles([imgs[name, axis] for name in psf_names], base_name=f'{axis}_line_profile',
+                            phy_x=int(phy_size[0] / 1e3), v_range=[vmin, vmax])
 
 
 def plot2():
