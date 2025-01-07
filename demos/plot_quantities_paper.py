@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 from matplotlib_scalebar.scalebar import ScaleBar
 
 from psf_generator.utils.handle_data import load_from_npy
+from psf_generator.utils.plots import colorbar, apply_disk_mask
 
 _FIG_SIZE = 8
 _BAR_SIZE = 40
@@ -56,7 +57,38 @@ def plot_profiles(imgs, base_name, phy_x, v_range):
     save_path = os.path.join(base_plot_path, base_name + '.svg')
     fig.savefig(save_path, format='svg')
 
-def plot1():
+
+def plot_phase(phase: np.ndarray, base_name, normalize: bool):
+    fig, ax = plt.subplots(1, 1, figsize=(_FIG_SIZE, _FIG_SIZE))
+    if normalize:
+        cbar_min, cbar_max = -np.pi, np.pi
+        cbar_labels = ['-$\pi$', '$\pi$']
+        cmap = 'twilight'
+    else:
+        cbar_min, cbar_max = np.nanmin(phase), np.nanmax(phase)
+        cbar_labels = [np.round(cbar_min, 1), np.round(cbar_max, 1)]
+        cmap = 'viridis'
+    norm = plt.Normalize(cbar_min, cbar_max)
+    im = ax.imshow(phase, norm=norm, cmap=cmap)
+
+    colorbar(im, cbar_ticks=[cbar_min, cbar_max], cbar_labels=cbar_labels, tick_size=_FONT_SIZE)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    fig.tight_layout()
+    save_path = os.path.join(base_plot_path, base_name + '.svg')
+    fig.savefig(save_path, format='svg')
+
+def plot_vec_phases(normalize: bool = True):
+    for name in psf_names:
+        data_path = os.path.join(base_data_path, name + '_pupil.npy')
+        data = np.squeeze(load_from_npy(data_path))
+        phases = np.angle(data)
+        for (number, phase) in enumerate(phases):
+            phase = apply_disk_mask(phase)
+            plot_phase(phase, base_name=f'{name}_pupil_{number}', normalize=normalize)
+
+
+def plot1(plot_profile: bool = True):
     imgs = {}
     vmins, vmaxs = [], []
     for name in psf_names:
@@ -129,6 +161,9 @@ if __name__ == "__main__":
     os.makedirs(base_plot_path, exist_ok=True)
 
     base_data_path = os.path.join('results', 'data', 'fields', exp_name)
-    psf_names = ['scalar_cartesian', 'vectorial_cartesian']
-    plot1()
+    psf_names = ['vectorial_cartesian']
+    # plot2()
+    plot1(plot_profile=False)
+    plot_vec_phases(normalize=False)
+
 
