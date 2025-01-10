@@ -201,8 +201,9 @@ def plot_pupil(
                 plt.subplots_adjust(left=0.05)
 
     plt.suptitle(f'Pupil properties ({name_of_propagator})', fontsize=_SUP_TITLE_SIZE)
-    figure.tight_layout()
-    if filepath:
+
+    if filepath is not None:
+        figure.tight_layout()
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         figure.savefig(filepath)
     plt.show()
@@ -325,8 +326,8 @@ def plot_psf(
                 ax.set_xticks([])
                 ax.set_yticks([])
     plt.suptitle(f'{quantity} of PSF at three orthogonal planes ({name_of_propagator})', fontsize=_SUP_TITLE_SIZE)
-    figure.tight_layout()
-    if filepath:
+    if filepath is not None:
+        figure.tight_layout()
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         figure.savefig(filepath)
     plt.show()
