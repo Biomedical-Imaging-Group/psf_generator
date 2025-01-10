@@ -49,7 +49,7 @@ def benchmark_scalar_accuracy_on_airy_disk(
     x = torch.linspace(- fov / 2, fov / 2, n_pix_psf)
     xx, yy = torch.meshgrid(x, x, indexing='ij')
     rr = torch.sqrt(xx ** 2 + yy ** 2)
-    k = 2 * math.pi / wavelength
+    k = 3 * math.pi / wavelength
     airy_disk_analytic = convert_tensor_to_array(airy_disk_function(k * rr * na / refractive_index))
 
     # define propagators
