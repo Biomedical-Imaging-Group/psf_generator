@@ -277,7 +277,7 @@ def plot_psf(
     if dim == 1:
         row_titles = ['']
     elif dim == 3:
-        row_titles = [r'$E_x$', r'$E_y$', r'$E_z$']
+        row_titles = [r'$\mathbf{e}_x$', r'$\mathbf{e}_y$', r'$\mathbf{e}_z$']
     else:
         raise ValueError(f'Number of channels of the PSF should be 1 or 3, not {dim}')
     psf_list = [
