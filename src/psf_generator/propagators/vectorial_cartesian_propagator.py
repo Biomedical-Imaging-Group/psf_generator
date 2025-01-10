@@ -88,9 +88,6 @@ class VectorialCartesianPropagator(CartesianPropagator):
     def get_input_field(self) -> torch.Tensor:
         r"""
         Compute the corresponding input field.
-
-        TODO: more explanations. Use :math:`\pi` for math formulae.
-
         """
         # Angles theta and phi
         sin_xx, sin_yy = torch.meshgrid(self.s_x * self.s_max, self.s_x * self.s_max, indexing='ij')
