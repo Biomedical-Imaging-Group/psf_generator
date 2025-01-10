@@ -4,6 +4,7 @@ A collection of plotting functions.
 """
 import os
 import typing as tp
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -64,16 +65,18 @@ def colorbar(mappable, cbar_ticks: tp.Union[str, tp.List, None] = 'auto', tick_s
 def apply_disk_mask(img):
     """Apply a disk mask to a square image."""
     img = img.copy()
+    lx, ly = img.shape
+    diameter = max(lx, ly)
     # check if square
-    if img.shape[0] != img.shape[1]:
-        raise ValueError('Can not apply disk mask on a non-square image')
+    if lx != ly:
+        msg = f'Image is non-square, shape: {img.shape}. Applying an over-sized disk mask!'
+        warnings.warn(msg)
     # create mask
-    size = img.shape[0]
-    mask = np.zeros((size, size))
-    i = np.linspace(0, size, size)
-    j = np.linspace(0, size, size)
+    mask = np.zeros((lx, ly))
+    i = np.linspace(0, lx, lx)
+    j = np.linspace(0, ly, ly)
     ii, jj = np.meshgrid(i, j, indexing='ij')
-    disk = (ii - size / 2) ** 2 + (jj - size / 2) ** 2 <= (size / 2) ** 2
+    disk = (ii - lx // 2) ** 2 + (jj - ly // 2) ** 2 <= (diameter // 2) ** 2
     mask[disk] = 1
     # apply mask, set values outside the mask to nan
     img = np.where(mask, img, np.nan)
