@@ -14,10 +14,10 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from .misc import convert_tensor_to_array
 
 _FIG_SIZE = 6
-_SUP_TITLE_SIZE = 18
-_TITLE_SIZE = 16
-_LABEL_SIZE = 14
-_TICK_SIZE = 12
+_SUP_TITLE_SIZE = 21
+_TITLE_SIZE = 20
+_LABEL_SIZE = 20
+_TICK_SIZE = 18
 lw = 1
 markersize = 6
 
