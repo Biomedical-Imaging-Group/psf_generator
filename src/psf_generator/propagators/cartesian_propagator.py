@@ -22,7 +22,7 @@ class CartesianPropagator(Propagator, ABC):
     Notes
     -----
     Apart from parameters inherited from the base class, there is one additional
-    `sz_correction`. This factor appears due to the cartesian parametrization inside 
+    `sz_correction`. This factor appears due to the cartesian parameterization inside
     the integral to compute, which affects the PSF for high-NA systems. 
     Set it to `True` to apply the correction factor :math:`1/s_z` to the pupil function.
     Set it to `False` to ignore the correction factor, to obtain low-NA analytic PSFs 
