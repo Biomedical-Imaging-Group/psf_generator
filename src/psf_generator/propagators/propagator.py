@@ -98,7 +98,8 @@ class Propagator(ABC):
                  t_g0: float = 170e3,
                  n_i: float = 1.5,
                  n_i0: float = 1.5,
-                 t_i0: float = 100e3):
+                 t_i0: float = 100e3,
+                 refractive_index: float = 1.5):
         self.n_pix_pupil = n_pix_pupil
         self.n_pix_psf = n_pix_psf
         self.device = device
@@ -129,7 +130,7 @@ class Propagator(ABC):
         if gibson_lanni:
             self.refractive_index = n_s
         else:
-            self.refractive_index = 1.0
+            self.refractive_index = refractive_index
 
     @classmethod
     @abstractmethod
