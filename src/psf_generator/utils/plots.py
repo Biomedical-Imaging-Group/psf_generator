@@ -121,7 +121,7 @@ def plot_pupil(
         filepath: str = None,
         show_cbar_ticks: bool = False,
         show_image_ticks: bool = False,
-        show_titles: bool = False
+        show_titles: bool = True
 ):
     """
     Plot the modulus and phase of a scalar or vectorial pupil for the Cartesian propagator.
