@@ -8,7 +8,7 @@ The propagator for scalar field in Spherical coordinates.
 import math
 
 import torch
-from torch import vmap
+from functorch import vmap
 from torch.special import bessel_j0
 
 from .spherical_propagator import SphericalPropagator
