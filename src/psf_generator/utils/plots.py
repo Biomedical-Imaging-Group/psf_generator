@@ -142,6 +142,10 @@ def plot_pupil(
         Whether to show the ticks for the colorbar. Default is False.
 
     """
+    if 'spherical' in name_of_propagator:
+        raise NotImplementedError('For spherical propagators, the pupil is represented by two 1D intervals, '
+                                  'no 2D image is thus available. '
+                                  'Please check the pupil of the equivalent Cartesian propagator instead.')
     # convert to numpy array
     pupil_array = convert_tensor_to_array(pupil).squeeze()
     # compute modulus and phase
