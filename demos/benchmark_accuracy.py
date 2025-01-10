@@ -11,6 +11,7 @@ from torch.special import bessel_j1
 
 from psf_generator.utils.misc import convert_tensor_to_array
 import psf_generator.utils.integrate as integrate
+from psf_generator.utils.plots import colorbar
 
 module_path = os.path.abspath(os.path.join('')) + '/src/'
 if module_path not in sys.path:
@@ -84,9 +85,11 @@ def benchmark_scalar_accuracy_on_airy_disk(
                 accuracy = np.sqrt(np.sum(np.abs(psf - airy_disk_analytic) ** 2))
                 if debug:
                     fig, axes = plt.subplots(1, 3)
-                    norm = plt.Normalize(0.0, 1.0)
                     for ax, image in zip(axes, [psf.squeeze(), airy_disk_analytic, psf.squeeze() - airy_disk_analytic]):
-                        ax.imshow(np.abs(image), norm=norm, cmap='inferno')
+                        im = ax.imshow(np.abs(image), cmap='inferno')
+                        colorbar(im)
+                        ax.set_xticks([])
+                        ax.set_yticks([])
                     plt.show()
                     print(accuracy)
                 accuracy_list.append((n_pix, accuracy))
