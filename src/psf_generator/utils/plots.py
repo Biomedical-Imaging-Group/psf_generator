@@ -89,12 +89,13 @@ def _compute_psf_intensity(input_image: np.ndarray) -> np.ndarray:
 
     The input array must be 4D with this convention:
     - dim one: z axis, or defocus slices.
-    - dim two: electric field components. Only one for scalar and three :math:`(e_x, e_y, e_z)` for vectorial.
+    - dim two: electric field components. Only one for scalar and three :math:`(\mathbf{e}_x, \mathbf{e}_y, \mathbf{e}_z)`
+    for vectorial.
     - dim three and four : (x, y) axes
 
     The intensity is computed as follows:
 
-    .. math:: I = \sum_{i=1}^{N_e} |e_i(x, y, z)|^2, \quad N_e = 1 \, \mathrm{or} \, 3.
+    .. math:: I = \sum_{i=1}^{N} |\mathbf{e}_i(x, y, z)|^2, \quad N = 1 \, \mathrm{or} \, 3.
 
     Parameters
     ----------
@@ -154,7 +155,7 @@ def plot_pupil(
         row_titles = ['']
     elif pupil_array.ndim == 3:
         nrows = pupil_array.shape[0]
-        row_titles = [r'$E_x$', r'$E_y$', r'$E_z$']
+        row_titles = [r'$\mathbf{e}_x$', r'$\mathbf{e}_y$', r'$\mathbf{e}_z$']
     else:
         raise ValueError(f'Pupil should be either 2D or 3D, not {pupil_array.ndim}')
 
