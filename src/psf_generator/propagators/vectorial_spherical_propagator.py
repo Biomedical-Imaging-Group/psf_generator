@@ -65,7 +65,6 @@ class VectorialSphericalPropagator(SphericalPropagator):
                  gibson_lanni=False, z_p=1e3, n_s=1.3,
                  n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3,
                  n_i=1.5, n_i0=1.5, t_i0=100e3,
-                 refractive_index=1.5,
                  integrator=simpsons_rule):
         super().__init__(n_pix_pupil=n_pix_pupil, n_pix_psf=n_pix_psf, device=device,
                          zernike_coefficients=zernike_coefficients,
@@ -75,7 +74,6 @@ class VectorialSphericalPropagator(SphericalPropagator):
                          gibson_lanni=gibson_lanni, z_p=z_p, n_s=n_s,
                          n_g=n_g, n_g0=n_g0, t_g=t_g, t_g0=t_g0,
                          n_i=n_i, n_i0=n_i0, t_i0=t_i0,
-                         refractive_index=refractive_index,
                          integrator=integrator)
 
         self.e0x = e0x
