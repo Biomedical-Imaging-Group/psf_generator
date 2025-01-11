@@ -1,7 +1,9 @@
 # PSF Library
 
 ```{toctree}
-:maxdepth: 5
+:maxdepth: 2
 
+src/index
+demo
 autoapi/index
 ```
