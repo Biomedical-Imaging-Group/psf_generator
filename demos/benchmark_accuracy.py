@@ -29,7 +29,6 @@ def benchmark_scalar_accuracy_on_airy_disk(
         wavelength: float = 632,
         na: float = 0.9,
         fov: int = 3000,
-        refractive_index: float = 1.5,
         debug: bool = False
 ):
     """
@@ -41,8 +40,7 @@ def benchmark_scalar_accuracy_on_airy_disk(
         'n_pix_psf': n_pix_psf,
         'wavelength': wavelength,
         'na': na,
-        'fov': fov,
-        'refractive_index': refractive_index
+        'fov': fov
     }
 
     # define ground truth: Airy disk
@@ -50,7 +48,8 @@ def benchmark_scalar_accuracy_on_airy_disk(
     x = torch.linspace(- fov / 2, fov / 2, n_pix_psf)
     xx, yy = torch.meshgrid(x, x, indexing='ij')
     rr = torch.sqrt(xx ** 2 + yy ** 2)
-    k = 3 * math.pi / wavelength
+    refractive_index = 1.0
+    k = 4/3 * refractive_index * math.pi / wavelength
     airy_disk_analytic = convert_tensor_to_array(airy_disk_function(k * rr * na / refractive_index))
 
     # define propagators
@@ -84,7 +83,7 @@ def benchmark_scalar_accuracy_on_airy_disk(
                 psf /= np.max(np.abs(psf))
                 accuracy = np.sqrt(np.sum(np.abs(psf - airy_disk_analytic) ** 2))
                 if debug:
-                    fig, axes = plt.subplots(1, 3)
+                    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
                     for ax, image in zip(axes, [psf.squeeze(), airy_disk_analytic, psf.squeeze() - airy_disk_analytic]):
                         im = ax.imshow(np.abs(image), cmap='inferno')
                         colorbar(im)
@@ -100,4 +99,4 @@ def benchmark_scalar_accuracy_on_airy_disk(
 
 
 if __name__ == "__main__":
-    benchmark_scalar_accuracy_on_airy_disk()
+    benchmark_scalar_accuracy_on_airy_disk(debug=True)
