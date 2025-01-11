@@ -16,7 +16,7 @@ author = 'Yan Liu'
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
-source_suffix = ['.md', '.rst']
+source_suffix = ['.md', '.rst', '.ipynb']
 exclude_patterns = []
 
 myst_enable_extensions = [
@@ -41,7 +41,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
     'sphinxcontrib.bibtex',
-    'myst_parser',
+    'myst_nb',
     'autoapi.extension',
 ]
 
