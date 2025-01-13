@@ -42,10 +42,10 @@ class VectorialCartesianPropagator(CartesianPropagator):
 
     Notes
     -----
-    The voctorial propagators have two addtional arguments apart from those inherited form the base propagator
+    The vectorial propagators have two additional arguments apart from those inherited form the base propagator
     to account for polarization:
-    - `self.e0x`: initial electric field component ex
-    - `self.e0y`: initial electric field component ey
+    - `self.e0x`: initial electric field component :math:`\mathbf{e}_0^x`. Default value is `1.0`.
+    - `self.e0y`: initial electric field component :math:`\mathbf{e}_0^y`. Default value is `0.0`.
 
     """
     def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
