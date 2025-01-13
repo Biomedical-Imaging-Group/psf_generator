@@ -27,6 +27,9 @@ TODO: add how to build a local env; make conda work
 pip install psf-generator
 ```
 
+# Demos
+Jupyter Notebook demos can be found under `demos/`.
+
 # Documentation
 Documentation can be found here: TO ADD LINK
 
