@@ -61,17 +61,19 @@ class Propagator(ABC):
         Refractive index of the immersion medium.
     n_i0 : float
         Design condition of the refractive index of the immersion medium.
-    t_i : float
-        Thickness of the immersion medium. It is computed from
-        :math:`t_i = z_p - z + n_i \left( -\frac{z_p}{n_s} - \frac{t_g}{n_g} + \frac{t_g^0}{n_g^0} + \frac{t_i^0}{n_i^0} \right)`.
     t_i0 : float
         Design condition of the thickness of the immersion medium.
-    refractive_index : float
-        Refractive index of the propagation medium, i.e. sample if gibson_lanni=True, immersion oil otherwise.
 
     Notes
     -----
-    `(z_p, n_s, n_g, n_g0, t_g, t_g0, n_i, t_i0, t_i)` are coefficients related to the aberrations due to refractive
+    Internal parameters:
+        - t_i : float
+        Thickness of the immersion medium. It is computed from
+        :math:`t_i = z_p - z + n_i \left( -\frac{z_p}{n_s} - \frac{t_g}{n_g} + \frac{t_g^0}{n_g^0} + \frac{t_i^0}{n_i^0} \right)`.
+        - refractive_index : float
+        Refractive index of the propagation medium. It is equal to :math:`n_s` if gibson_lanni=True, 1.0, otherwise.
+
+    - `(z_p, n_s, n_g, n_g0, t_g, t_g0, n_i, t_i0, t_i)` are coefficients related to the aberrations due to refractive
     index mismatch between stratified layers of the microscope.
     This aberration is computed by method `self.compute_optical_path`.
 
