@@ -19,50 +19,54 @@ class Propagator(ABC):
 
     Parameters
     ----------
-    n_pix_pupil : int
-        Number of pixels (size) of the pupil (always a square image).
-    n_pix_psf : int
-        Number of pixels (size) of the PSF (always a square image).
-    device : str
-        Computational backend. Choose from 'cpu' and 'gpu'.
-    zernike_coefficients : np.ndarray or torch.tensor
-        Zernike coefficients of length 'K' of the chosen first 'K' modes.
-    wavelength : float
-        Wavelength of light, in nanometer.
-    na : float
-        Numerical aperture.
-    fov : float
-        Size of the square field of view of the PSF plane, in micrometer.
-    defocus_min : float
+    n_pix_pupil : int, optional
+        Number of pixels (size) of the pupil (always a square image). Default value is `128`.
+    n_pix_psf : int, optional
+        Number of pixels (size) of the PSF (always a square image). Default value is `128`.
+    device : str, optional
+        Computational backend. Choose from 'cpu' and 'gpu'. Default value is `'cpu'`.
+    zernike_coefficients : np.ndarray or torch.tensor, optional
+        Zernike coefficients of length 'K' of the chosen first 'K' modes. Default is `None`.
+    wavelength : float, optional
+        Wavelength of light, in nanometer. Default value is `632`.
+    na : float, optional
+        Numerical aperture. Default value is `1.3`.
+    fov : float, optional
+        Size of the square field of view of the PSF plane, in micrometer. Default value is `2000`.
+    defocus_min : float, optional
         Extent of the defocus along the optical (z) axis on one side of the focal plane in micrometer.
-    defocus_max : float
+        Default value is `0.0`.
+    defocus_max : float, optional
         Extent of the defocus along the optical (z) axis on the other side of the focal plane in micrometer.
-    n_defocus : int
-        Number of z-stack.
-    apod_factor : bool
-        Apply apodization factor or not.
-    envelope : float
-        Size :math:`k_{\mathrm{env}}` of the Gaussian envolope :math:`A(\mathbf{s}) = \mathrm{e}^{-(k^2_x+k^2_y)/k_\mathrm{env}^2}`.
-    gibson_lanni : bool
-        Apply Gibson-Lanni aberration or not.
-    z_p : float
-        Depth of the focal plane in the sample. It is usually obtained experimentally by focusing on a point source at this depth. 
-    n_s : float
-        Refractive index of the sample.
-    n_g : float
-        Refractive index of the (glass) cover slip.
-    n_g0 : float
-        Design condition of the refractive index of the cover slip.
-    t_g : float
-        Thickness of the sample.
-    t_g0 : float
-        Design condition of the thickness of the sample.
-    n_i : float
-        Refractive index of the immersion medium.
-    n_i0 : float
-        Design condition of the refractive index of the immersion medium.
-    t_i0 : float
-        Design condition of the thickness of the immersion medium.
+        Default value is `0.0`.
+    n_defocus : int, optional
+        Number of z-stack. Default value is `1`.
+    apod_factor : bool, optional
+        Apply apodization factor or not. Default value is `False`.
+    envelope : float, optional
+        Size :math:`k_{\mathrm{env}}` of the Gaussian envelope :math:`A(\mathbf{s}) = \mathrm{e}^{-(k^2_x+k^2_y)/k_\mathrm{env}^2}`.
+        Default is `None`.
+    gibson_lanni : bool, optional
+        Apply Gibson-Lanni aberration or not. Default value is `False`.
+    z_p : float, optional
+        Depth of the focal plane in the sample. It is usually obtained experimentally by focusing on a point source
+        at this depth.  Default value is `1e3`.
+    n_s : float, optional
+        Refractive index of the sample. Default value is `1.3`.
+    n_g : float, optional
+        Refractive index of the (glass) cover slip. Default value is `1.5`.
+    n_g0 : float, optional
+        Design condition of the refractive index of the cover slip. Default value is `1.5`.
+    t_g : float, optional
+        Thickness of the sample. Default value is `170e3`.
+    t_g0 : float, optional
+        Design condition of the thickness of the sample. Default value is `170e3`.
+    n_i : float, optional
+        Refractive index of the immersion medium. Default value is `1.5`.
+    n_i0 : float, optional
+        Design condition of the refractive index of the immersion medium. Default value is `1.5`.
+    t_i0 : float, optional
+        Design condition of the thickness of the immersion medium. Default value is `100e3`.
 
     Notes
     -----
