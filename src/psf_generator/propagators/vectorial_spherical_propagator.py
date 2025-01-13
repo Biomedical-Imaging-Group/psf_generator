@@ -48,12 +48,17 @@ class VectorialSphericalPropagator(SphericalPropagator):
     where :math:`a\in\{x,y\}, \boldsymbol{e}_{\textrm{inc}}(\theta) =
     [\boldsymbol{e}_{\textrm{inc}}^x(\theta), \boldsymbol{e}_{\textrm{inc}}^y(\theta), 0]`.
 
+    Parameters
+    ----------
+    `self.e0x` : float, optional
+        Initial electric field component :math:`\mathbf{e}_0^x`. Default value is `1.0`.
+    `self.e0y` : float, optional
+        Initial electric field component :math:`\mathbf{e}_0^y`. Default value is `0.0`.
+
     Notes
     -----
     The vectorial propagators have two additional arguments apart from those inherited form the base propagator
-    to account for polarization:
-    - `self.e0x`: initial electric field component :math:`\mathbf{e}_0^x`. Default value is `1.0`.
-    - `self.e0y`: initial electric field component :math:`\mathbf{e}_0^y`. Default value is `0.0`.
+    to account for polarization.
 
     """
     def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',

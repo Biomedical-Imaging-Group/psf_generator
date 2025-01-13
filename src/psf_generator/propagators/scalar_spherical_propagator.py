@@ -22,7 +22,7 @@ class ScalarSphericalPropagator(SphericalPropagator):
 
     .. math::
             E(\boldsymbol{\rho})
-                = -\mathrm{i}fk \int_0^{\theta_{max}} d\theta \mathrm{e}_{\infty}(\theta)
+                = -\mathrm{i}fk \int_0^{\theta_{\max}} d\theta \mathrm{e}_{\infty}(\theta)
                 J_0(k \rho \sin \theta) \mathrm{e}^{\mathrm{i} kz\cos\theta} \sin\theta,
 
     where :math:`J_0` is the Bessel function of first kind and order 0.
@@ -41,11 +41,11 @@ class ScalarSphericalPropagator(SphericalPropagator):
         This function is defined on the interval :math:`\rho \in [0,1]`; :math:`\rho` is a "normalized" radius.
         The conversion to physical pupil coordinates - the polar angle :math:`\theta` - is given by
 
-        .. math:: \rho = \frac{\sin{\theta}}{\sin{\theta_{max}}},
+        .. math:: \rho = \frac{\sin{\theta}}{\sin{\theta_{\max}}},
 
         such that the physical domain is
 
-        .. math:: \theta \leq \theta_{max}.
+        .. math:: \theta \leq \theta_{\max}.
 
         """
         input_field = torch.ones(self.n_pix_pupil).to(torch.complex64).to(self.device)
