@@ -34,13 +34,13 @@ kwargs = {
         'n_pix_pupil': 201,
         'n_pix_psf': 256,
         'wavelength': 600,
-        'na': 1.4,
+        'na': 1.2,
         'fov': 2000,
         'defocus_min': -4000,
         'defocus_max': 4000,
         'n_defocus': 200,
         'e0x': 1.0,
-        'e0y': 1j,
+        'e0y': 0.0,
         'gibson_lanni': True
     }
 my_propagator = VectorialCartesianPropagator(**kwargs)
@@ -50,7 +50,7 @@ For a detailed explanation on all the input parameters, refer to the [documentat
 Then, to compute the pupil, simply do
 
 ```python
-pupil = my_propagator.get_input_field()
+pupil = my_propagator.get_pupil()
 ```
 
 and the PSF
@@ -64,7 +64,7 @@ Both electric fields `pupil` and `PSF` are a `torch.tesnor` of data type `comple
 ## Visualize the results
 For a convenient visual check, we provide two functions
 - `plot_pupil`: modulus and phase of the pupil of all the components of the electric field (3 for vectorial Cartesian and 1 for scalar Cartesian)
-- `plot_psf`: modulus, phase and intensity of the PSF at three orthogonal planes (xy, yz, and xz)
+- `plot_psf`: modulus, phase and intensity of the PSF at three orthogonal planes ($xy$, $yz$, and $xz$)
 
 Here is an example
 
@@ -125,16 +125,19 @@ if __name__ == "__main__":
         'n_pix_pupil': 201,
         'n_pix_psf': 256,
         'wavelength': 600,
-        'fov': 1000,
-        'defocus_min': -50,
-        'defocus_max': 50,
-        'n_defocus': 50,
+        'na': 1.2,
+        'fov': 2000,
+        'defocus_min': -4000,
+        'defocus_max': 4000,
+        'n_defocus': 200,
+        'e0x': 1.0,
+        'e0y': 0.0,
         'gibson_lanni': True
     }
     my_propagator = VectorialCartesianPropagator(**kwargs)
 
     # compute pupil
-    pupil = my_propagator.get_input_field()
+    pupil = my_propagator.get_pupil()
 
     # compute PSF
     psf = my_propagator.compute_focus_field()
