@@ -1,1 +1,1 @@
-# Copyright Biomedical Imaging Group, EPFL 2024
+# Copyright Biomedical Imaging Group, EPFL 2025

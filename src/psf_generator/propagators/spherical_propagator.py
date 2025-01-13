@@ -1,4 +1,4 @@
-# Copyright Biomedical Imaging Group, EPFL 2024
+# Copyright Biomedical Imaging Group, EPFL 2025
 
 """
 The propagator in the case of Spherical coordinates.

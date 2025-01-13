@@ -1,4 +1,4 @@
-# Copyright Biomedical Imaging Group, EPFL 2024
+# Copyright Biomedical Imaging Group, EPFL 2025
 
 """
 The propagator for the vectorial field in the spherical coordinates.

@@ -1,4 +1,4 @@
-# Copyright Biomedical Imaging Group, EPFL 2024
+# Copyright Biomedical Imaging Group, EPFL 2025
 
 from .scalar_cartesian_propagator import ScalarCartesianPropagator
 from .scalar_spherical_propagator import ScalarSphericalPropagator

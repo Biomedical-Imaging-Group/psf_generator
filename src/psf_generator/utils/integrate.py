@@ -1,4 +1,4 @@
-# Copyright Biomedical Imaging Group, EPFL 2024
+# Copyright Biomedical Imaging Group, EPFL 2025
 
 r"""
 A collection of numerical integration rules in 1D.
