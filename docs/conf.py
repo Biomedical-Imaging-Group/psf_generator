@@ -16,7 +16,7 @@ author = 'Yan Liu'
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
-source_suffix = ['.md', '.rst', '.ipynb']
+source_suffix = ['.md', '.rst']
 exclude_patterns = []
 
 myst_enable_extensions = [
