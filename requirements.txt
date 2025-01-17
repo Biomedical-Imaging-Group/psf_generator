@@ -8,6 +8,6 @@ scipy==1.9.1
 sphinx
 myst-nb
 pydata-sphinx-theme
-torch>=1.13.1
+torch>=2.0.0
 tqdm
 zernikepy>=0.0.4
