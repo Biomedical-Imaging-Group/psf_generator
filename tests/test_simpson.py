@@ -2,13 +2,12 @@
 Test self-implemented PyTorch version of trapezoid and simpson's integration method against the Scipy ones.
 
 """
-from scipy.integrate import simpson, trapezoid
-from scipy.special import j0
 import numpy as np
 import torch
+from scipy.integrate import simpson, trapezoid
+from scipy.special import j0
 
 from psf_generator.utils.integrate import simpsons_rule, trapezoid_rule
-
 
 a = 0
 b = np.pi/4

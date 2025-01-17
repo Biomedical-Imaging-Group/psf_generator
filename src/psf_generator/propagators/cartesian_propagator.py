@@ -12,7 +12,7 @@ import torch
 
 from .propagator import Propagator
 from ..utils.czt import custom_ifft2
-from ..utils.zernike import create_zernike_aberrations, create_special_pupil
+from ..utils.zernike import create_special_pupil, create_zernike_aberrations
 
 
 class CartesianPropagator(Propagator, ABC):
@@ -28,10 +28,11 @@ class CartesianPropagator(Propagator, ABC):
     Set it to `False` to ignore the correction factor, to obtain low-NA analytic PSFs 
     such as the Airy disk.
     """
+
     def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
                  zernike_coefficients=None,
                  special_phase_mask=None,
-                 wavelength=632, na=1.3, fov=1000, 
+                 wavelength=632, na=1.3, fov=1000,
                  defocus_min=0, defocus_max=0, n_defocus=1,
                  sz_correction=True, apod_factor=False, envelope=None,
                  gibson_lanni=False, z_p=1e3, n_s=1.3,
@@ -39,7 +40,7 @@ class CartesianPropagator(Propagator, ABC):
                  n_i=1.5, n_i0=1.5, t_i0=100e3):
         super().__init__(n_pix_pupil=n_pix_pupil, n_pix_psf=n_pix_psf, device=device,
                          zernike_coefficients=zernike_coefficients,
-                         wavelength=wavelength, na=na, fov=fov, 
+                         wavelength=wavelength, na=na, fov=fov,
                          defocus_min=defocus_min, defocus_max=defocus_max, n_defocus=n_defocus,
                          apod_factor=apod_factor, envelope=envelope,
                          gibson_lanni=gibson_lanni, z_p=z_p, n_s=n_s,

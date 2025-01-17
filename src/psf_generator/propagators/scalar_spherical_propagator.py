@@ -28,6 +28,7 @@ class ScalarSphericalPropagator(SphericalPropagator):
     where :math:`J_0` is the Bessel function of first kind and order 0.
 
     """
+
     @classmethod
     def get_name(cls) -> str:
         return 'scalar_spherical'
@@ -77,7 +78,6 @@ class ScalarSphericalPropagator(SphericalPropagator):
         We compute it independently of defocus and handle defocus via batching with vmap().
 
         """
-
         sin_t = torch.sin(self.thetas)
         bessel_arg = self.k * self.rs[None, :] * sin_t[:, None] * self.refractive_index
         J0 = bessel_j0(bessel_arg)

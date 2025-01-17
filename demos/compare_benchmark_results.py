@@ -23,7 +23,7 @@ def plot_accuracy_benchmark_results(
         results: list,
         labels: list,
         title: str,
-        filepath: str = None
+        filepath: str = None,
 ):
     """
     Plot results of the accuracy benchmarking.
@@ -80,7 +80,7 @@ def plot_runtime_benchmark_results(
         title: str,
         letter: str,
         show_legend: bool = True,
-        filepath: str = None
+        filepath: str = None,
 ):
     """
     Plot results of the runtime benchmarking.

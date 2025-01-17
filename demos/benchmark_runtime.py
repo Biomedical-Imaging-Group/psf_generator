@@ -9,7 +9,6 @@ import os
 import sys
 from time import time
 
-
 module_path = os.path.abspath(os.path.join('')) + '/src/'
 if module_path not in sys.path:
     sys.path.insert(0, module_path)
@@ -26,14 +25,14 @@ def benchmark_runtime_on_size(
         n_pix_psf: int = 201,
         wavelength: float = 632,
         na: float = 0.9,
-        fov: int = 3000
+        fov: int = 3000,
 ):
     """Benchmark the runtime against the size of the pupil or PSF."""
     # propagator parameters
     kwargs = {
         'wavelength': wavelength,
         'na': na,
-        'fov': fov
+        'fov': fov,
     }
     # define propagators
     propagator_types = [

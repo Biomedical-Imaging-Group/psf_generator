@@ -6,11 +6,11 @@ import sys
 import numpy as np
 import torch
 from matplotlib import pyplot as plt
-from psf_generator.utils.handle_data import save_stats_as_csv
 from torch.special import bessel_j1
 
+from psf_generator.utils import integrate
+from psf_generator.utils.handle_data import save_stats_as_csv
 from psf_generator.utils.misc import convert_tensor_to_array
-import psf_generator.utils.integrate as integrate
 from psf_generator.utils.plots import colorbar
 
 module_path = os.path.abspath(os.path.join('')) + '/src/'
@@ -29,7 +29,7 @@ def benchmark_scalar_accuracy_on_airy_disk(
         wavelength: float = 632,
         na: float = 0.9,
         fov: int = 3000,
-        debug: bool = False
+        debug: bool = False,
 ):
     """
     Benchmark the accuracy of the two scalar propagators compared to an Airy disk against the size of the pupil.
@@ -40,7 +40,7 @@ def benchmark_scalar_accuracy_on_airy_disk(
         'n_pix_psf': n_pix_psf,
         'wavelength': wavelength,
         'na': na,
-        'fov': fov
+        'fov': fov,
     }
 
     # define ground truth: Airy disk
@@ -55,7 +55,7 @@ def benchmark_scalar_accuracy_on_airy_disk(
     # define propagators
     propagator_types = [
         ScalarCartesianPropagator,
-        ScalarSphericalPropagator
+        ScalarSphericalPropagator,
     ]
     # test parameters
     list_of_pixels = [int(math.pow(2, exponent) + 1) for exponent in range(5, 13)]

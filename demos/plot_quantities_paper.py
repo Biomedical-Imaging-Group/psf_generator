@@ -3,10 +3,10 @@ import os
 
 import numpy as np
 from matplotlib import pyplot as plt
-from matplotlib_scalebar.scalebar import ScaleBar
 
+from matplotlib_scalebar.scalebar import ScaleBar
 from psf_generator.utils.handle_data import load_from_npy
-from psf_generator.utils.plots import colorbar, apply_disk_mask
+from psf_generator.utils.plots import apply_disk_mask, colorbar
 
 _FIG_SIZE = 8
 _BAR_SIZE = 40
@@ -107,7 +107,7 @@ def plot_phase(phase: np.ndarray, base_name: str, normalize: bool):
     fig, ax = plt.subplots(1, 1, figsize=(_FIG_SIZE, _FIG_SIZE))
     if normalize:
         cbar_min, cbar_max = -np.pi, np.pi
-        cbar_labels = ['-$\pi$', '$\pi$']
+        cbar_labels = [r'-$\pi$', r'$\pi$']
         cmap = 'twilight'
     else:
         cbar_min, cbar_max = np.nanmin(phase), np.nanmax(phase)

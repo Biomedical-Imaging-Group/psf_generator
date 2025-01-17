@@ -82,6 +82,7 @@ class Propagator(ABC):
     This aberration is computed by method `self.compute_optical_path`.
 
     """
+
     def __init__(self,
                  n_pix_pupil: int =128,
                  n_pix_psf: int = 128,
@@ -212,7 +213,7 @@ class Propagator(ABC):
             't_g0': self.t_g0,
             'n_i': self.n_i,
             't_i0': self.t_i0,
-            't_i': self.t_i
+            't_i': self.t_i,
         }
         return args
 

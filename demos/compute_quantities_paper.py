@@ -2,8 +2,8 @@ import math
 import os
 
 from psf_generator.utils.handle_data import save_as_npy
-from src.psf_generator.propagators import *
 
+from src.psf_generator.propagators import *
 
 if __name__ == "__main__":
     n_pix_pupil = 127

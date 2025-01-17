@@ -11,6 +11,7 @@ import numpy as np
 import torch
 
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+
 from .misc import convert_tensor_to_array
 
 _FIG_SIZE = 6
@@ -121,7 +122,7 @@ def plot_pupil(
         filepath: str = None,
         show_cbar_ticks: bool = False,
         show_image_ticks: bool = False,
-        show_titles: bool = True
+        show_titles: bool = True,
 ):
     """
     Plot the modulus and phase of a scalar or vectorial pupil for the Cartesian propagator.
@@ -219,7 +220,7 @@ def plot_psf(
         filepath: str = None,
         show_cbar_ticks: bool = False,
         show_image_ticks: bool = False,
-        show_titles: bool = False
+        show_titles: bool = False,
 
 ):
     """
@@ -286,7 +287,7 @@ def plot_psf(
     psf_list = [
                    psf_quantity[:, z_slice_number, :, :],
                    psf_quantity[:, :, x_slice_number, :],
-                   psf_quantity[:, :, :, y_slice_number]
+                   psf_quantity[:, :, :, y_slice_number],
                   ]
 
     nrows = dim
@@ -294,7 +295,7 @@ def plot_psf(
     col_titles = [
                   f'x-y plane at z={z_slice_number}/{number_of_pixel_z} slices',
                   f'y-z plane at x={x_slice_number}/{number_of_pixel_x} slices',
-                  f'x-z plane at y={y_slice_number}/{number_of_pixel_y} slices'
+                  f'x-z plane at y={y_slice_number}/{number_of_pixel_y} slices',
     ]
     cbar_min = min(np.min(psf) for psf in psf_list)
     cbar_max = max(np.max(psf) for psf in psf_list)

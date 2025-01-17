@@ -125,7 +125,7 @@ def load_stats_from_csv(filepath: str):
     if not os.path.isfile(filepath):
         raise FileNotFoundError(f'File {filepath} does not exist')
 
-    with open(filepath, 'r', newline='') as csv_file:
+    with open(filepath, newline='') as csv_file:
         reader = csv.reader(csv_file, delimiter=',')
         data = []
         for row in reader:
