@@ -32,8 +32,8 @@ classifiers = [
 ]
 # TODO
 [project.urls]
-Homepage = "https://example.com"
+Homepage = "https://github.com/Biomedical-Imaging-Group/psf_generator"
 Documentation = "https://readthedocs.org"
-Repository = "https://github.com/Biomedical-Imaging-Group/PSF-Generator.git"
-"Bug Tracker" = "https://github.com/Biomedical-Imaging-Group/PSF-Generator/issues"
-Changelog = "https://github.com/Biomedical-Imaging-Group/PSF-Generator/CHANGELOG.md"
+Repository = "https://github.com/Biomedical-Imaging-Group/psf_generator.git"
+"Bug Tracker" = "https://github.com/Biomedical-Imaging-Group/psf_generator/issues"
+Changelog = "https://github.com/Biomedical-Imaging-Group/psf_generator/CHANGELOG.md"

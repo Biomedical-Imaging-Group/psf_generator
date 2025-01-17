@@ -22,7 +22,7 @@ For details on the theory, please kindly refer to our paper
 [Revisiting PSF models: unifying framework and high-performance implementation](todo:addlink) or the documentation: TO ADD LINK.
 
 # Installation
-TODO: add how to build a local env; make conda work
+
 ```python
 pip install psf-generator
 ```
