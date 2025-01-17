@@ -252,7 +252,7 @@ def plot_psf(
     # convert to numpy array
     psf_array = convert_tensor_to_array(psf)
     # check and compute quantity
-    valid_choices = ['modulus', 'phase', 'intensity']
+    valid_choices = ['modulus', 'phase', 'intensity', 'amplitude']
     if quantity == 'modulus':
         psf_quantity = np.abs(psf_array)
         cmap = 'inferno'
@@ -261,6 +261,9 @@ def plot_psf(
         cmap = 'twilight'
     elif quantity == 'intensity':
         psf_quantity = _compute_psf_intensity(psf_array)
+        cmap = 'inferno'
+    elif quantity == 'amplitude':
+        psf_quantity = np.sqrt(_compute_psf_intensity(psf_array))
         cmap = 'inferno'
     else:
         raise ValueError(f'quantity {quantity} is not supported, choose from {valid_choices}')
