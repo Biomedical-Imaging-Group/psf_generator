@@ -29,6 +29,7 @@ myst_enable_extensions = [
 myst_heading_anchors = 5
 myst_dmath_allow_labels = True
 myst_dmath_double_inline = True
+numfig = True
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
