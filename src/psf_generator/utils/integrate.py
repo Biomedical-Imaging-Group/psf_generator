@@ -82,7 +82,7 @@ def riemann_rule(fs: torch.Tensor, dx: float) -> torch.Tensor:
 
 def trapezoid_rule(fs: torch.Tensor, dx: float) -> torch.Tensor:
     r"""
-    Composite trapezoid rule.
+    Composite trapezoid rule, see also [1]_.
 
     Parameters
     ----------
@@ -94,7 +94,7 @@ def trapezoid_rule(fs: torch.Tensor, dx: float) -> torch.Tensor:
     Returns
     -------
     output: torch.Tensor
-        Integral evaluated by trapezoid rule of shape (num_integrals,)..
+        Integral evaluated by trapezoid rule of shape (num_integrals,).
 
     Notes
     -----
@@ -109,7 +109,7 @@ def trapezoid_rule(fs: torch.Tensor, dx: float) -> torch.Tensor:
 
 def simpsons_rule(fs: torch.Tensor, dx: float) -> torch.Tensor:
     r"""
-    Composite Simpson's rule.
+    Composite Simpson's rule, see also [2]_.
 
     Parameters
     ----------

@@ -26,19 +26,19 @@ markersize = 6
 def colorbar(mappable, cbar_ticks: tp.Union[str, tp.List, None] = 'auto', tick_size: float = _TICK_SIZE,
              cbar_labels: tp.List[str] = None):
     """
-    colorbar with the option to add or remove ticks
+    Colorbar with the option to add or remove ticks.
 
     Parameters
     ----------
-    mappable
+    mappable :
+        Matplotlib Mappable.
     cbar_ticks : None or str or List of ticks
-        If None, no ticks visible
-        If 'auto': ticks are determined automatically
-        otherwise, set the ticks as given by cbar_ticks
+        If None, no ticks visible. If 'auto': ticks are determined automatically. Otherwise, set the ticks as given by cbar_ticks.
     tick_size: float, optional
         Fontsize of the tick labels.
     cbar_labels: list[str], optional
         Cbar labels. Default is None, use cbar ticks.
+
     """
     last_axes = plt.gca()
     ax = mappable.axes
@@ -89,10 +89,12 @@ def _compute_psf_intensity(input_image: np.ndarray) -> np.ndarray:
     Compute the intensity of a complex field.
 
     The input array must be 4D with this convention:
+
     - dim one: z axis, or defocus slices.
-    - dim two: electric field components. Only one for scalar and three :math:`(\mathbf{e}_x, \mathbf{e}_y, \mathbf{e}_z)`
-    for vectorial.
-    - dim three and four : (x, y) axes
+
+    - dim two: electric field components. Only one for scalar and three :math:`(\mathbf{e}_x, \mathbf{e}_y, \mathbf{e}_z)` for vectorial.
+
+    - dim three and four: :math:`(x, y)` axes.
 
     The intensity is computed as follows:
 
@@ -233,7 +235,7 @@ def plot_psf(
     name_of_propagator : str
         Name of the propagator.
     quantity : str, optional
-        Quantity of the PSF to plot. Default is 'modulus'. Valid choices are 'modulus', 'phase', 'intensity'.
+        Quantity of the PSF to plot. Default is 'modulus'. Valid choices are 'modulus', 'phase', 'intensity', 'amplitude'.
     z_slice_number : int, optional
         Z slice number for the x-y plane.
     x_slice_number : int, optional

@@ -71,13 +71,15 @@ class Propagator(ABC):
     Notes
     -----
     Internal parameters:
-        - t_i : float
-        Thickness of the immersion medium. It is computed from
-        :math:`t_i = z_p - z + n_i \left( -\frac{z_p}{n_s} - \frac{t_g}{n_g} + \frac{t_g^0}{n_g^0} + \frac{t_i^0}{n_i^0} \right)`.
-        - refractive_index : float
-        Refractive index of the propagation medium. It is equal to :math:`n_s` if gibson_lanni=True, 1.0, otherwise.
 
-    - `(z_p, n_s, n_g, n_g0, t_g, t_g0, n_i, t_i0, t_i)` are coefficients related to the aberrations due to refractive
+    1. t_i : float,
+    thickness of the immersion medium. It is computed from
+    :math:`t_i = z_p - z + n_i \left( -\frac{z_p}{n_s} - \frac{t_g}{n_g} + \frac{t_g^0}{n_g^0} + \frac{t_i^0}{n_i^0} \right)`.
+
+    2. refractive_index : float,
+    refractive index of the propagation medium. It is equal to :math:`n_s` if gibson_lanni=True, 1.0, otherwise.
+
+    3. `(z_p, n_s, n_g, n_g0, t_g, t_g0, n_i, t_i0, t_i)` are coefficients related to the aberrations due to refractive
     index mismatch between stratified layers of the microscope.
     This aberration is computed by method `self.compute_optical_path`.
 
@@ -164,7 +166,7 @@ class Propagator(ABC):
         return self.get_input_field() * self._aberrations()
 
     def compute_optical_path(self, sin_t: torch.Tensor) -> torch.Tensor:
-        r"""Compute the optical path following Eq. (3.45) in [1]
+        r"""Compute the optical path following Eq. (3.45) in [1]_.
 
         .. math::
 
