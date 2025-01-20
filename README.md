@@ -30,6 +30,9 @@ pip install psf-generator
 # Demos
 Jupyter Notebook demos can be found under `demos/`.
 
+# Napari Plugin
+TODO: add link
+
 # Documentation
 Documentation can be found here: TO ADD LINK
 
