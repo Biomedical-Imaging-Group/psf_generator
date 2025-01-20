@@ -10,4 +10,4 @@ myst-nb
 pydata-sphinx-theme
 torch>=2.0.0
 tqdm
-zernikepy>=0.0.4
+zernikepy>=0.0.5

@@ -6,7 +6,7 @@ dependencies = [
     "numpy>=1.23.4",
     "scipy>=1.9.1",
     "torch>=2.0.0",
-    "zernikepy>=0.0.4"
+    "zernikepy>=0.0.5"
 ]
 requires-python = ">=3.8"
 authors = [
