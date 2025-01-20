@@ -21,7 +21,7 @@ maintainers = [
     {name = "Vasiliki Stergiopoulou", email = "vasiliki.stergiopoulou@epfl.ch"},
     {name = "Jonathan Dong"}, {email = "jonathan.dong@epfl.ch"}
 ]
-description = "Powerful PyTorch Point-Spread-Function library for microscopies."
+description = "PSF Generator: a PyTorch-based library to simulate point spread functions for microscopies."
 readme = "README.md"
 license = {file = "LICENSE"}
 keywords = ["point-spread-function", "pytorch", "deep learning", "microscopies", "imaging", "optical system",
