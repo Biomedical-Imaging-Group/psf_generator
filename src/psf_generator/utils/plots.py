@@ -14,11 +14,11 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from .misc import convert_tensor_to_array
 
-_FIG_SIZE = 6
-_SUP_TITLE_SIZE = 21
-_TITLE_SIZE = 20
-_LABEL_SIZE = 20
-_TICK_SIZE = 18
+_FIG_SIZE = 5
+_SUP_TITLE_SIZE = 17
+_TITLE_SIZE = 12
+_LABEL_SIZE = 18
+_TICK_SIZE = 16
 lw = 1
 markersize = 6
 
@@ -286,52 +286,80 @@ def plot_psf(
         row_titles = [r'$\mathbf{e}_x$', r'$\mathbf{e}_y$', r'$\mathbf{e}_z$']
     else:
         raise ValueError(f'Number of channels of the PSF should be 1 or 3, not {dim}')
-    psf_list = [
-                   psf_quantity[:, z_slice_number, :, :],
-                   psf_quantity[:, :, x_slice_number, :],
-                   psf_quantity[:, :, :, y_slice_number],
-                  ]
 
-    nrows = dim
-    ncols = len(psf_list)
-    col_titles = [
-                  f'x-y plane at z={z_slice_number}/{number_of_pixel_z} slices',
-                  f'y-z plane at x={x_slice_number}/{number_of_pixel_x} slices',
-                  f'x-z plane at y={y_slice_number}/{number_of_pixel_y} slices',
-    ]
-    cbar_min = min(np.min(psf) for psf in psf_list)
-    cbar_max = max(np.max(psf) for psf in psf_list)
-    norm = plt.Normalize(cbar_min, cbar_max)
-    if show_cbar_ticks:
-        cbar_ticks = [cbar_min, cbar_max]
-    else:
-        cbar_ticks = None
-    figure, axes = plt.subplots(nrows, ncols, figsize=(ncols * _FIG_SIZE, nrows * _FIG_SIZE))
-    if dim == 1:
-        axes = axes.reshape(1, -1)
-    axes = axes.T
-    for (col_index, axis), psf, col_title in zip(enumerate(axes), psf_list, col_titles):
-        for (row_index, ax), image, row_title, in zip(enumerate(axis), psf, row_titles):
-            im = ax.imshow(image, norm = norm, cmap=cmap)
-            colorbar(im, cbar_ticks=cbar_ticks)
-            if show_titles and row_index == 0:
-                ax.set_title(col_title, fontsize=_TITLE_SIZE)
-            if dim > 1 and col_index == 0:
+    if number_of_pixel_z == 1: # 2D PSF
+        psf_slice = psf_quantity[:, 0, :, :]
+        figure, axes = plt.subplots(dim, 1, figsize=(1 * _FIG_SIZE, dim * _FIG_SIZE))
+
+        if dim == 1:
+            axes = [axes]
+
+        for row_index, (ax, image, row_title) in enumerate(zip(axes, psf_slice, row_titles)):
+            im = ax.imshow(image, cmap=cmap)
+            colorbar(im, cbar_ticks=[np.min(image), np.max(image)] if show_cbar_ticks else None)
+            if show_titles:
+                ax.set_title('XY-plane (2D PSF)', fontsize=_TITLE_SIZE)
+            if dim > 1 :
                 ax.set_ylabel(row_title, fontsize=_LABEL_SIZE)
                 plt.subplots_adjust(left=0.05)
             if show_image_ticks:
                 x_ticks = [0, image.shape[1]]
-                xtick_labels = x_ticks
                 ax.set_xticks(x_ticks)
-                ax.set_xticklabels(xtick_labels, fontsize=_TICK_SIZE)
+                ax.set_xticklabels(x_ticks, fontsize=_TICK_SIZE)
                 y_ticks = [0, image.shape[0]]
                 ax.set_yticks(y_ticks)
-                ytick_labels = y_ticks
-                ax.set_yticklabels(ytick_labels, fontsize=_TICK_SIZE)
+                ax.set_yticklabels(y_ticks, fontsize=_TICK_SIZE)
             else:
                 ax.set_xticks([])
                 ax.set_yticks([])
-    plt.suptitle(f'{quantity} of PSF at three orthogonal planes ({name_of_propagator})', fontsize=_SUP_TITLE_SIZE)
+        plt.suptitle(f'{quantity.capitalize()} ({name_of_propagator.capitalize()})', fontsize=_SUP_TITLE_SIZE)
+    else: # 3D PSF
+        psf_list = [
+                       psf_quantity[:, z_slice_number, :, :],
+                       psf_quantity[:, :, x_slice_number, :],
+                       psf_quantity[:, :, :, y_slice_number],
+                      ]
+
+        nrows = dim
+        ncols = len(psf_list)
+        col_titles = [
+                      f'XY-plane (z={z_slice_number+1}/{number_of_pixel_z} slice)',
+                      f'ZY plane (x={x_slice_number+1}/{number_of_pixel_x} slice)',
+                      f'ZX plane (y={y_slice_number+1}/{number_of_pixel_y} slice)',
+        ]
+        cbar_min = min(np.min(psf) for psf in psf_list)
+        cbar_max = max(np.max(psf) for psf in psf_list)
+        norm = plt.Normalize(cbar_min, cbar_max)
+        if show_cbar_ticks:
+            cbar_ticks = [cbar_min, cbar_max]
+        else:
+            cbar_ticks = None
+        figure, axes = plt.subplots(nrows, ncols, figsize=(ncols * _FIG_SIZE, nrows * _FIG_SIZE))
+        if dim == 1:
+            axes = axes.reshape(1, -1)
+        axes = axes.T
+        for (col_index, axis), psf, col_title in zip(enumerate(axes), psf_list, col_titles):
+            for (row_index, ax), image, row_title, in zip(enumerate(axis), psf, row_titles):
+                im = ax.imshow(image, norm = norm, cmap=cmap)
+                colorbar(im, cbar_ticks=cbar_ticks)
+                if show_titles and row_index == 0:
+                    ax.set_title(col_title, fontsize=_TITLE_SIZE)
+                if dim > 1 and col_index == 0:
+                    ax.set_ylabel(row_title, fontsize=_LABEL_SIZE)
+                    plt.subplots_adjust(left=0.05)
+                if show_image_ticks:
+                    x_ticks = [0, image.shape[1]]
+                    xtick_labels = x_ticks
+                    ax.set_xticks(x_ticks)
+                    ax.set_xticklabels(xtick_labels, fontsize=_TICK_SIZE)
+                    y_ticks = [0, image.shape[0]]
+                    ax.set_yticks(y_ticks)
+                    ytick_labels = y_ticks
+                    ax.set_yticklabels(ytick_labels, fontsize=_TICK_SIZE)
+                else:
+                    ax.set_xticks([])
+                    ax.set_yticks([])
+        plt.suptitle(f'{quantity.capitalize()} at three orthogonal planes ({name_of_propagator.capitalize()})', fontsize=_SUP_TITLE_SIZE)
     if filepath is not None:
         figure.tight_layout()
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
