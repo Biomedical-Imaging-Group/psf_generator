@@ -202,7 +202,7 @@ def plot2():
     for name in psf_names:
         data_path = os.path.join(base_data_path, name + '_psf.npy')
         data = load_from_npy(data_path)
-        zs = [data.shape[0]//4, data.shape[0]//2, data.shape[0]*3//4]
+        zs = [0, data.shape[0]//2, data.shape[0]-1]
         amplitude = np.sqrt(np.sum(np.abs(data) ** 2, axis=1))
         for z in zs:
             imgs[name, z] = amplitude[z, :, :]
