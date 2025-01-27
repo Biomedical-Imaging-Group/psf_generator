@@ -16,7 +16,7 @@ if __name__ == "__main__":
     n_pix_pupil = 127
     n_pix_psf = 256
     na = 1.3
-    wavelength = 600
+    wavelength = 632
     fov = 2000
     defocus = 4000
     n_defocus = 256
