@@ -23,11 +23,25 @@ For details on the theory, please kindly refer to our paper
 
 # Installation
 
-```python
+## Basic Installation
+
+```
 pip install psf-generator
 ```
 
+That's it for the basic intallation; you're ready to go!
+
+## Developer Installation
+
+If you're interested in experimenting with the code base, please clone the repository and install it using the following commands:
+```
+git clone git@github.com:Biomedical-Imaging-Group/psf_generator.git
+cd psf_generator
+pip install -e .
+```
+
 # Demos
+
 Jupyter Notebook demos can be found under `demos/`.
 
 # Napari Plugin
@@ -36,4 +50,6 @@ TODO: add link
 # Documentation
 Documentation can be found here: TO ADD LINK
 
+# Cite us
 
+TODO
