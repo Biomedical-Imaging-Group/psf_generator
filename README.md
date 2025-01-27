@@ -45,11 +45,11 @@ pip install -e .
 Jupyter Notebook demos can be found under `demos/`.
 
 # Napari Plugin
-TODO: add link
+You can find our Napari plugin [here](https://github.com/Biomedical-Imaging-Group/napari-psfgenerator).
 
 # Documentation
 Documentation can be found here: TO ADD LINK
 
-# Cite us
+# Cite Us
 
 TODO
