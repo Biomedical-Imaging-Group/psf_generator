@@ -289,14 +289,19 @@ def plot_psf(
 
     if number_of_pixel_z == 1: # 2D PSF
         psf_slice = psf_quantity[:, 0, :, :]
+
+        cbar_min = np.min(psf_slice)
+        cbar_max = np.max(psf_slice)
+        norm = plt.Normalize(cbar_min, cbar_max)
+
         figure, axes = plt.subplots(dim, 1, figsize=(1 * _FIG_SIZE, dim * _FIG_SIZE))
 
         if dim == 1:
             axes = [axes]
 
         for row_index, (ax, image, row_title) in enumerate(zip(axes, psf_slice, row_titles)):
-            im = ax.imshow(image, cmap=cmap)
-            colorbar(im, cbar_ticks=[np.min(image), np.max(image)] if show_cbar_ticks else None)
+            im = ax.imshow(image, norm=norm, cmap=cmap)
+            colorbar(im, cbar_ticks=[cbar_min, cbar_max] if show_cbar_ticks else None)
             if show_titles:
                 ax.set_title('XY-plane (2D PSF)', fontsize=_TITLE_SIZE)
             if dim > 1 :
