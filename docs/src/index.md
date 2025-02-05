@@ -45,7 +45,7 @@ kwargs = {
     }
 my_propagator = VectorialCartesianPropagator(**kwargs)
 ```
-For a detailed explanation on all the input parameters, refer to the [documentation](TODO:addlink).
+For a detailed explanation on all the input parameters, refer to the API Documentation.
 
 Then, to compute the pupil, simply do
 
