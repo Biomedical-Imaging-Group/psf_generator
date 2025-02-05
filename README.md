@@ -1,13 +1,18 @@
 # PSF-Generator
+
+[![MIT License](https://img.shields.io/github/license/Biomedical-Imaging-Group/psf_generator)](https://github.com/Biomedical-Imaging-Group/psf_generator/raw/main/LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/psf-generator.svg?color=green)](https://pypi.org/project/psf-generator)
+[![Python Version](https://img.shields.io/pypi/pyversions/psf-generator.svg?color=green)](https://python.org)
+
 ***
 Welcome to the psf-generator library!
 
-This library implements various physical models that compute the point spread function (PSF) for microscopes. 
+This library implements various physical models that compute the point spread function (PSF) of optical microscopes. 
 PSF characterizes the response of an imaging system to a point source and is crucial for tasks such as 
 deconvolution, correction of aberrations, and characterization of the system.
 
-We classify these models based on their physical property (scalar or vectorial) and numerical property (computed on a 
-Cartesian or spherical coordinate system) and implement them as the following four
+We classify these models in two types---scalar or vectorial--- and in both cases the PSF integral can be computed in Cartesian or spherical coordinate systems. 
+This results in the following four 
 _propagators_
 
 | Name of propagator             |         Other names         |
@@ -17,8 +22,7 @@ _propagators_
 | `VectorialCartesianPropagator` |   vectorial Fourier model   |
 | `VectorialSphericalPropagator` |     Richards-Wolf model     |
 
-All of them can be derived from the Richards-Wolf integral under certain parameterization and conditions.
-For details on the theory, please kindly refer to our paper
+For details on the theory, please refer to our paper
 [Revisiting PSF models: unifying framework and high-performance implementation](todo:addlink) or the documentation: TO ADD LINK.
 
 # Installation
