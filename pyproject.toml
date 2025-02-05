@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "psf-generator"
 version = "0.0.1"
@@ -21,16 +25,16 @@ maintainers = [
     {name = "Vasiliki Stergiopoulou", email = "vasiliki.stergiopoulou@epfl.ch"},
     {name = "Jonathan Dong"}, {email = "jonathan.dong@epfl.ch"}
 ]
-description = "PSF Generator: a PyTorch-based library to simulate point spread functions for microscopies."
+description = "PSF Generator: a PyTorch-based library to simulate point spread functions for microscopy."
 readme = "README.md"
 license = {file = "LICENSE"}
-keywords = ["point-spread-function", "pytorch", "deep learning", "microscopies", "imaging", "optical system",
+keywords = ["point-spread-function", "pytorch", "deep learning", "microscopy", "imaging", "optical system",
 "fluorescene", "psf engineering", "light propagation"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python :: 3.8",
 ]
-# TODO
+
 [project.urls]
 Homepage = "https://github.com/Biomedical-Imaging-Group/psf_generator"
 Documentation = "https://readthedocs.org"
