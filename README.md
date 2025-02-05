@@ -3,7 +3,7 @@
 Welcome to the psf-generator library!
 
 This library implements various physical models that compute the point spread function (PSF) for microscopes. 
-PSF characterizes the response of an imaging system to a point source of light and is crucial for tasks such as 
+PSF characterizes the response of an imaging system to a point source and is crucial for tasks such as 
 deconvolution, correction of aberrations, and characterization of the system.
 
 We classify these models based on their physical property (scalar or vectorial) and numerical property (computed on a 
