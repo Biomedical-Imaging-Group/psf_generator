@@ -1,3 +1,5 @@
 sphinx==7.4.7
 myst-nb==1.1.2
 pydata-sphinx-theme==0.15.4
+sphinxcontrib-bibtex==2.6.2
+sphinx-autoapi==3.3.2
