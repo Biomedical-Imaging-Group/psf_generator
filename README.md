@@ -23,7 +23,10 @@ _propagators_
 | `VectorialSphericalPropagator` |     Richards-Wolf model     |
 
 For details on the theory, please refer to our paper
-[Revisiting PSF models: unifying framework and high-performance implementation](todo:addlink) or the documentation: TO ADD LINK.
+[Revisiting PSF models: unifying framework and high-performance implementation](todo:addlink).
+
+# Documentation
+Documentation can be found here: https://psf-generator.readthedocs.io/
 
 # Installation
 
@@ -33,7 +36,7 @@ For details on the theory, please refer to our paper
 pip install psf-generator
 ```
 
-That's it for the basic intallation; you're ready to go!
+That's it for the basic installation; you're ready to go!
 
 ## Developer Installation
 
@@ -50,9 +53,6 @@ Jupyter Notebook demos can be found under `demos/`.
 
 # Napari Plugin
 You can find our Napari plugin [here](https://github.com/Biomedical-Imaging-Group/napari-psfgenerator).
-
-# Documentation
-Documentation can be found here: TO ADD LINK
 
 # Cite Us
 

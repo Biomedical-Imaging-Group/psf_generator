@@ -28,8 +28,8 @@ maintainers = [
 description = "PSF Generator: a PyTorch-based library to simulate point spread functions for microscopy."
 readme = "README.md"
 license = {file = "LICENSE"}
-keywords = ["point-spread-function", "pytorch", "deep learning", "microscopy", "imaging", "optical system",
-"fluorescene", "psf engineering", "light propagation"]
+keywords = ["point-spread-function", "pytorch", "deep learning", "fluorescence microscopy",
+    "imaging", "optical system", "psf engineering", "light propagation"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python :: 3.8",
@@ -37,7 +37,7 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://github.com/Biomedical-Imaging-Group/psf_generator"
-Documentation = "https://readthedocs.org"
+Documentation = "https://psf-generator.readthedocs.io/"
 Repository = "https://github.com/Biomedical-Imaging-Group/psf_generator.git"
 "Bug Tracker" = "https://github.com/Biomedical-Imaging-Group/psf_generator/issues"
 Changelog = "https://github.com/Biomedical-Imaging-Group/psf_generator/CHANGELOG.md"
