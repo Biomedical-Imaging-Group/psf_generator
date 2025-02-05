@@ -16,14 +16,14 @@ requires-python = ">=3.8"
 authors = [
     {name = "Yan Liu", email = "yan.liu@epfl.ch"},
     {name = "Vasiliki Stergiopoulou", email = "vasiliki.stergiopoulou@epfl.ch"},
-    {name = "Jonathan Dong"}, {email = "jonathan.dong@epfl.ch"},
-    {name = "Jonathan Chuah"}, {email = "jonathan.chuahwenjie@epfl.ch"},
-    {name = "Daniel Sage"}, {email = "daniel.sage@epfl.ch"}
+    {name = "Jonathan Dong", email = "jonathan.dong@epfl.ch"},
+    {name = "Jonathan Chuah", email = "jonathan.chuahwenjie@epfl.ch"},
+    {name = "Daniel Sage", email = "daniel.sage@epfl.ch"}
 ]
 maintainers = [
     {name = "Yan Liu", email = "yan.liu@epfl.ch"},
     {name = "Vasiliki Stergiopoulou", email = "vasiliki.stergiopoulou@epfl.ch"},
-    {name = "Jonathan Dong"}, {email = "jonathan.dong@epfl.ch"}
+    {name = "Jonathan Dong", email = "jonathan.dong@epfl.ch"}
 ]
 description = "PSF Generator: a PyTorch-based library to simulate point spread functions for microscopy."
 readme = "README.md"
