@@ -23,7 +23,7 @@ _propagators_
 | `VectorialSphericalPropagator` |     Richards-Wolf model     |
 
 For details on the theory, please refer to our paper
-[Revisiting PSF models: unifying framework and high-performance implementation](todo:addlink).
+[Revisiting PSF models: unifying framework and high-performance implementation](https://arxiv.org/html/2502.03170v1).
 
 # Documentation
 Documentation can be found here: https://psf-generator.readthedocs.io/
