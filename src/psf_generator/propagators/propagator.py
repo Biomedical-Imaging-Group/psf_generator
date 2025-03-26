@@ -32,12 +32,12 @@ class Propagator(ABC):
     na : float, optional
         Numerical aperture. Default value is `1.3`.
     fov : float, optional
-        Size of the square field of view of the PSF plane, in micrometer. Default value is `2000`.
+        Size of the square field of view of the PSF plane, in nanometer. Default value is `2000`.
     defocus_min : float, optional
-        Extent of the defocus along the optical (z) axis on one side of the focal plane in micrometer.
+        Extent of the defocus along the optical (z) axis on one side of the focal plane in nanometer.
         Default value is `0.0`.
     defocus_max : float, optional
-        Extent of the defocus along the optical (z) axis on the other side of the focal plane in micrometer.
+        Extent of the defocus along the optical (z) axis on the other side of the focal plane in nanometer.
         Default value is `0.0`.
     n_defocus : int, optional
         Number of z-stack. Default value is `1`.
@@ -47,7 +47,7 @@ class Propagator(ABC):
         Size :math:`k_{\mathrm{env}}` of the Gaussian envelope :math:`A(\mathbf{s}) = \mathrm{e}^{-(k^2_x+k^2_y)/k_\mathrm{env}^2}`.
         Default is `None`.
     gibson_lanni : bool, optional
-        Apply Gibson-Lanni aberration or not. Default value is `False`.
+        Apply Gibson-Lanni aberration correction or not. Default value is `False`.
     z_p : float, optional
         Depth of the focal plane in the sample. It is usually obtained experimentally by focusing on a point source
         at this depth.  Default value is `1e3`.
@@ -77,7 +77,7 @@ class Propagator(ABC):
     :math:`t_i = z_p - z + n_i \left( -\frac{z_p}{n_s} - \frac{t_g}{n_g} + \frac{t_g^0}{n_g^0} + \frac{t_i^0}{n_i^0} \right)`.
 
     2. refractive_index : float,
-    refractive index of the propagation medium. It is equal to :math:`n_s` if gibson_lanni=True, 1.0, otherwise.
+    refractive index of the propagation medium. It is equal to :math:`n_s` if gibson_lanni=True, :math:`n_i`, otherwise.
 
     3. `(z_p, n_s, n_g, n_g0, t_g, t_g0, n_i, t_i0, t_i)` are coefficients related to the aberrations due to refractive
     index mismatch between stratified layers of the microscope.
@@ -138,7 +138,7 @@ class Propagator(ABC):
         if gibson_lanni:
             self.refractive_index = n_s
         else:
-            self.refractive_index = n_i0
+            self.refractive_index = n_i
 
     @classmethod
     @abstractmethod

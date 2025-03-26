@@ -95,7 +95,7 @@ class VectorialCartesianPropagator(CartesianPropagator):
         Compute the corresponding input field.
         """
         # Angles theta and phi
-        sin_xx, sin_yy = torch.meshgrid(self.s_x * self.s_max, self.s_x * self.s_max, indexing='ij')
+        sin_yy, sin_xx = torch.meshgrid(self.s_x * self.s_max, self.s_x * self.s_max, indexing='ij')
         sin_t_sq = sin_xx ** 2 + sin_yy ** 2
         s_valid = sin_t_sq <= self.s_max ** 2
         sin_theta = torch.sqrt(sin_t_sq)

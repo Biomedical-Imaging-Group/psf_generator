@@ -53,7 +53,7 @@ class SphericalPropagator(Propagator, ABC):
                          n_i=n_i, n_i0=n_i0, t_i0=t_i0)
         # PSF coordinates
         x = torch.linspace(-self.fov / 2, self.fov / 2, self.n_pix_psf)
-        self.xx, self.yy = torch.meshgrid(x, x, indexing='ij')
+        self.yy, self.xx = torch.meshgrid(x, x, indexing='ij')
         rr = torch.sqrt(self.xx ** 2 + self.yy ** 2)
         r_unique, rr_indices = torch.unique(rr, return_inverse=True)
         self.rs = r_unique.to(self.device)  # compute minimal number of points
