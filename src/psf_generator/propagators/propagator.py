@@ -31,8 +31,8 @@ class Propagator(ABC):
         Wavelength of light, in nanometer. Default value is `632`.
     na : float, optional
         Numerical aperture. Default value is `1.3`.
-    fov : float, optional
-        Size of the square field of view of the PSF plane, in nanometer. Default value is `2000`.
+    pix_size : float, optional
+        Camera pixel size, in nanometer. Default value is `20`.
     defocus_min : float, optional
         Extent of the defocus along the optical (z) axis on one side of the focal plane in nanometer.
         Default value is `0.0`.
@@ -92,7 +92,7 @@ class Propagator(ABC):
                  zernike_coefficients=None,
                  wavelength: float = 632,
                  na: float = 1.3,
-                 fov: float = 2000,
+                 pix_size: float = 20,
                  defocus_min: float = 0.0,
                  defocus_max: float = 0.0,
                  n_defocus: int = 1,
@@ -118,7 +118,8 @@ class Propagator(ABC):
         self.zernike_coefficients = zernike_coefficients
         self.wavelength = wavelength
         self.na = na
-        self.fov = fov
+        self.pix_size = pix_size
+        self.fov = pix_size * n_pix_psf
         self.defocus_min = defocus_min
         self.defocus_max = defocus_max
         self.n_defocus = n_defocus
@@ -199,7 +200,7 @@ class Propagator(ABC):
             'zernike_coefficients': convert_tensor_to_array(self.zernike_coefficients).tolist(),
             'wavelength': self.wavelength,
             'na': self.na,
-            'fov': self.fov,
+            'pix_size': self.pix_size,
             'refractive_index': self.refractive_index,
             'defocus_min': self.defocus_min,
             'defocus_max': self.defocus_max,

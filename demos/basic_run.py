@@ -9,15 +9,15 @@ import os
 
 from psf_generator.utils.handle_data import save_as_npy
 
-from src.psf_generator.propagators import *
-from src.psf_generator.utils.plots import plot_psf, plot_pupil
+from psf_generator.propagators import *
+from psf_generator.utils.plots import plot_psf, plot_pupil
 
 if __name__ == "__main__":
     n_pix_pupil = 127
     n_pix_psf = 256
     na = 1.3
     wavelength = 632
-    fov = 2000
+    pix_size = 7.8125
     defocus = 4000
     n_defocus = 256
     e0x = math.sqrt(2) / 2
@@ -31,7 +31,7 @@ if __name__ == "__main__":
         'wavelength': wavelength,
         'zernike_coefficients': zernike_coefficients,
         'na': na,
-        'fov': fov,
+        'pix_size': pix_size,
         'defocus_min': -defocus,
         'defocus_max': defocus,
         'n_defocus': n_defocus,
