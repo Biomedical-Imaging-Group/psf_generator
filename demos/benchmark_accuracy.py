@@ -17,7 +17,7 @@ module_path = os.path.abspath(os.path.join('')) + '/src/'
 if module_path not in sys.path:
     sys.path.insert(0, module_path)
 
-from src.psf_generator import ScalarCartesianPropagator, ScalarSphericalPropagator
+from psf_generator import ScalarCartesianPropagator, ScalarSphericalPropagator
 
 
 def _get_all_integrators():
@@ -28,7 +28,7 @@ def benchmark_scalar_accuracy_on_airy_disk(
         n_pix_psf: int = 201,
         wavelength: float = 632,
         na: float = 0.9,
-        fov: int = 3000,
+        pix_size: int = 15,
         debug: bool = False,
 ):
     """
@@ -40,10 +40,11 @@ def benchmark_scalar_accuracy_on_airy_disk(
         'n_pix_psf': n_pix_psf,
         'wavelength': wavelength,
         'na': na,
-        'fov': fov,
+        'pix_size': pix_size,
     }
 
     # define ground truth: Airy disk
+    fov = pix_size * n_pix_psf
     airy_disk_function = lambda x: torch.where(x > 1e-6, 2 * bessel_j1(x) / x, 1 - x ** 2 / 8)
     x = torch.linspace(- fov / 2, fov / 2, n_pix_psf)
     xx, yy = torch.meshgrid(x, x, indexing='ij')

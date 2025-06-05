@@ -175,14 +175,14 @@ def plot1(plot_profile: bool = True):
             json_path = os.path.join(base_data_path, name + '_params.json')
             with open(json_path) as file:
                 params = json.load(file)
-            dx = params['fov'] / params['n_pix_psf']
+            dx = params['pix_size']
             if axis == 'z':
-                phy_size = [params['fov'], params['fov']]
+                phy_size = [params['pix_size']*params['n_pix_psf'],params['pix_size']*params['n_pix_psf']]
                 units = [dx, None]
             else:
                 phy_z = params['defocus_max'] - params['defocus_min']
                 dz = phy_z / params['n_defocus']
-                phy_size = [phy_z, params['fov']]
+                phy_size = [phy_z, params['pix_size']*params['n_pix_psf']]
                 units = [dx, dz]
             plot_amplitude(img=imgs[name, axis], base_name=f'{name}_{axis}', units=units,  bar_value=bar_value,
                            v_range=[vmin, vmax])
@@ -216,14 +216,14 @@ def plot2():
             json_path = os.path.join(base_data_path, name + '_params.json')
             with open(json_path) as file:
                 params = json.load(file)
-            dx = params['fov'] / params['n_pix_psf']
+            dx = params['pix_size']
             units = [dx, None]
             plot_amplitude(img=imgs[name, z], base_name=f'{name}_z{z}', units=units, bar_value=bar_value, v_range=[vmin, vmax])
 
 
 if __name__ == "__main__":
     # define base file path
-    exp_name = 'gl_gaussian_high_na_e0_1_1j'
+    exp_name = 'pure_gaussian_low_na_e0_1_1j'
     bar_value = 3000 if 'low_na' in exp_name else 600
     base_plot_path = os.path.join('results', 'plots', 'fields', exp_name)
     os.makedirs(base_plot_path, exist_ok=True)

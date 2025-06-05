@@ -8,8 +8,8 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-from src.psf_generator.propagators import *
-from src.psf_generator.utils.handle_data import load_stats_from_csv
+from psf_generator.propagators import *
+from psf_generator.utils.handle_data import load_stats_from_csv
 
 _FIG_SIZE = 6
 _TITLE_SIZE = 12

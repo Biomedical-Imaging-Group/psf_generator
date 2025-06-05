@@ -17,7 +17,7 @@ if __name__ == "__main__":
     n_pix_psf = 256
     na = 1.3
     wavelength = 632
-    pix_size = 7.8125
+    pix_size = 10
     defocus = 4000
     n_defocus = 256
     e0x = math.sqrt(2) / 2

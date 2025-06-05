@@ -15,8 +15,8 @@ if module_path not in sys.path:
 
 import torch
 
-from src.psf_generator.propagators import *
-from src.psf_generator.utils.handle_data import save_stats_as_csv
+from psf_generator.propagators import *
+from psf_generator.utils.handle_data import save_stats_as_csv
 
 
 def benchmark_runtime_on_size(
@@ -25,14 +25,14 @@ def benchmark_runtime_on_size(
         n_pix_psf: int = 201,
         wavelength: float = 632,
         na: float = 0.9,
-        fov: int = 3000,
+        pix_size: int = 15,
 ):
     """Benchmark the runtime against the size of the pupil or PSF."""
     # propagator parameters
     kwargs = {
         'wavelength': wavelength,
         'na': na,
-        'fov': fov,
+        'pix_size': pix_size,
     }
     # define propagators
     propagator_types = [
