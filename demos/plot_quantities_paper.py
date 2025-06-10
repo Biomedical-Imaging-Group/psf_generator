@@ -180,8 +180,8 @@ def plot1(plot_profile: bool = True):
                 phy_size = [params['pix_size']*params['n_pix_psf'],params['pix_size']*params['n_pix_psf']]
                 units = [dx, None]
             else:
-                phy_z = params['defocus_max'] - params['defocus_min']
-                dz = phy_z / params['n_defocus']
+                dz = params['defocus_step']
+                phy_z = dz * params['n_defocus']
                 phy_size = [phy_z, params['pix_size']*params['n_pix_psf']]
                 units = [dx, dz]
             plot_amplitude(img=imgs[name, axis], base_name=f'{name}_{axis}', units=units,  bar_value=bar_value,
@@ -223,7 +223,7 @@ def plot2():
 
 if __name__ == "__main__":
     # define base file path
-    exp_name = 'pure_gaussian_low_na_e0_1_1j'
+    exp_name = 'pure_gaussian_high_na_e0_1_1j'
     bar_value = 3000 if 'low_na' in exp_name else 600
     base_plot_path = os.path.join('results', 'plots', 'fields', exp_name)
     os.makedirs(base_plot_path, exist_ok=True)

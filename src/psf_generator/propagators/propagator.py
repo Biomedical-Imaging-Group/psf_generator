@@ -33,11 +33,8 @@ class Propagator(ABC):
         Numerical aperture. Default value is `1.3`.
     pix_size : float, optional
         Camera pixel size, in nanometer. Default value is `20`.
-    defocus_min : float, optional
-        Extent of the defocus along the optical (z) axis on one side of the focal plane in nanometer.
-        Default value is `0.0`.
-    defocus_max : float, optional
-        Extent of the defocus along the optical (z) axis on the other side of the focal plane in nanometer.
+    defocus_step : float, optional
+        Step size of the defocus along the optical (z) axis on one side of the focal plane in nanometer.
         Default value is `0.0`.
     n_defocus : int, optional
         Number of z-stack. Default value is `1`.
@@ -93,8 +90,7 @@ class Propagator(ABC):
                  wavelength: float = 632,
                  na: float = 1.3,
                  pix_size: float = 20,
-                 defocus_min: float = 0.0,
-                 defocus_max: float = 0.0,
+                 defocus_step: float = 0.0,
                  n_defocus: int = 1,
                  apod_factor: bool = False,
                  envelope=None,
@@ -120,9 +116,10 @@ class Propagator(ABC):
         self.na = na
         self.pix_size = pix_size
         self.fov = pix_size * n_pix_psf
-        self.defocus_min = defocus_min
-        self.defocus_max = defocus_max
+        self.defocus_step = defocus_step
         self.n_defocus = n_defocus
+        self.defocus_min = -defocus_step * n_defocus // 2
+        self.defocus_max = defocus_step * n_defocus // 2
         self.apod_factor = apod_factor
         self.envelope = envelope
         self.gibson_lanni = gibson_lanni
@@ -202,8 +199,7 @@ class Propagator(ABC):
             'na': self.na,
             'pix_size': self.pix_size,
             'refractive_index': self.refractive_index,
-            'defocus_min': self.defocus_min,
-            'defocus_max': self.defocus_max,
+            'defocus_step': self.defocus_step,
             'n_defocus': self.n_defocus,
             'apod_factor': self.apod_factor,
             'envelope': self.envelope,

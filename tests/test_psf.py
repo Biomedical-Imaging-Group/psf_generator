@@ -7,18 +7,17 @@ import os
 import numpy as np
 import pytest
 
-from src.psf_generator.propagators import *
-from src.psf_generator.utils.handle_data import load_from_npy
-from src.psf_generator.utils.misc import convert_tensor_to_array
+from psf_generator.propagators import *
+from psf_generator.utils.handle_data import load_from_npy
+from psf_generator.utils.misc import convert_tensor_to_array
 
 kwargs = {
             'n_pix_pupil': 127,
             'n_pix_psf': 256,
             'wavelength': 632,
             'na': 1.4,
-            'fov': 2000,
-            'defocus_min': -1000,
-            'defocus_max': 1000,
+            'pix_size': 10,
+            'defocus_step': 15,
             'n_defocus': 126,
             'apod_factor': False,
             'gibson_lanni': False,

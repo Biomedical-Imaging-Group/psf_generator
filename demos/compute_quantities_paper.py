@@ -11,7 +11,7 @@ if __name__ == "__main__":
     na = 1.3
     wavelength = 632
     pix_size = 10
-    defocus = 4000
+    defocus_step = 30
     n_defocus = 256
     e0x = math.sqrt(2) / 2
     e0y = e0x * 1j
@@ -25,8 +25,7 @@ if __name__ == "__main__":
         'zernike_coefficients': zernike_coefficients,
         'na': na,
         'pix_size': pix_size,
-        'defocus_min': -defocus,
-        'defocus_max': defocus,
+        'defocus_step': defocus_step,
         'n_defocus': n_defocus,
         'apod_factor': False,
         'gibson_lanni': False,
