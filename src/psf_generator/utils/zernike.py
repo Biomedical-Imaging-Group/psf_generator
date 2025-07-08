@@ -150,7 +150,7 @@ def create_zernike_aberrations(zernike_coefficients: torch.Tensor, n_pix_pupil: 
     return torch.exp(1j * zernike_phase).to(torch.complex64)
 
 
-def create_special_pupil(n_pix_pupil: int, name: str = 'flat', tophat_radius: float = 0.5) -> torch.Tensor:
+def create_special_pupil(n_pix_pupil: int, mask = None, tophat_radius: float = 0.5) -> torch.Tensor:
     """
     Special phase masks not included in the space spanned by the Zernike polynomials.
 
@@ -180,22 +180,26 @@ def create_special_pupil(n_pix_pupil: int, name: str = 'flat', tophat_radius: fl
         Pupil function of the special phase mask.
 
     """
-    valid_names = [None, 'vortex', 'halfmoon-h', 'halfmoon-v', 'tophat']
+    valid_names = [None, 'vortex', 'halfmoon-h', 'halfmoon-v', 'tophat', 'custom']
     kx, ky = create_pupil_mesh(n_pixels=n_pix_pupil)
-    if name is None:
+    if mask is None:
         phase_mask = torch.zeros(n_pix_pupil, n_pix_pupil)
-    elif name == 'vortex':
+    elif isinstance(mask, torch.Tensor):
+        if mask.shape != (n_pix_pupil, n_pix_pupil):
+            raise ValueError(f"Custom phase mask must be a 2D Tensor of shape ({n_pix_pupil}, {n_pix_pupil}).")
+        phase_mask = mask
+    elif mask == 'vortex':
         phase_mask = torch.atan2(kx, ky)
-    elif name == 'halfmoon-h':
+    elif mask == 'halfmoon-h':
         phase_mask = torch.zeros(n_pix_pupil, n_pix_pupil)
         phase_mask[0: n_pix_pupil // 2, :] = torch.pi
-    elif name == 'halfmoon-v':
+    elif mask == 'halfmoon-v':
         phase_mask = torch.zeros(n_pix_pupil, n_pix_pupil)
         phase_mask[:, 0: n_pix_pupil // 2] = torch.pi
-    elif name == 'tophat':
+    elif mask == 'tophat':
         inner_disk = kx ** 2 + ky ** 2 - tophat_radius ** 2
         phase_mask = torch.where(inner_disk > 0, torch.pi, 0)
     else:
-        raise ValueError(f'Invalid name for the special pupil {name}, choose one of the following: {valid_names}')
+        raise ValueError(f"Invalid mask value {mask}. Must be None, a valid string, or a custom tensor")
     pupil = torch.exp(1j * phase_mask).to(torch.complex64)
     return pupil
