@@ -7,13 +7,11 @@
 ***
 Welcome to the psf-generator library!
 
-This library implements various physical models that compute the point spread function (PSF) of optical microscopes. 
-PSF characterizes the response of an imaging system to a point source and is crucial for tasks such as 
-deconvolution, correction of aberrations, and characterization of the system.
+This library contains a high-performance PyTorch implementation of precise physical models to compute the point spread function (PSF) of optical microscopes. 
+The PSF characterizes the response of an imaging system to a point source and is crucial for tasks such as deconvolution, correction of aberrations, and characterization of the system.
 
-We classify these models in two types---scalar or vectorial--- and in both cases the PSF integral can be computed in Cartesian or spherical coordinate systems. 
-This results in the following four 
-_propagators_
+We classify these models in two types—scalar or vectorial—and in both cases the PSF integral can be computed in Cartesian or spherical coordinate systems. 
+This results in the following four _propagators_
 
 | Name of propagator             |         Other names         |
 |--------------------------------|:---------------------------:|
@@ -22,7 +20,7 @@ _propagators_
 | `VectorialCartesianPropagator` |   vectorial Fourier model   |
 | `VectorialSphericalPropagator` |     Richards-Wolf model     |
 
-For details on the theory, please refer to our paper
+For details on the theory, please refer to 
 [Revisiting PSF models: unifying framework and high-performance implementation](https://arxiv.org/html/2502.03170v1).
 
 # Documentation
@@ -49,11 +47,12 @@ pip install -e .
 
 # Demos
 
-Jupyter Notebook demos can be found under `demos/`.
+Jupyter Notebook demos and Python scripts can be found under `demos/`.
 
 # Napari Plugin
+
 You can find our Napari plugin [here](https://github.com/Biomedical-Imaging-Group/napari-psfgenerator).
 
 # Cite Us
 
-TODO
+```Liu, Yan, Vasiliki Stergiopoulou, Jonathan Chuah, Michael Unser, Daniel Sage, and Jonathan Dong. Revisiting PSF models: unifying framework and high-performance implementation. arXiv preprint [arXiv:2502.03170](https://arxiv.org/abs/2502.03170), 2025.```
