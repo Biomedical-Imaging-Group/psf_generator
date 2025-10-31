@@ -27,30 +27,30 @@ print(f"Target coefficients: {target_coeffs.numpy()}\n")
 
 # Initialize with random aberrations
 print("Initializing with random Zernike aberrations...")
-initial_coeffs = torch.randn(n_zernike) * 1
-initial_coeffs[0] = 0  # Keep piston at 0
-initial_coeffs.requires_grad = True
-print(f"Initial coefficients: {initial_coeffs.detach().numpy()}\n")
+zernike_coeffs = torch.randn(n_zernike) * 1
+zernike_coeffs[0] = 0  # Keep piston at 0
+zernike_coeffs.requires_grad = True
+print(f"Initial coefficients: {zernike_coeffs.detach().numpy()}\n")
 
 # Create propagator for optimization
 prop = ScalarCartesianPropagator(
     n_pix_pupil=n_pix,
     n_pix_psf=n_pix,
-    zernike_coefficients=initial_coeffs.detach()
+    zernike_coefficients=zernike_coeffs.detach()
 )
 
 # Gradient descent
 print("Starting gradient descent...\n")
 losses = []
-coeffs_history = [initial_coeffs.detach().clone()]
+coeffs_history = [zernike_coeffs.detach().clone()]
 
-optimizer = torch.optim.Adam([initial_coeffs], lr=learning_rate)
+optimizer = torch.optim.Adam([zernike_coeffs], lr=learning_rate)
 
 for iteration in range(n_iterations):
     optimizer.zero_grad()
 
     # Update propagator with current coefficients
-    prop.update_zernike_coefficients(initial_coeffs)
+    prop.update_zernike_coefficients(zernike_coeffs)
 
     # Compute PSF
     field = prop.compute_focus_field()
@@ -64,7 +64,7 @@ for iteration in range(n_iterations):
     optimizer.step()
 
     losses.append(loss.item())
-    coeffs_history.append(initial_coeffs.detach().clone())
+    coeffs_history.append(zernike_coeffs.detach().clone())
 
     if (iteration + 1) % 20 == 0:
         print(f"Iteration {iteration + 1}/{n_iterations}, Loss: {loss.item():.6e}")
@@ -72,7 +72,7 @@ for iteration in range(n_iterations):
 print(f"\n✓ Optimization complete!\n")
 
 # Results
-final_coeffs = initial_coeffs.detach()
+final_coeffs = zernike_coeffs.detach()
 print("=== Results ===")
 print(f"Target coefficients:  {target_coeffs.numpy()}")
 print(f"Final coefficients:   {final_coeffs.numpy()}")
