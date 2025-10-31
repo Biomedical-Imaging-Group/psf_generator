@@ -103,10 +103,50 @@ class SphericalPropagator(Propagator, ABC):
         # Numerical integration method
         self.integrator = integrator
 
-    def _aberrations(self) -> torch.Tensor:
-        """Compute Zernike aberrations that will be applied on the pupil."""
-        zernike_aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='spherical').to(self.device)
-        aberrations = zernike_aberrations * self.correction_factor
+        # Precompute Zernike aberrations
+        self._zernike_aberrations = None
+        self._compute_zernike_aberrations()
+
+    def update_custom_field(self, custom_field):
+        """
+        Update custom field without reinitializing propagator.
+
+        Parameters
+        ----------
+        custom_field : torch.Tensor or None
+            Custom field of shape (n_pix_pupil,).
+        """
+        if custom_field is None:
+            self.custom_field = None
+            return
+        if not isinstance(custom_field, torch.Tensor):
+            custom_field = torch.tensor(custom_field, dtype=torch.complex64)
+        if custom_field.shape != (self.n_pix_pupil,):
+            raise ValueError(f"custom_field must have shape ({self.n_pix_pupil},)")
+        self.custom_field = custom_field.to(torch.complex64).to(self.device)
+
+    def get_correction_factor(self):
+        """
+        Get the correction factor applied to the pupil (apod_factor, envelope, gibson_lanni, cos_factor).
+
+        Returns
+        -------
+        torch.Tensor
+            Correction factor of shape (n_pix_pupil,).
+        """
+        return self.correction_factor
+
+    def _compute_zernike_aberrations(self):
+        """Compute Zernike aberrations."""
+        self._zernike_aberrations = create_zernike_aberrations(
+            self.zernike_coefficients, self.n_pix_pupil, mesh_type='spherical'
+        ).to(self.device)
+
+    def get_pupil(self):
+        """Get the pupil function with all corrections applied."""
+        pupil = self.initialize_input_field()
+        pupil = pupil * self._zernike_aberrations
+        pupil = pupil * self.correction_factor
         if self.custom_field is not None:
-            aberrations = aberrations * self.custom_field
-        return aberrations
+            pupil = pupil * self.custom_field
+        return pupil

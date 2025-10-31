@@ -106,14 +106,58 @@ class CartesianPropagator(Propagator, ABC):
                                        ).reshape(-1, 1, 1, 1).to(self.device)
         self.defocus_filters = torch.exp(1j * self.k * s_zz * defocus_range * self.refractive_index)
 
-    def _aberrations(self):
-        """Compute aberrations that will be applied on the pupil."""
-        zernike_aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='cartesian').to(self.device)
-        special_aberrations = create_special_pupil(self.n_pix_pupil, mask=self.special_phase_mask).to(self.device)
-        aberrations = zernike_aberrations * special_aberrations * self.correction_factor
+        # Precompute Zernike aberrations
+        self._zernike_aberrations = None
+        self._compute_zernike_aberrations()
+
+    def _compute_zernike_aberrations(self):
+        """Compute Zernike aberrations."""
+        self._zernike_aberrations = create_zernike_aberrations(
+            self.zernike_coefficients, self.n_pix_pupil, mesh_type='cartesian'
+        ).to(self.device)
+
+    def get_pupil(self):
+        """Get the pupil function with all corrections applied."""
+        pupil = self.initialize_input_field()
+        pupil = pupil * self._zernike_aberrations
+        pupil = pupil * create_special_pupil(self.n_pix_pupil, mask=self.special_phase_mask).to(self.device)
+        pupil = pupil * self.correction_factor
         if self.custom_field is not None:
-            aberrations = aberrations * self.custom_field
-        return aberrations
+            pupil = pupil * self.custom_field
+        return pupil
+
+    def update_custom_field(self, custom_field):
+        """
+        Update custom field without reinitializing propagator.
+
+        Parameters
+        ----------
+        custom_field : torch.Tensor or None
+            Custom field of shape (n_pix_pupil, n_pix_pupil) or (1, 1, n_pix_pupil, n_pix_pupil).
+        """
+        if custom_field is None:
+            self.custom_field = None
+            return
+        if not isinstance(custom_field, torch.Tensor):
+            custom_field = torch.tensor(custom_field, dtype=torch.complex64)
+        if custom_field.shape != (1, 1, self.n_pix_pupil, self.n_pix_pupil):
+            if custom_field.shape == (self.n_pix_pupil, self.n_pix_pupil):
+                custom_field = custom_field.reshape(1, 1, self.n_pix_pupil, self.n_pix_pupil)
+            else:
+                raise ValueError(f"custom_field must have shape ({self.n_pix_pupil}, {self.n_pix_pupil}) "
+                               f"or (1, 1, {self.n_pix_pupil}, {self.n_pix_pupil})")
+        self.custom_field = custom_field.to(torch.complex64).to(self.device)
+
+    def get_correction_factor(self):
+        """
+        Get the correction factor applied to the pupil (sz_correction, apod_factor, envelope, gibson_lanni).
+
+        Returns
+        -------
+        torch.Tensor
+            Correction factor of shape (1, 1, n_pix_pupil, n_pix_pupil).
+        """
+        return self.correction_factor
 
     def compute_focus_field(self):
         """Compute the electric field at the focal plane."""

@@ -35,7 +35,7 @@ class ScalarCartesianPropagator(CartesianPropagator):
     def get_name(cls) -> str:
         return 'scalar_cartesian'
 
-    def get_input_field(self) -> torch.Tensor:
+    def initialize_input_field(self) -> torch.Tensor:
         r"""
         Define the corresponding 2D pupil function as the input field.
 

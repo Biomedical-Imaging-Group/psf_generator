@@ -105,7 +105,7 @@ class VectorialSphericalPropagator(SphericalPropagator):
         args['e0y'] = str(self.e0y)
         return args
 
-    def get_input_field(self) -> torch.Tensor:
+    def initialize_input_field(self) -> torch.Tensor:
         single_field = torch.ones(self.n_pix_pupil).to(self.device)
         input_field = torch.stack((self.e0x * single_field, self.e0y * single_field),
                            dim=0).to(torch.complex64)

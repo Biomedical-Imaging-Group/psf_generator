@@ -145,13 +145,13 @@ class Propagator(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def _aberrations(self) -> torch.Tensor:
-        """Aberrations that will be applied on the pupil."""
+    def initialize_input_field(self) -> torch.Tensor:
+        """Initialize the input field of propagator."""
         raise NotImplementedError
 
     @abstractmethod
-    def get_input_field(self) -> torch.Tensor:
-        """Get the input field of propagator."""
+    def get_pupil(self) -> torch.Tensor:
+        """Get the pupil function with all corrections applied."""
         raise NotImplementedError
 
     @abstractmethod
@@ -159,9 +159,14 @@ class Propagator(ABC):
         """Compute the output field of the propagator at focal plane."""
         raise NotImplementedError
 
-    def get_pupil(self) -> torch.Tensor:
-        """Get the pupil function."""
-        return self.get_input_field() * self._aberrations()
+    def update_zernike_coefficients(self, zernike_coefficients):
+        """Update Zernike coefficients without reinitializing propagator."""
+        if not isinstance(zernike_coefficients, torch.Tensor):
+            zernike_coefficients = torch.tensor(zernike_coefficients)
+        self.zernike_coefficients = zernike_coefficients
+        # Recompute Zernike aberrations if method exists
+        if hasattr(self, '_compute_zernike_aberrations'):
+            self._compute_zernike_aberrations()
 
     def compute_optical_path(self, sin_t: torch.Tensor) -> torch.Tensor:
         r"""Compute the optical path following Eq. (3.45) in [1]_.
