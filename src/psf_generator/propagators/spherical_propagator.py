@@ -36,6 +36,7 @@ class SphericalPropagator(Propagator, ABC):
 
     def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
                  zernike_coefficients=None,
+                 custom_field=None,
                  wavelength=632, na=1.3, pix_size=10,
                  defocus_step=0, n_defocus=1,
                  apod_factor=False, envelope=None, cos_factor=False,
@@ -89,6 +90,16 @@ class SphericalPropagator(Propagator, ABC):
         if self.cos_factor:
             self.correction_factor *= cos_t
 
+        # custom field (1D array of length n_pix_pupil or None)
+        if custom_field is not None:
+            if not isinstance(custom_field, torch.Tensor):
+                custom_field = torch.tensor(custom_field, dtype=torch.complex64)
+            if custom_field.shape != (n_pix_pupil,):
+                raise ValueError(f"custom_field must have shape ({n_pix_pupil},)")
+            self.custom_field = custom_field.to(torch.complex64).to(self.device)
+        else:
+            self.custom_field = None
+
         # Numerical integration method
         self.integrator = integrator
 
@@ -96,4 +107,6 @@ class SphericalPropagator(Propagator, ABC):
         """Compute Zernike aberrations that will be applied on the pupil."""
         zernike_aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='spherical').to(self.device)
         aberrations = zernike_aberrations * self.correction_factor
+        if self.custom_field is not None:
+            aberrations = aberrations * self.custom_field
         return aberrations

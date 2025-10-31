@@ -32,6 +32,7 @@ class CartesianPropagator(Propagator, ABC):
     def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
                  zernike_coefficients=None,
                  special_phase_mask=None,
+                 custom_field=None,
                  wavelength=632, na=1.3, pix_size=10,
                  defocus_step=0, n_defocus=1,
                  sz_correction=True, apod_factor=False, envelope=None,
@@ -50,6 +51,20 @@ class CartesianPropagator(Propagator, ABC):
 
         # special phase mask
         self.special_phase_mask = special_phase_mask
+
+        # custom field (shape: [1, 1, n_pix_pupil, n_pix_pupil] or None)
+        if custom_field is not None:
+            if not isinstance(custom_field, torch.Tensor):
+                custom_field = torch.tensor(custom_field, dtype=torch.complex64)
+            if custom_field.shape != (1, 1, n_pix_pupil, n_pix_pupil):
+                if custom_field.shape == (n_pix_pupil, n_pix_pupil):
+                    custom_field = custom_field.reshape(1, 1, n_pix_pupil, n_pix_pupil)
+                else:
+                    raise ValueError(f"custom_field must have shape ({n_pix_pupil}, {n_pix_pupil}) "
+                                   f"or (1, 1, {n_pix_pupil}, {n_pix_pupil})")
+            self.custom_field = custom_field.to(torch.complex64).to(self.device)
+        else:
+            self.custom_field = None
 
         # Physical parameters
         self.k = 2 * torch.pi / self.wavelength
@@ -96,6 +111,8 @@ class CartesianPropagator(Propagator, ABC):
         zernike_aberrations = create_zernike_aberrations(self.zernike_coefficients, self.n_pix_pupil, mesh_type='cartesian').to(self.device)
         special_aberrations = create_special_pupil(self.n_pix_pupil, mask=self.special_phase_mask).to(self.device)
         aberrations = zernike_aberrations * special_aberrations * self.correction_factor
+        if self.custom_field is not None:
+            aberrations = aberrations * self.custom_field
         return aberrations
 
     def compute_focus_field(self):
