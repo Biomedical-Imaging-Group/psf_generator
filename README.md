@@ -20,8 +20,8 @@ This results in the following four _propagators_
 | `VectorialCartesianPropagator` |   vectorial Fourier model   |
 | `VectorialSphericalPropagator` |     Richards-Wolf model     |
 
-For details on the theory, please refer to 
-[Revisiting PSF models: unifying framework and high-performance implementation](https://arxiv.org/html/2502.03170v1).
+For details on the theory, please refer to our paper
+[here](https://doi.org/10.1111/jmi.70045).
 
 # Documentation
 Documentation can be found here: https://psf-generator.readthedocs.io/
@@ -55,4 +55,5 @@ You can find our Napari plugin [here](https://github.com/Biomedical-Imaging-Grou
 
 # Cite Us
 
-```Liu, Yan, Vasiliki Stergiopoulou, Jonathan Chuah, Michael Unser, Daniel Sage, and Jonathan Dong. Revisiting PSF models: unifying framework and high-performance implementation. arXiv preprint [arXiv:2502.03170](https://arxiv.org/abs/2502.03170), 2025.```
+Liu, Y., Stergiopoulou, V., Chuah, J., Bezzam, E., Both, G.-J., Unser, M., Sage, D., & Dong, J. (2025).
+Revisiting PSF models: Unifying framework and high-performance implementation. _Journal of Microscopy_, 1–13.
