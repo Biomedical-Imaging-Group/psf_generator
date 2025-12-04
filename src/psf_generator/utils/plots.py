@@ -223,6 +223,7 @@ def plot_psf(
         show_cbar_ticks: bool = False,
         show_image_ticks: bool = False,
         show_titles: bool = False,
+        propagator=None,
 
 ):
     """
@@ -235,7 +236,7 @@ def plot_psf(
     name_of_propagator : str
         Name of the propagator.
     quantity : str, optional
-        Quantity of the PSF to plot. Default is 'modulus'. Valid choices are 'modulus', 'phase', 'intensity', 'amplitude'.
+        Quantity of the PSF to plot. Default is 'modulus'. Valid choices are 'modulus', 'phase', 'stationary_phase', 'intensity', 'amplitude'.
     z_slice_number : int, optional
         Z slice number for the x-y plane.
     x_slice_number : int, optional
@@ -250,17 +251,41 @@ def plot_psf(
         Whether to show ticks. Default is False.
     show_cbar_ticks : bool, optional
         Whether to show the ticks for the colorbar. Default is False.
+    propagator : Propagator, optional
+        Propagator object. Required for 'stationary_phase' quantity. Default is None.
 
     """
     # convert to numpy array
     psf_array = convert_tensor_to_array(psf)
     # check and compute quantity
-    valid_choices = ['modulus', 'phase', 'intensity', 'amplitude']
+    valid_choices = ['modulus', 'phase', 'stationary_phase', 'intensity', 'amplitude']
     if quantity == 'modulus':
         psf_quantity = np.abs(psf_array)
         cmap = 'inferno'
     elif quantity == 'phase':
         psf_quantity = np.angle(psf_array)
+        cmap = 'twilight'
+    elif quantity == 'stationary_phase':
+        # Remove the plane wave e^(ikz) contribution by multiplying by e^(-ikz)
+        if propagator is None:
+            raise ValueError('propagator parameter is required for stationary_phase quantity')
+        
+        zz = torch.linspace(propagator.defocus_min, propagator.defocus_max, propagator.n_defocus)
+        correction = torch.exp(- 1j * propagator.k * zz * propagator.refractive_index)
+        correction = convert_tensor_to_array(correction)
+
+        number_of_pixel_z, dim, number_of_pixel_x, number_of_pixel_y = psf_array.shape
+
+        # Create a copy of the PSF array to modify
+        psf_stationary = psf_array.copy()
+
+        # Multiply each z-slice by the conjugate of the plane wave factor exp(-ikz)
+        for z in range(number_of_pixel_z):
+            for d in range(dim):
+                psf_stationary[z, d, :, :] = psf_array[z, d, :, :] * correction[z]
+
+        # Now compute the phase of the stationary field
+        psf_quantity = np.angle(psf_stationary)
         cmap = 'twilight'
     elif quantity == 'intensity':
         psf_quantity = _compute_psf_intensity(psf_array)
