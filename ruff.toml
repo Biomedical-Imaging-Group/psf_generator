@@ -15,7 +15,6 @@ lint.select = [
 
 lint.ignore = [
     "ANN001",
-    "ANN101",
     "E501",
     "E741",
     "N806",
@@ -23,7 +22,6 @@ lint.ignore = [
     "Q000",
     "RET504",
     "T201",
-
 ]
 
 [lint.pydocstyle]

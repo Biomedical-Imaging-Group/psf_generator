@@ -13,7 +13,7 @@ dependencies = [
     "zernikepy>=0.0.5",
     "scikit-image"
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 authors = [
     {name = "Yan Liu", email = "yan.liu@epfl.ch"},
     {name = "Vasiliki Stergiopoulou", email = "vasiliki.stergiopoulou@epfl.ch"},
@@ -33,12 +33,17 @@ keywords = ["point-spread-function", "pytorch", "deep learning", "fluorescence m
     "imaging", "optical system", "psf engineering", "light propagation"]
 classifiers = [
   "Development Status :: 4 - Beta",
-  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
 ]
+
+[project.optional-dependencies]
+test = ["pytest", "ruff"]
 
 [project.urls]
 Homepage = "https://github.com/Biomedical-Imaging-Group/psf_generator"
 Documentation = "https://psf-generator.readthedocs.io/"
 Repository = "https://github.com/Biomedical-Imaging-Group/psf_generator.git"
 "Bug Tracker" = "https://github.com/Biomedical-Imaging-Group/psf_generator/issues"
-Changelog = "https://github.com/Biomedical-Imaging-Group/psf_generator/CHANGELOG.md"

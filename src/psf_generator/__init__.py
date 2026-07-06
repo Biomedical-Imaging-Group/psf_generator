@@ -5,3 +5,10 @@ from .propagators import (
     VectorialCartesianPropagator,
     VectorialSphericalPropagator,
 )
+
+__all__ = [
+    'ScalarCartesianPropagator',
+    'ScalarSphericalPropagator',
+    'VectorialCartesianPropagator',
+    'VectorialSphericalPropagator',
+]

@@ -169,8 +169,9 @@ def create_special_pupil(n_pix_pupil: int, mask = None, tophat_radius: float = 0
     ----------
     n_pix_pupil : int
         Number of pixels on the pupil plane.
-    name : str
-        Name of the special phase mask. Valid choices: None, 'vortex', 'halfmoon-h', 'halfmoon-v', 'tophat'.
+    mask : str or torch.Tensor, optional
+        Name of the special phase mask (None, 'vortex', 'halfmoon-h', 'halfmoon-v',
+        'tophat'), or a custom 2D phase tensor of shape (n_pix_pupil, n_pix_pupil).
     tophat_radius : float
         Radius of the tophat mask. Default is 0.5. TODO: relate to cutoff frequency of the system.
 
@@ -180,7 +181,6 @@ def create_special_pupil(n_pix_pupil: int, mask = None, tophat_radius: float = 0
         Pupil function of the special phase mask.
 
     """
-    valid_names = [None, 'vortex', 'halfmoon-h', 'halfmoon-v', 'tophat', 'custom']
     kx, ky = create_pupil_mesh(n_pixels=n_pix_pupil)
     if mask is None:
         phase_mask = torch.zeros(n_pix_pupil, n_pix_pupil)
