@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "psf-generator"
-version = "0.0.1"
+dynamic = ["version"]
 dependencies = [
     "matplotlib>=3.6.1",
     "numpy>=1.23.4",
@@ -40,6 +40,9 @@ classifiers = [
 
 [project.optional-dependencies]
 test = ["pytest", "ruff"]
+
+[tool.setuptools.dynamic]
+version = {attr = "psf_generator.__version__"}
 
 [project.urls]
 Homepage = "https://github.com/Biomedical-Imaging-Group/psf_generator"

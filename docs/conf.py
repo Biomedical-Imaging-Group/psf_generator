@@ -1,10 +1,14 @@
 # -- Project information -----------------------------------------------------
+import pathlib
+import re
 
-project = 'PSF Library'
-author = 'Yan Liu'
+project = 'PSF Generator'
+author = 'Biomedical Imaging Group, EPFL'
 
-# The full version, including alpha/beta/rc tags
-# release = '1.0.0'
+# The full version, read from the package so that the docs never drift from the code.
+_init_file = pathlib.Path(__file__).resolve().parent.parent / 'src' / 'psf_generator' / '__init__.py'
+release = re.search(r"__version__\s*=\s*['\"]([^'\"]+)['\"]", _init_file.read_text()).group(1)
+version = release
 
 
 # -- General configuration ---------------------------------------------------

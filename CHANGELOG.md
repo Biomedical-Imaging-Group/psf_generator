@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 (unreleased)
 
 ### Changed
 
@@ -33,3 +33,11 @@ Numerical results differ slightly from 0.1.0 because of the first two items.
 
 - `CartesianPropagator.zoom_factor` (replaced by `k_start` / `k_end`), `zernike.index_to_nl` and
   `zernike.zernike_nl` (renamed to `osa_index_to_nl` and `zernike_polynomial`).
+
+### Packaging
+
+- The version is single-sourced from `psf_generator.__version__` and shown in the documentation.
+
+## 0.1.0 (2025-06-17)
+
+First release on PyPI of the models described in the paper (tag `v0.1.0`).

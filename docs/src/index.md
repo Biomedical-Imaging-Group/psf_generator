@@ -35,10 +35,9 @@ kwargs = {
         'n_pix_psf': 256,
         'wavelength': 600,
         'na': 1.2,
-        'fov': 2000,
-        'defocus_min': -4000,
-        'defocus_max': 4000,
-        'n_defocus': 200,
+        'pix_size': 10,
+        'defocus_step': 40,
+        'n_defocus': 201,
         'e0x': 1.0,
         'e0y': 0.0,
         'gibson_lanni': True
@@ -46,6 +45,11 @@ kwargs = {
 my_propagator = VectorialCartesianPropagator(**kwargs)
 ```
 For a detailed explanation on all the input parameters, refer to the API Documentation.
+
+The PSF is sampled on a grid that is centred on pixel `n_pix_psf // 2` along both lateral axes, with a pitch of
+`pix_size` nanometers, and on z-slices located at `(i - n_defocus // 2) * defocus_step` nanometers, so that the
+optical axis and the focal plane are always sampled exactly. The physical coordinates of the grid are available as
+`my_propagator.x` (lateral, in nm) and `my_propagator.z` (axial, in nm).
 
 Then, to compute the pupil, simply do
 
@@ -58,8 +62,9 @@ and the PSF
 psf = my_propagator.compute_focus_field()
 ```
 
-Both electric fields `pupil` and `PSF` are a `torch.tesnor` of data type `complex64` of size (3, n_pix_pupil, n_pix_pupil) and 
-(n_defocus, 3, n_pix_psf, n_pix_psf), respectively.
+Both electric fields `pupil` and `psf` are a `torch.Tensor` of data type `complex64` of size
+(1, 3, n_pix_pupil, n_pix_pupil) and (n_defocus, 3, n_pix_psf, n_pix_psf), respectively (the second axis holds the
+three components of the electric field; it has length 1 for the scalar propagators).
 
 ## Visualize the results
 For a convenient visual check, we provide two functions
@@ -76,7 +81,8 @@ plot_pupil(pupil=pupil, name_of_propagator=name, filepath=None)
 plot_psf(psf=psf, name_of_propagator=name, quantity='modulus', filepath=None)
 ```
 
-For PSF, you need to specify which quantity to plot by passing the keyword 'modulus' or 'phase' or 'intensity' to the
+For PSF, you need to specify which quantity to plot by passing 'modulus', 'phase', 'intensity', 'amplitude' or
+'stationary_phase' (the phase with the plane-wave factor removed; requires `propagator=my_propagator`) to the
 argument `quantity`.
 By default, the three orthogonal planes are the central slice in each dimension.
 
@@ -126,10 +132,9 @@ if __name__ == "__main__":
         'n_pix_psf': 256,
         'wavelength': 600,
         'na': 1.2,
-        'fov': 2000,
-        'defocus_min': -4000,
-        'defocus_max': 4000,
-        'n_defocus': 200,
+        'pix_size': 10,
+        'defocus_step': 40,
+        'n_defocus': 201,
         'e0x': 1.0,
         'e0y': 0.0,
         'gibson_lanni': True

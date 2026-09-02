@@ -3,6 +3,7 @@
 [![MIT License](https://img.shields.io/github/license/Biomedical-Imaging-Group/psf_generator)](https://github.com/Biomedical-Imaging-Group/psf_generator/raw/main/LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/psf-generator.svg?color=green)](https://pypi.org/project/psf-generator)
 [![Python Version](https://img.shields.io/pypi/pyversions/psf-generator.svg?color=green)](https://python.org)
+[![CI](https://github.com/Biomedical-Imaging-Group/psf_generator/actions/workflows/ci.yml/badge.svg)](https://github.com/Biomedical-Imaging-Group/psf_generator/actions/workflows/ci.yml)
 
 ***
 Welcome to the psf-generator library!
@@ -48,6 +49,17 @@ pip install -e .
 # Demos
 
 Jupyter Notebook demos and Python scripts can be found under `demos/`.
+
+# Development
+
+Install the package with the test extras, then run the test suite and the linter:
+```
+pip install -e ".[test]"
+pytest
+ruff check --select F src/ tests/
+```
+The same checks run in continuous integration on every push and pull request.
+Behaviour changes between releases are listed in `CHANGELOG.md`.
 
 # Napari Plugin
 
