@@ -21,6 +21,9 @@ Numerical results differ slightly from 0.1.0 because of the first two items.
 
 ### Added
 
+- The propagators validate their arguments and raise a `ValueError` with a clear message for an unknown
+  `device`, `n_pix_pupil < 2`, `n_pix_psf < 1`, `n_defocus < 1`, a non-positive `wavelength`, `pix_size` or
+  `na`, and `na > n_i0` (which used to produce NaNs or a meaningless field silently; `na == n_i0` is allowed).
 - `Propagator.x` and `Propagator.z`: physical lateral and axial coordinates (nm) of the PSF grid.
 - `zernike_basis`, `zernike_polynomial`, `osa_index_to_nl`, `nl_to_osa_index` in `psf_generator.utils.zernike`;
   `create_zernike_aberrations` accepts a precomputed `basis`.
@@ -30,6 +33,10 @@ Numerical results differ slightly from 0.1.0 because of the first two items.
   written by 0.1.0 are still accepted.
 
 ### Fixed
+
+- The spherical propagators crashed with "Expected all tensors to be on the same device" on any non-CPU device
+  as soon as a correction factor was requested (`apod_factor`, `envelope`, `gibson_lanni` or `cos_factor`):
+  the sines and cosines of the polar angle were computed on the CPU. They now run on CUDA and MPS.
 
 - The spherical propagators evaluated the Zernike modes at the wrong pupil radius. They sample the pupil
   uniformly in the polar angle, so sample `i` sits at the normalized radius `sin(theta_i) / sin(theta_max)`,

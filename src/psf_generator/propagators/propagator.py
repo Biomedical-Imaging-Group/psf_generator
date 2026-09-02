@@ -34,6 +34,24 @@ def _decode_complex(value) -> complex:
     return complex(value)
 
 
+def _validate_device(device) -> None:
+    """Raise a :class:`ValueError` if `device` is not a valid PyTorch device specification."""
+    try:
+        torch.device(device)
+    except (RuntimeError, TypeError) as error:
+        raise ValueError(f"Invalid device {device!r}: {error}. Valid examples are 'cpu', 'cuda', 'cuda:0' "
+                         f"and 'mps'.") from error
+
+
+def _validate_number(name: str, value, minimum, strict: bool = False) -> None:
+    """Raise a :class:`ValueError` unless `value` is a number above `minimum` (excluded if `strict`)."""
+    valid = isinstance(value, (int, float)) and not isinstance(value, bool)
+    valid = valid and (value > minimum if strict else value >= minimum)
+    if not valid:
+        comparison = 'greater than' if strict else 'at least'
+        raise ValueError(f'{name} must be a number {comparison} {minimum}, got {value!r}.')
+
+
 def _centred_grid(n: int, step: float) -> torch.Tensor:
     """Return the coordinates ``(i - n // 2) * step`` for ``i = 0, ..., n - 1`` (centred on index ``n // 2``)."""
     return (torch.arange(n, dtype=torch.float32) - n // 2) * step
@@ -49,8 +67,9 @@ class Propagator(ABC):
         Number of pixels (size) of the pupil (always a square image). Default value is `128`.
     n_pix_psf : int, optional
         Number of pixels (size) of the PSF (always a square image). Default value is `128`.
-    device : str, optional
-        Computational backend. Choose from 'cpu' and 'gpu'. Default value is `'cpu'`.
+    device : str or torch.device, optional
+        Computational backend, given as anything :func:`torch.device` accepts, e.g. `'cpu'`, `'cuda'`,
+        `'cuda:0'` or `'mps'`. Default value is `'cpu'`.
     zernike_coefficients : np.ndarray or torch.tensor, optional
         Zernike coefficients of length 'K' of the chosen first 'K' modes. Default is `None`.
     wavelength : float, optional
@@ -140,6 +159,20 @@ class Propagator(ABC):
                  n_i: float = 1.5,
                  n_i0: float = 1.5,
                  t_i0: float = 100e3):
+        _validate_device(device)
+        # Both parameterisations sample the pupil with a step of 1 / (n_pix_pupil - 1).
+        _validate_number('n_pix_pupil', n_pix_pupil, 2)
+        _validate_number('n_pix_psf', n_pix_psf, 1)
+        _validate_number('n_defocus', n_defocus, 1)
+        _validate_number('wavelength', wavelength, 0, strict=True)
+        _validate_number('pix_size', pix_size, 0, strict=True)
+        _validate_number('na', na, 0, strict=True)
+        # Beyond na = n_i0 the pupil is not physical: sin(theta_max) > 1, which makes the spherical propagator
+        # return NaN and the Cartesian one a meaningless field.
+        _validate_number('n_i0', n_i0, 0, strict=True)
+        if na > n_i0:
+            raise ValueError(f'The numerical aperture cannot exceed the design refractive index of the immersion '
+                             f'medium: got na={na!r} and n_i0={n_i0!r}.')
         self.n_pix_pupil = n_pix_pupil
         self.n_pix_psf = n_pix_psf
         self.device = device

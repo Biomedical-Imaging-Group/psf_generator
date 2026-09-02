@@ -107,3 +107,32 @@ def test_tensor_masks_are_not_saved_and_warn(make_propagator):
     prop = make_propagator(VectorialSphericalPropagator, custom_field=torch.ones(63, dtype=torch.complex64))
     with pytest.warns(UserWarning, match='custom_field'):
         prop.to_dict()
+
+
+@pytest.mark.parametrize('propagator_type', ALL_PROPAGATORS)
+@pytest.mark.parametrize('invalid, message', [
+    ({'device': 'gpu'}, 'Invalid device'),
+    ({'device': None}, 'Invalid device'),
+    ({'n_pix_pupil': 1}, 'n_pix_pupil'),
+    ({'n_pix_pupil': 0}, 'n_pix_pupil'),
+    ({'n_pix_psf': 0}, 'n_pix_psf'),
+    ({'n_defocus': 0}, 'n_defocus'),
+    ({'wavelength': 0}, 'wavelength'),
+    ({'wavelength': -632}, 'wavelength'),
+    ({'pix_size': 0}, 'pix_size'),
+    ({'pix_size': -10}, 'pix_size'),
+    ({'na': 0}, 'na'),
+    ({'na': -1.0}, 'na'),
+    ({'na': 1.6, 'n_i0': 1.5}, 'numerical aperture'),
+])
+def test_invalid_parameters_are_rejected(make_propagator, propagator_type, invalid, message):
+    with pytest.raises(ValueError, match=message):
+        make_propagator(propagator_type, **invalid)
+
+
+@pytest.mark.parametrize('propagator_type', ALL_PROPAGATORS)
+def test_valid_edge_case_parameters_are_accepted(make_propagator, propagator_type):
+    # na == n_i0 (a full hemisphere) and the smallest grids are allowed.
+    make_propagator(propagator_type, na=1.5, n_i0=1.5)
+    prop = make_propagator(propagator_type, n_pix_pupil=2, n_pix_psf=2, n_defocus=1)
+    assert torch.isfinite(prop.compute_focus_field()).all()

@@ -88,13 +88,14 @@ class SphericalPropagator(Propagator, ABC):
         # sin(arcsin(s_max)) / s_max may round above 1, which would zero the outermost sample of every mode.
         self.rho = (torch.sin(thetas.double()) / self.s_max.double()).clamp(0.0, 1.0)
 
-        # Precompute additional factors
+        # Precompute additional factors. Everything below is built from tensors that already live on
+        # ``self.device``, so that the propagator works on a GPU (CUDA or MPS) as well as on the CPU.
         self.cos_factor = cos_factor
         self.k = 2.0 * math.pi / self.wavelength
-        sin_t, cos_t = torch.sin(thetas), torch.cos(thetas)
+        sin_t, cos_t = torch.sin(self.thetas), torch.cos(self.thetas)
 
-        defocus_range = self.z
-        self.defocus_filters = torch.exp(1j * self.k * defocus_range[:, None] * cos_t[None, :] * self.refractive_index).to(self.device)   # [n_defocus, n_thetas]
+        defocus_range = self.z.to(self.device)
+        self.defocus_filters = torch.exp(1j * self.k * defocus_range[:, None] * cos_t[None, :] * self.refractive_index)   # [n_defocus, n_thetas]
 
         self.correction_factor = torch.ones(self.n_pix_pupil).to(torch.complex64).to(self.device)
         if self.apod_factor:
