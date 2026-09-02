@@ -31,6 +31,17 @@ Numerical results differ slightly from 0.1.0 because of the first two items.
 
 ### Fixed
 
+- The spherical propagators evaluated the Zernike modes at the wrong pupil radius. They sample the pupil
+  uniformly in the polar angle, so sample `i` sits at the normalized radius `sin(theta_i) / sin(theta_max)`,
+  but the modes were evaluated on an equispaced radius `i / (n_pix_pupil - 1)`, i.e. at `theta_i / theta_max`.
+  At NA 1.4 in oil (`n = 1.5`, `theta_max = 69 deg`) the mid-pupil sample sat at radius 0.5 instead of 0.607,
+  so a given set of coefficients described a different wavefront than in the Cartesian propagators: with a
+  1.5 rad defocus (OSA index 4) or primary spherical (index 12) coefficient the normalized in-focus PSFs of
+  `ScalarCartesianPropagator` and `ScalarSphericalPropagator` differed by 0.037 and 0.031 (max abs difference,
+  against 0.0004 without aberration); they now differ by 0.0012 and 0.0006. `zernike_basis` takes an optional
+  `rho` argument with the radius of every sample of a spherical mesh (the spherical propagators pass their own,
+  stored in the new attribute `SphericalPropagator.rho`); without it the radius is equispaced as before.
+
 - `create_zernike_aberrations` with a single coefficient returned an array of the wrong shape.
 - `VectorialCartesianPropagator` accepts `sz_correction` and `custom_field`, and `VectorialSphericalPropagator`
   accepts `custom_field`, like their scalar counterparts.

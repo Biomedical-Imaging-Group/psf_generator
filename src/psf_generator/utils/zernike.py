@@ -157,7 +157,8 @@ def zernike_polynomial(n: int, l: int, rho: torch.Tensor, phi: torch.Tensor) -> 
     return torch.where(rho <= 1, radial * angular, torch.zeros_like(radial))
 
 
-def zernike_basis(n_modes: int, n_pix_pupil: int, mesh_type: str = 'cartesian') -> torch.Tensor:
+def zernike_basis(n_modes: int, n_pix_pupil: int, mesh_type: str = 'cartesian',
+                  rho: tp.Optional[torch.Tensor] = None) -> torch.Tensor:
     r"""
     Stack the first `n_modes` Zernike polynomials (OSA order) sampled on the pupil.
 
@@ -170,9 +171,15 @@ def zernike_basis(n_modes: int, n_pix_pupil: int, mesh_type: str = 'cartesian') 
     mesh_type : str
         'cartesian': modes are sampled on the square grid of :func:`create_pupil_mesh`, giving a tensor of
         shape `(n_modes, n_pix_pupil, n_pix_pupil)`.
-        'spherical': modes are sampled along the radius :math:`\rho \in [0, 1]` only, giving a tensor of shape
-        `(n_modes, n_pix_pupil)`. The spherical propagators assume an axisymmetric pupil, so the modes with
-        :math:`l \neq 0` are identically zero on this mesh.
+        'spherical': modes are sampled along the radius only, giving a tensor of shape `(n_modes, n_pix_pupil)`.
+        The spherical propagators assume an axisymmetric pupil, so the modes with :math:`l \neq 0` are
+        identically zero on this mesh.
+    rho : torch.Tensor, optional
+        Normalized radius :math:`\rho \in [0, 1]` of every pupil sample, of shape `(n_pix_pupil,)`. Only for
+        the spherical mesh; if None, the samples are assumed to be equispaced in :math:`\rho`
+        (``torch.linspace(0, 1, n_pix_pupil)``). The spherical propagators sample the pupil uniformly in the
+        polar angle :math:`\theta` instead, so they pass their own radii
+        :math:`\rho_i = \sin\theta_i / \sin\theta_{\max}`.
 
     Returns
     -------
@@ -183,12 +190,23 @@ def zernike_basis(n_modes: int, n_pix_pupil: int, mesh_type: str = 'cartesian') 
     if n_modes < 1:
         raise ValueError(f'At least one Zernike mode is required, got n_modes={n_modes}.')
     if mesh_type == 'cartesian':
+        if rho is not None:
+            raise ValueError('A custom radius rho is only supported by the spherical mesh; the Cartesian mesh '
+                             'samples the pupil on the square grid of create_pupil_mesh.')
         kx, ky = create_pupil_mesh(n_pixels=n_pix_pupil)
         kx, ky = kx.to(torch.float64), ky.to(torch.float64)
         rho = torch.sqrt(kx ** 2 + ky ** 2)
         phi = torch.atan2(ky, kx)
     elif mesh_type == 'spherical':
-        rho = torch.linspace(0, 1, n_pix_pupil, dtype=torch.float64)
+        if rho is None:
+            rho = torch.linspace(0, 1, n_pix_pupil, dtype=torch.float64)
+        else:
+            if not isinstance(rho, torch.Tensor):
+                rho = torch.as_tensor(rho)
+            if rho.shape != (n_pix_pupil,):
+                raise ValueError(f'The radius rho must be a 1D tensor of shape ({n_pix_pupil},), '
+                                 f'got {tuple(rho.shape)}.')
+            rho = rho.detach().cpu().to(torch.float64)
         phi = torch.zeros_like(rho)
     else:
         raise ValueError(f"Invalid mesh type {mesh_type}, choose 'spherical' or 'cartesian'.")

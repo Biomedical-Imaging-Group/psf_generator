@@ -33,6 +33,18 @@ class SphericalPropagator(Propagator, ABC):
 
       .. math:: \mathbf{e}_{\infty}(\theta, \phi) = \mathbf{e}_{\infty}(\theta).
 
+    - The pupil is sampled **uniformly in the polar angle** :math:`\theta`: the `n_pix_pupil` samples are
+      :math:`\theta_i = i \, \theta_{\max} / (n_{\mathrm{pix}} - 1)` with
+      :math:`\theta_{\max} = \arcsin(\mathrm{na} / n_i^0)`. Sample :math:`i` therefore sits at the normalized
+      pupil radius
+
+      .. math:: \rho_i = \frac{\sin\theta_i}{\sin\theta_{\max}},
+
+      which is *not* :math:`i / (n_{\mathrm{pix}} - 1)`. The radii are stored in the attribute ``rho`` and the
+      Zernike modes are evaluated there, so that a given set of coefficients describes the same wavefront as in
+      the Cartesian propagators (which sample the pupil uniformly in :math:`\rho`). A `custom_field` is
+      interpreted on the same :math:`\theta` grid.
+
     """
 
     _zernike_mesh_type = 'spherical'
@@ -70,6 +82,11 @@ class SphericalPropagator(Propagator, ABC):
         self.thetas = thetas.to(self.device)
         dtheta = theta_max / (num_thetas - 1)
         self.dtheta = dtheta
+        # Normalized radius of every pupil sample. The pupil is sampled uniformly in theta, so sample i sits at
+        # rho_i = sin(theta_i) / sin(theta_max) and *not* at i / (n_pix_pupil - 1); the Zernike modes are
+        # evaluated there (see ``_zernike_radius``). Computed in float64 and clamped to [0, 1] because
+        # sin(arcsin(s_max)) / s_max may round above 1, which would zero the outermost sample of every mode.
+        self.rho = (torch.sin(thetas.double()) / self.s_max.double()).clamp(0.0, 1.0)
 
         # Precompute additional factors
         self.cos_factor = cos_factor
@@ -107,6 +124,10 @@ class SphericalPropagator(Propagator, ABC):
 
         # Precompute Zernike aberrations
         self._compute_zernike_aberrations()
+
+    def _zernike_radius(self) -> torch.Tensor:
+        """Normalized radius :math:`\sin\theta_i / \sin\theta_{\max}` of every pupil sample (float64, CPU)."""
+        return self.rho
 
     def update_custom_field(self, custom_field):
         """

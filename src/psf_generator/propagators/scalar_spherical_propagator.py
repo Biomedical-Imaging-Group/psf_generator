@@ -39,14 +39,19 @@ class ScalarSphericalPropagator(SphericalPropagator):
 
         Notes
         -----
-        This function is defined on the interval :math:`\rho \in [0,1]`; :math:`\rho` is a "normalized" radius.
-        The conversion to physical pupil coordinates - the polar angle :math:`\theta` - is given by
+        The pupil is sampled uniformly in the polar angle :math:`\theta` on :math:`[0, \theta_{\max}]`, with
+        :math:`\theta_{\max} = \arcsin(\mathrm{na} / n_i^0)`, i.e. the `n_pix_pupil` samples are
+        :math:`\theta_i = i \, \theta_{\max} / (n_{\mathrm{pix}} - 1)` (attribute ``thetas``).
+
+        The conversion to the "normalized" radius :math:`\rho \in [0, 1]` used by the Cartesian propagators and
+        by the Zernike polynomials is
 
         .. math:: \rho = \frac{\sin{\theta}}{\sin{\theta_{\max}}},
 
-        such that the physical domain is
-
-        .. math:: \theta \leq \theta_{\max}.
+        so sample :math:`i` sits at :math:`\rho_i = \sin\theta_i / \sin\theta_{\max}` (attribute ``rho``) and
+        *not* at :math:`i / (n_{\mathrm{pix}} - 1)`; the samples are equispaced in :math:`\theta`, not in
+        :math:`\rho`. The Zernike modes are evaluated at these radii, and a `custom_field` of shape
+        `(n_pix_pupil,)` is interpreted on the same grid.
 
         """
         input_field = torch.ones(self.n_pix_pupil).to(torch.complex64).to(self.device)

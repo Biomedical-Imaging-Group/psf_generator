@@ -171,3 +171,30 @@ def test_gradient_flows_to_the_coefficients():
     assert coefficients.grad is not None
     assert torch.isfinite(coefficients.grad).all()
     assert coefficients.grad[0] != 0
+
+
+def test_spherical_basis_can_be_sampled_at_given_radii():
+    """The spherical propagators sample the pupil uniformly in theta and pass their own radii."""
+    thetas = torch.linspace(0, torch.arcsin(torch.tensor(1.4 / 1.5)), N_PIX, dtype=torch.float64)
+    rho = torch.sin(thetas) / torch.sin(thetas[-1])
+    basis = zernike_basis(13, N_PIX, 'spherical', rho=rho)
+    assert basis.shape == (13, N_PIX)
+    assert basis.dtype == torch.float32
+    for index in range(13):
+        n, l = osa_index_to_nl(index)
+        if l == 0:
+            expected = zernike_polynomial(n, 0, rho, torch.zeros_like(rho)).to(torch.float32)
+            torch.testing.assert_close(basis[index], expected, atol=1e-6, rtol=1e-6)
+        else:
+            assert torch.all(basis[index] == 0)
+    # The non-uniform mesh really differs from the default equispaced one.
+    assert (basis - zernike_basis(13, N_PIX, 'spherical')).abs().max() > 0.1
+
+
+def test_spherical_basis_validates_the_given_radii():
+    with pytest.raises(ValueError, match='shape'):
+        zernike_basis(5, N_PIX, 'spherical', rho=torch.linspace(0, 1, N_PIX + 1))
+    with pytest.raises(ValueError, match='shape'):
+        zernike_basis(5, N_PIX, 'spherical', rho=torch.zeros(1, N_PIX))
+    with pytest.raises(ValueError, match='spherical'):
+        zernike_basis(5, N_PIX, 'cartesian', rho=torch.linspace(0, 1, N_PIX))

@@ -26,6 +26,7 @@ from psf_generator.propagators import (
     VectorialCartesianPropagator,
     VectorialSphericalPropagator,
 )
+from psf_generator.utils.zernike import create_zernike_aberrations, zernike_basis
 
 N_PIX = 63
 N_DEFOCUS = 3
@@ -39,6 +40,11 @@ def _intensity(field):
 def _in_focus_intensity(field):
     intensity = _intensity(field)
     return intensity[intensity.shape[0] // 2]
+
+
+def _normalized_in_focus_intensity(field):
+    in_focus = _in_focus_intensity(field)
+    return in_focus / in_focus.max()
 
 
 @pytest.mark.parametrize('propagator_type', ALL_PROPAGATORS)
@@ -192,3 +198,46 @@ def test_cartesian_and_spherical_agree_in_phase(make_propagator, cartesian_type,
     cartesian, spherical = fields
     significant = spherical.abs() > 0.05 * spherical.abs().max()
     assert (cartesian / spherical)[significant].angle().abs().max() < 1e-3
+
+
+# Parameters at which the difference between the two Zernike meshes is clearly visible: at na=1.4, n=1.5 the
+# mid-pupil sample of the spherical mesh sits at rho = 0.607, not 0.5.
+ABERRATED_KWARGS = dict(n_pix_pupil=201, n_pix_psf=65, pix_size=40, n_defocus=1)
+
+
+@pytest.mark.parametrize('spherical_type', [ScalarSphericalPropagator, VectorialSphericalPropagator])
+def test_spherical_zernike_modes_are_evaluated_at_the_radius_of_the_samples(make_propagator, spherical_type):
+    """The pupil is sampled uniformly in theta, so sample i sits at rho = sin(theta_i) / sin(theta_max)."""
+    prop = make_propagator(spherical_type, zernike_coefficients=[0, 0, 0, 0, 1.0], **ABERRATED_KWARGS)
+    rho = prop.rho
+    assert rho.shape == (prop.n_pix_pupil,)
+    assert float(rho[0]) == 0.0
+    assert float(rho[-1]) == 1.0  # exactly, thanks to the clamp
+    assert torch.all(torch.diff(rho) > 0)
+    expected = torch.sin(prop.thetas.cpu().double()) / float(prop.s_max)
+    torch.testing.assert_close(rho, expected.clamp(0.0, 1.0), atol=1e-6, rtol=0)
+    assert (rho - torch.linspace(0, 1, prop.n_pix_pupil, dtype=rho.dtype)).abs().max() > 0.1
+
+    # Defocus (OSA index 4) at the edge of the pupil is Z_2^0(1) = 1: the outermost sample is not zeroed.
+    torch.testing.assert_close(prop._zernike_basis[4][-1].cpu(), torch.tensor(1.0), atol=1e-6, rtol=0)
+
+
+@pytest.mark.parametrize('cartesian_type, spherical_type', PARAMETERISATION_PAIRS)
+@pytest.mark.parametrize('osa_index', [4, 12])  # defocus and primary spherical
+def test_cartesian_and_spherical_agree_with_aberrations(make_propagator, cartesian_type, spherical_type, osa_index):
+    """An aberration described by Zernike coefficients must give the same PSF in both parameterisations."""
+    coefficients = [0.0] * (osa_index + 1)
+    coefficients[osa_index] = 1.5
+    cartesian = make_propagator(cartesian_type, zernike_coefficients=coefficients, **ABERRATED_KWARGS)
+    spherical = make_propagator(spherical_type, zernike_coefficients=coefficients, **ABERRATED_KWARGS)
+    reference = _normalized_in_focus_intensity(cartesian.compute_focus_field())
+    torch.testing.assert_close(_normalized_in_focus_intensity(spherical.compute_focus_field()), reference,
+                               atol=5e-3, rtol=0)
+
+    # Regression guard: evaluating the spherical modes on the equispaced radius (the behaviour before the fix)
+    # samples the wavefront at the wrong place and visibly disagrees.
+    uniform_basis = zernike_basis(len(coefficients), spherical.n_pix_pupil, 'spherical')
+    spherical._zernike_aberrations = create_zernike_aberrations(
+        torch.tensor(coefficients), spherical.n_pix_pupil, 'spherical', basis=uniform_basis).to(spherical.device)
+    on_uniform_mesh = _normalized_in_focus_intensity(spherical.compute_focus_field())
+    assert (on_uniform_mesh - reference).abs().max() > 2e-2

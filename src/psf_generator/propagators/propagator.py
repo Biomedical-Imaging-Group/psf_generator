@@ -207,6 +207,14 @@ class Propagator(ABC):
     #: Mesh on which the Zernike polynomials are evaluated ('cartesian' or 'spherical'), set by the subclasses.
     _zernike_mesh_type: str = 'cartesian'
 
+    def _zernike_radius(self):
+        """Normalized radius of every pupil sample, or None if the mesh of :func:`zernike_basis` already knows it.
+
+        Only used by the spherical mesh, whose samples are equispaced in the polar angle rather than in the
+        radius; see :meth:`SphericalPropagator._zernike_radius`.
+        """
+        return None
+
     def update_zernike_coefficients(self, zernike_coefficients):
         """Update Zernike coefficients without reinitializing propagator."""
         if not isinstance(zernike_coefficients, torch.Tensor):
@@ -222,7 +230,8 @@ class Propagator(ABC):
         """
         n_modes = len(self.zernike_coefficients)
         if self._zernike_basis is None or self._zernike_basis.shape[0] != n_modes:
-            self._zernike_basis = zernike_basis(n_modes, self.n_pix_pupil, self._zernike_mesh_type).to(self.device)
+            self._zernike_basis = zernike_basis(n_modes, self.n_pix_pupil, self._zernike_mesh_type,
+                                                rho=self._zernike_radius()).to(self.device)
         self._zernike_aberrations = create_zernike_aberrations(
             self.zernike_coefficients, self.n_pix_pupil, self._zernike_mesh_type, basis=self._zernike_basis)
 
