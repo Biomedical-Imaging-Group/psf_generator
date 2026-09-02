@@ -29,3 +29,8 @@ def convert_tensor_to_array(input_data: tp.Union[torch.Tensor, np.ndarray]) -> n
         return input_data.copy()
     else:
         raise TypeError(f'Unrecognized type of input, should be a torch.Tensor or np.ndarray, not {type(input_data)}')
+
+
+def centred_grid(n: int, step: float) -> torch.Tensor:
+    """Return the coordinates ``(i - n // 2) * step`` for ``i = 0, ..., n - 1`` (centred on index ``n // 2``)."""
+    return (torch.arange(n, dtype=torch.float32) - n // 2) * step

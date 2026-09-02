@@ -4,15 +4,15 @@
 The abstract propagator class.
 
 """
-import inspect
-import json
-import numbers
-import os
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 
 import torch
 
+from ..utils.misc import centred_grid as _centred_grid
 from ..utils.misc import convert_tensor_to_array
+from ..utils.parameters import Parametrized
+from ..utils.parameters import validate_device as _validate_device
+from ..utils.parameters import validate_number as _validate_number
 from ..utils.zernike import create_zernike_aberrations, zernike_basis
 
 
@@ -20,49 +20,7 @@ from ..utils.zernike import create_zernike_aberrations, zernike_basis
 _DERIVED_KEYS = ('refractive_index', 't_i')
 
 
-def _encode_complex(value) -> list:
-    """Encode a (possibly complex) number as a JSON-friendly ``[real, imag]`` pair."""
-    value = complex(value)
-    return [value.real, value.imag]
-
-
-def _decode_complex(value) -> complex:
-    """Inverse of :func:`_encode_complex`; also accepts the ``str(complex)`` form written by versions <= 0.1.0."""
-    if isinstance(value, (list, tuple)):
-        return complex(value[0], value[1])
-    if isinstance(value, str):
-        return complex(value.replace(' ', ''))
-    return complex(value)
-
-
-def _validate_device(device) -> None:
-    """Raise a :class:`ValueError` if `device` is not a valid PyTorch device specification."""
-    try:
-        torch.device(device)
-    except (RuntimeError, TypeError) as error:
-        raise ValueError(f"Invalid device {device!r}: {error}. Valid examples are 'cpu', 'cuda', 'cuda:0' "
-                         f"and 'mps'.") from error
-
-
-def _validate_number(name: str, value, minimum, strict: bool = False) -> None:
-    """Raise a :class:`ValueError` unless `value` is a number above `minimum` (excluded if `strict`).
-
-    ``numbers.Real`` rather than ``(int, float)``, so that the NumPy scalars a caller may get from an array
-    or from ``np.arange`` (``np.int64`` is not a subclass of ``int``) are accepted; ``bool`` is not a size.
-    """
-    valid = isinstance(value, numbers.Real) and not isinstance(value, bool)
-    valid = valid and (value > minimum if strict else value >= minimum)
-    if not valid:
-        comparison = 'greater than' if strict else 'at least'
-        raise ValueError(f'{name} must be a number {comparison} {minimum}, got {value!r}.')
-
-
-def _centred_grid(n: int, step: float) -> torch.Tensor:
-    """Return the coordinates ``(i - n // 2) * step`` for ``i = 0, ..., n - 1`` (centred on index ``n // 2``)."""
-    return (torch.arange(n, dtype=torch.float32) - n // 2) * step
-
-
-class Propagator(ABC):
+class Propagator(Parametrized):
     r"""
     Base class propagator.
 
@@ -145,6 +103,14 @@ class Propagator(ABC):
     physical axial coordinates of the z-slices in nanometer: ``z[i] = (i - n_defocus // 2) * defocus_step``.
 
     """
+
+    #: Key under which the name of the propagator is stored by :meth:`to_dict`.
+    _registry_key = 'propagator'
+
+    @classmethod
+    def _registry(cls) -> dict:
+        from . import PROPAGATORS
+        return PROPAGATORS
 
     def __init__(self,
                  n_pix_pupil: int =128,
@@ -330,87 +296,12 @@ class Propagator(ABC):
 
     @classmethod
     def _decode_args(cls, args: dict) -> dict:
-        """Inverse of :meth:`_get_args`: turn the JSON values back into constructor arguments."""
-        return dict(args)
-
-    def to_dict(self) -> dict:
         """
-        Return the parameters of the propagator as a JSON-serialisable dictionary.
+        Inverse of :meth:`_get_args`: turn the JSON values back into constructor arguments.
 
-        The dictionary holds the constructor arguments plus the name of the propagator under the key
-        ``'propagator'``, so that :meth:`from_dict` can rebuild an identical propagator.
-
-        Notes
-        -----
-        - Zernike coefficients are stored as a list, complex numbers (e.g. ``e0x``) as ``[real, imag]`` pairs,
-          and the integrator of the spherical propagators by name.
-        - Tensors that cannot be written to JSON (a custom ``special_phase_mask`` or a ``custom_field``) are not
-          stored; a warning is issued.
-
+        Files written by versions <= 0.1.0 are accepted: the derived values they contain are dropped.
         """
-        return {'propagator': self.get_name(), **self._get_args()}
-
-    @classmethod
-    def from_dict(cls, parameters: dict) -> 'Propagator':
-        """
-        Build a propagator from a dictionary produced by :meth:`to_dict` (or :meth:`save_parameters`).
-
-        Called on the abstract base class, the propagator type is taken from the ``'propagator'`` key; called on
-        a concrete propagator class, that class is used (and the key, if present, must match).
-
-        Parameters
-        ----------
-        parameters : dict
-            Parameters as returned by :meth:`to_dict`. Files written by versions <= 0.1.0 are accepted.
-
-        Returns
-        -------
-        propagator : Propagator
-            A new propagator.
-
-        """
-        parameters = dict(parameters)
-        name = parameters.pop('propagator', None)
+        args = dict(args)
         for key in _DERIVED_KEYS:
-            parameters.pop(key, None)
-        if inspect.isabstract(cls):
-            from . import PROPAGATORS
-            if name is None:
-                raise ValueError("The parameters do not name a propagator: add the 'propagator' key or call "
-                                 "from_dict on a concrete propagator class.")
-            if name not in PROPAGATORS:
-                raise ValueError(f'Unknown propagator {name!r}, choose from {sorted(PROPAGATORS)}.')
-            cls = PROPAGATORS[name]
-        elif name is not None and name != cls.get_name():
-            raise ValueError(f'The parameters describe a {name!r} propagator, not {cls.get_name()!r}.')
-        return cls(**cls._decode_args(parameters))
-
-    @classmethod
-    def load_parameters(cls, json_filepath: str) -> 'Propagator':
-        """
-        Build a propagator from a JSON file written by :meth:`save_parameters`.
-
-        Parameters
-        ----------
-        json_filepath : str
-            Path to the JSON file.
-
-        """
-        with open(json_filepath) as file:
-            return cls.from_dict(json.load(file))
-
-    def save_parameters(self, json_filepath: str):
-        r"""
-        Save the parameters of the propagator in a JSON file (see :meth:`to_dict`).
-
-        Parameters
-        ----------
-        json_filepath : str
-            Path of the JSON file to write.
-
-        """
-        directory = os.path.dirname(json_filepath)
-        if directory:
-            os.makedirs(directory, exist_ok=True)
-        with open(json_filepath, 'w') as file:
-            json.dump(self.to_dict(), file, indent=2)
+            args.pop(key, None)
+        return args

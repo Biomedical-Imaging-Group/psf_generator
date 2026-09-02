@@ -12,7 +12,7 @@ from torch import vmap
 from torch.special import bessel_j0, bessel_j1
 
 from .spherical_propagator import SphericalPropagator
-from .propagator import _decode_complex, _encode_complex
+from ..utils.parameters import decode_complex, encode_complex
 from ..utils.integrate import simpsons_rule
 
 
@@ -104,8 +104,8 @@ class VectorialSphericalPropagator(SphericalPropagator):
 
     def _get_args(self) -> tp.Dict:
         args = super()._get_args()
-        args['e0x'] = _encode_complex(self.e0x)
-        args['e0y'] = _encode_complex(self.e0y)
+        args['e0x'] = encode_complex(self.e0x)
+        args['e0y'] = encode_complex(self.e0y)
         return args
 
     @classmethod
@@ -113,7 +113,7 @@ class VectorialSphericalPropagator(SphericalPropagator):
         args = super()._decode_args(args)
         for key in ('e0x', 'e0y'):
             if key in args:
-                args[key] = _decode_complex(args[key])
+                args[key] = decode_complex(args[key])
         return args
 
     def initialize_input_field(self) -> torch.Tensor:
