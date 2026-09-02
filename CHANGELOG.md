@@ -34,6 +34,14 @@ Numerical results differ slightly from 0.1.0 because of the first two items.
 
 ### Fixed
 
+- `save_image` wrote TIFF files whose axes tifffile had to guess: a scalar PSF stack of shape
+  `(n_defocus, 1, x, y)` was refused with "not enough samples for RGB", and a vectorial stack
+  `(n_defocus, 3, x, y)` was stored as planar RGB and read back transposed as `(n_defocus, x, y, 3)`. TIFF
+  files are now written and read with an explicit layout, so any array round trips through
+  `save_image` / `load_image` with the same shape, dtype (`complex64` included) and values.
+- `save_image`, `save_as_npy`, `save_stats_as_csv`, `plot_pupil` and `plot_psf` raised
+  `FileNotFoundError: ''` when given a bare filename with no directory part.
+
 - The spherical propagators crashed with "Expected all tensors to be on the same device" on any non-CPU device
   as soon as a correction factor was requested (`apod_factor`, `envelope`, `gibson_lanni` or `cos_factor`):
   the sines and cosines of the polar angle were computed on the CPU. They now run on CUDA and MPS.

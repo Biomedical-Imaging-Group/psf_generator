@@ -7,8 +7,9 @@ A collection of functions to handle loading and saving of data and image.
 
 Notes
 -----
-    `save_image` follows convention (spatial dimensions, channels), i.e. it changes the axes of the input image.
-    For tests, we save images in `.npy` format to avoid this inconvenience.
+    `save_image` writes the array as it is, without reordering its axes: a PSF of shape
+    `(n_defocus, n_channels, n_pix_psf, n_pix_psf)` is stored with that shape and `load_image` reads it back
+    unchanged, dtype (`complex64` included) and values included.
 
 """
 import csv
@@ -17,9 +18,25 @@ import typing as tp
 
 import numpy as np
 import skimage.io as skio
+import tifffile
 import torch
 
 from psf_generator.utils.misc import convert_tensor_to_array
+
+#: Extensions written and read with `tifffile`, which preserves the layout of an arbitrary n-dimensional array.
+_TIFF_EXTENSIONS = ('.tif', '.tiff')
+
+
+def _ensure_parent_directory(filepath: str) -> None:
+    """Create the directory of `filepath`, if the path has one (a bare filename has not)."""
+    directory = os.path.dirname(filepath)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
+
+
+def _is_tiff(filepath: str) -> bool:
+    """Whether `filepath` names a TIFF file."""
+    return filepath.lower().endswith(_TIFF_EXTENSIONS)
 
 
 def load_image(filepath: str):
@@ -34,6 +51,10 @@ def load_image(filepath: str):
     """
     if not os.path.isfile(filepath):
         raise FileNotFoundError(f'{filepath} does not exist')
+    if _is_tiff(filepath):
+        # skimage.io.imread applies a channel heuristic that moves an axis of length 3 or 4 to the end;
+        # tifffile returns the array exactly as it was written by ``save_image``.
+        return tifffile.imread(filepath)
     return skio.imread(filepath)
 
 
@@ -50,12 +71,18 @@ def save_image(filepath: str, image: tp.Union[torch.Tensor, np.ndarray]):
 
     Notes
     -----
-    Scikit-image and tifffile both follow the convention of putting the channel dimension after x and y.
-    The saved tif image thus has dimension (z, x, y, channels) instead of (z, channels, x, y).
+    The array is written as it is: its axes are not reordered and its shape is preserved, so a PSF of shape
+    `(n_defocus, n_channels, n_pix_psf, n_pix_psf)` is stored with that shape and read back unchanged by
+    :func:`load_image`. TIFF files are written with `tifffile` and an explicit ``photometric='minisblack'``
+    layout; without it tifffile guesses the meaning of the axes and either refuses to write a stack with a
+    single channel or stores a three-channel stack as planar RGB, which comes back transposed.
     """
     image = convert_tensor_to_array(image)
-    os.makedirs(os.path.dirname(filepath), exist_ok=True)
-    skio.imsave(filepath, image, check_contrast=False)
+    _ensure_parent_directory(filepath)
+    if _is_tiff(filepath):
+        tifffile.imwrite(filepath, image, photometric='minisblack')
+    else:
+        skio.imsave(filepath, image, check_contrast=False)
 
 
 def save_as_npy(filepath: str, input_data: tp.Union[torch.Tensor, np.ndarray]):
@@ -71,7 +98,7 @@ def save_as_npy(filepath: str, input_data: tp.Union[torch.Tensor, np.ndarray]):
 
     """
     input_data = convert_tensor_to_array(input_data)
-    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    _ensure_parent_directory(filepath)
     np.save(filepath, input_data)
 
 def load_from_npy(filepath: str) -> np.ndarray:
@@ -105,7 +132,7 @@ def save_stats_as_csv(filepath: str, data: list):
         Statistics to be saved.
 
     """
-    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    _ensure_parent_directory(filepath)
     with open(filepath, 'w', newline='') as csv_file:
         writer = csv.writer(csv_file)
         for row in data:

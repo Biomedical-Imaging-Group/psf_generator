@@ -112,8 +112,9 @@ save_as_npy(filepath, data)
 save_image(filepath, data)
 ```
 
-Note that `save_image` will move the _channel_ dimension to the last one, e.g. the saved image of pupil will have shape
-(n_pix_pupil, n_pix_pupil, 3) and psf (n_defocus, n_pix_psf, n_pix_psf, 3).
+Note that `save_image` writes the array as it is, without reordering its axes: the saved image of a vectorial pupil
+keeps the shape (3, n_pix_pupil, n_pix_pupil) and that of a PSF the shape (n_defocus, 3, n_pix_psf, n_pix_psf).
+`load_image` reads it back with the same shape, dtype and values.
 
 The saved data can be conveniently loaded via
 ```python

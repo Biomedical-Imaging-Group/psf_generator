@@ -2,7 +2,6 @@
 A collection of plotting functions.
 
 """
-import os
 import typing as tp
 import warnings
 
@@ -12,6 +11,7 @@ import torch
 
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+from .handle_data import _ensure_parent_directory
 from .misc import convert_tensor_to_array
 
 _FIG_SIZE = 5
@@ -207,7 +207,7 @@ def plot_pupil(
 
     if filepath is not None:
         figure.tight_layout()
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        _ensure_parent_directory(filepath)
         figure.savefig(filepath)
     plt.show()
 
@@ -392,6 +392,6 @@ def plot_psf(
         plt.suptitle(f'{quantity.capitalize()} at three orthogonal planes ({name_of_propagator.capitalize()})', fontsize=_SUP_TITLE_SIZE)
     if filepath is not None:
         figure.tight_layout()
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        _ensure_parent_directory(filepath)
         figure.savefig(filepath)
     plt.show()
