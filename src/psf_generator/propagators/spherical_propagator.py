@@ -6,11 +6,13 @@ The propagator in the case of Spherical coordinates.
 """
 
 import math
+import warnings
 from abc import ABC
 
 import torch
 
 from .propagator import Propagator
+from ..utils import integrate
 from ..utils.integrate import simpsons_rule
 
 
@@ -134,6 +136,24 @@ class SphericalPropagator(Propagator, ABC):
             Correction factor of shape (n_pix_pupil,).
         """
         return self.correction_factor
+
+    def _get_args(self) -> dict:
+        args = super()._get_args()
+        args['cos_factor'] = self.cos_factor
+        args['integrator'] = self.integrator.__name__
+        if self.custom_field is not None:
+            warnings.warn('The custom_field tensor cannot be saved to JSON and is not stored.', stacklevel=3)
+        return args
+
+    @classmethod
+    def _decode_args(cls, args: dict) -> dict:
+        args = super()._decode_args(args)
+        integrator = args.get('integrator')
+        if isinstance(integrator, str):
+            if integrator not in ('riemann_rule', 'trapezoid_rule', 'simpsons_rule'):
+                raise ValueError(f'Unknown integrator {integrator!r}.')
+            args['integrator'] = getattr(integrate, integrator)
+        return args
 
     def get_pupil(self):
         """Get the pupil function with all corrections applied."""

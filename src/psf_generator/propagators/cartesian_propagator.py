@@ -6,6 +6,7 @@ The propagator in the case of Cartesian coordinates.
 """
 
 import math
+import warnings
 from abc import ABC
 
 import torch
@@ -150,6 +151,19 @@ class CartesianPropagator(Propagator, ABC):
             Correction factor of shape (1, 1, n_pix_pupil, n_pix_pupil).
         """
         return self.correction_factor
+
+    def _get_args(self) -> dict:
+        args = super()._get_args()
+        args['sz_correction'] = self.sz_correction
+        special_phase_mask = self.special_phase_mask
+        if isinstance(special_phase_mask, torch.Tensor):
+            warnings.warn('A custom special_phase_mask tensor cannot be saved to JSON; it is stored as None.',
+                          stacklevel=3)
+            special_phase_mask = None
+        args['special_phase_mask'] = special_phase_mask
+        if self.custom_field is not None:
+            warnings.warn('The custom_field tensor cannot be saved to JSON and is not stored.', stacklevel=3)
+        return args
 
     def compute_focus_field(self):
         """Compute the electric field at the focal plane."""

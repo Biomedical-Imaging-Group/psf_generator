@@ -12,6 +12,7 @@ from torch import vmap
 from torch.special import bessel_j0, bessel_j1
 
 from .spherical_propagator import SphericalPropagator
+from .propagator import _decode_complex, _encode_complex
 from ..utils.integrate import simpsons_rule
 
 
@@ -64,6 +65,7 @@ class VectorialSphericalPropagator(SphericalPropagator):
 
     def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
                  zernike_coefficients=None,
+                 custom_field=None,
                  e0x=1.0, e0y=0.0,
                  wavelength=632, na=1.3, pix_size=10,
                  defocus_step=0, n_defocus=1,
@@ -74,6 +76,7 @@ class VectorialSphericalPropagator(SphericalPropagator):
                  integrator=simpsons_rule):
         super().__init__(n_pix_pupil=n_pix_pupil, n_pix_psf=n_pix_psf, device=device,
                          zernike_coefficients=zernike_coefficients,
+                         custom_field=custom_field,
                          wavelength=wavelength, na=na, pix_size=pix_size,
                          defocus_step=defocus_step, n_defocus=n_defocus,
                          apod_factor=apod_factor, envelope=envelope, cos_factor=cos_factor,
@@ -101,8 +104,16 @@ class VectorialSphericalPropagator(SphericalPropagator):
 
     def _get_args(self) -> tp.Dict:
         args = super()._get_args()
-        args['e0x'] = str(self.e0x)
-        args['e0y'] = str(self.e0y)
+        args['e0x'] = _encode_complex(self.e0x)
+        args['e0y'] = _encode_complex(self.e0y)
+        return args
+
+    @classmethod
+    def _decode_args(cls, args: dict) -> dict:
+        args = super()._decode_args(args)
+        for key in ('e0x', 'e0y'):
+            if key in args:
+                args[key] = _decode_complex(args[key])
         return args
 
     def initialize_input_field(self) -> torch.Tensor:

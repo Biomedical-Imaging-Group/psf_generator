@@ -24,10 +24,20 @@ Numerical results differ slightly from 0.1.0 because of the first two items.
 - `Propagator.x` and `Propagator.z`: physical lateral and axial coordinates (nm) of the PSF grid.
 - `zernike_basis`, `zernike_polynomial`, `osa_index_to_nl`, `nl_to_osa_index` in `psf_generator.utils.zernike`;
   `create_zernike_aberrations` accepts a precomputed `basis`.
+- `Propagator.to_dict()`, `Propagator.from_dict()` and `Propagator.load_parameters()`: a propagator can be rebuilt
+  from its saved parameters (`save_parameters` writes the same dictionary). Called on the base class, the type is
+  taken from the new `'propagator'` key; `psf_generator.propagators.PROPAGATORS` maps names to classes. Files
+  written by 0.1.0 are still accepted.
 
 ### Fixed
 
 - `create_zernike_aberrations` with a single coefficient returned an array of the wrong shape.
+- `VectorialCartesianPropagator` accepts `sz_correction` and `custom_field`, and `VectorialSphericalPropagator`
+  accepts `custom_field`, like their scalar counterparts.
+
+- `save_parameters` no longer writes the derived values `refractive_index` and `t_i`, writes complex numbers as
+  `[real, imag]` pairs instead of strings, and also stores `n_i0`, `sz_correction`, `special_phase_mask`
+  (Cartesian), `cos_factor` and `integrator` (spherical).
 
 ### Removed
 

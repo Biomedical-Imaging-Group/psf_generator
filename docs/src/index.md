@@ -97,8 +97,13 @@ for further analysis:
 ```python
 from psf_generator.utils.handle_data import save_as_npy, save_image, load_from_npy, load_image
 
-# save the parameters as a json file
+# save the parameters as a json file ...
 my_propagator.save_parameters(json_filepath)
+# ... and rebuild an identical propagator later, with or without knowing its type
+same_propagator = VectorialCartesianPropagator.load_parameters(json_filepath)
+from psf_generator.propagators import Propagator
+same_propagator = Propagator.load_parameters(json_filepath)
+# the same round trip is available in memory with to_dict() / from_dict()
 
 data = pupil
 # save as .npy

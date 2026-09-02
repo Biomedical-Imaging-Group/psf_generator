@@ -9,6 +9,7 @@ import typing as tp
 import torch
 
 from .cartesian_propagator import CartesianPropagator
+from .propagator import _decode_complex, _encode_complex
 from ..utils.zernike import create_pupil_mesh
 
 
@@ -58,19 +59,21 @@ class VectorialCartesianPropagator(CartesianPropagator):
     def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
                  zernike_coefficients=None,
                  special_phase_mask=None,
+                 custom_field=None,
                  e0x=1.0, e0y=0.0,
                  wavelength=632, na=1.3, pix_size=10,
                  defocus_step=0, n_defocus=1,
-                 apod_factor=False, envelope=None,
+                 sz_correction=True, apod_factor=False, envelope=None,
                  gibson_lanni=False, z_p=1e3, n_s=1.3,
                  n_g=1.5, n_g0=1.5, t_g=170e3, t_g0=170e3,
                  n_i=1.5, n_i0=1.5, t_i0=100e3):
         super().__init__(n_pix_pupil=n_pix_pupil, n_pix_psf=n_pix_psf, device=device,
                          zernike_coefficients=zernike_coefficients,
                          special_phase_mask=special_phase_mask,
+                         custom_field=custom_field,
                          wavelength=wavelength, na=na, pix_size=pix_size,
                          defocus_step=defocus_step, n_defocus=n_defocus,
-                         apod_factor=apod_factor, envelope=envelope,
+                         sz_correction=sz_correction, apod_factor=apod_factor, envelope=envelope,
                          gibson_lanni=gibson_lanni, z_p=z_p, n_s=n_s,
                          n_g=n_g, n_g0=n_g0, t_g=t_g, t_g0=t_g0,
                          n_i=n_i, n_i0=n_i0, t_i0=t_i0)
@@ -86,8 +89,16 @@ class VectorialCartesianPropagator(CartesianPropagator):
 
     def _get_args(self) -> tp.Dict:
         args = super()._get_args()
-        args['e0x'] = str(self.e0x)
-        args['e0y'] = str(self.e0y)
+        args['e0x'] = _encode_complex(self.e0x)
+        args['e0y'] = _encode_complex(self.e0y)
+        return args
+
+    @classmethod
+    def _decode_args(cls, args: dict) -> dict:
+        args = super()._decode_args(args)
+        for key in ('e0x', 'e0y'):
+            if key in args:
+                args[key] = _decode_complex(args[key])
         return args
 
     def initialize_input_field(self) -> torch.Tensor:
