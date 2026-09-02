@@ -11,6 +11,7 @@ from abc import ABC, abstractmethod
 import torch
 
 from ..utils.misc import convert_tensor_to_array
+from ..utils.zernike import create_zernike_aberrations, zernike_basis
 
 
 class Propagator(ABC):
@@ -120,6 +121,10 @@ class Propagator(ABC):
         self.n_defocus = n_defocus
         self.defocus_min = -defocus_step * n_defocus // 2
         self.defocus_max = defocus_step * n_defocus // 2
+        # Zernike basis (cached per number of coefficients) and the resulting phase aberration; both are
+        # computed by the subclasses once the pupil geometry is known.
+        self._zernike_basis = None
+        self._zernike_aberrations = None
         self.apod_factor = apod_factor
         self.envelope = envelope
         self.gibson_lanni = gibson_lanni
@@ -159,14 +164,27 @@ class Propagator(ABC):
         """Compute the output field of the propagator at focal plane."""
         raise NotImplementedError
 
+    #: Mesh on which the Zernike polynomials are evaluated ('cartesian' or 'spherical'), set by the subclasses.
+    _zernike_mesh_type: str = 'cartesian'
+
     def update_zernike_coefficients(self, zernike_coefficients):
         """Update Zernike coefficients without reinitializing propagator."""
         if not isinstance(zernike_coefficients, torch.Tensor):
             zernike_coefficients = torch.tensor(zernike_coefficients)
         self.zernike_coefficients = zernike_coefficients
-        # Recompute Zernike aberrations if method exists
-        if hasattr(self, '_compute_zernike_aberrations'):
-            self._compute_zernike_aberrations()
+        self._compute_zernike_aberrations()
+
+    def _compute_zernike_aberrations(self):
+        """(Re)compute the Zernike phase aberration of the pupil from ``self.zernike_coefficients``.
+
+        The Zernike basis is built once for the current number of coefficients and cached on the device,
+        so that updating the coefficients (e.g. inside an optimization loop) only costs a weighted sum.
+        """
+        n_modes = len(self.zernike_coefficients)
+        if self._zernike_basis is None or self._zernike_basis.shape[0] != n_modes:
+            self._zernike_basis = zernike_basis(n_modes, self.n_pix_pupil, self._zernike_mesh_type).to(self.device)
+        self._zernike_aberrations = create_zernike_aberrations(
+            self.zernike_coefficients, self.n_pix_pupil, self._zernike_mesh_type, basis=self._zernike_basis)
 
     def compute_optical_path(self, sin_t: torch.Tensor) -> torch.Tensor:
         r"""Compute the optical path following Eq. (3.45) in [1]_.

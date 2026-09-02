@@ -1,15 +1,52 @@
 # Copyright Biomedical Imaging Group, EPFL 2025
 
-"""
-A collection of functions related to Zernike polynomials.
+r"""
+Zernike polynomials and special phase masks for the pupil function.
+
+Zernike polynomials are identified by the OSA/ANSI single index
+
+.. math:: j = \frac{n (n + 2) + l}{2},
+
+where :math:`n \geq 0` is the radial order and :math:`l \in \{-n, -n + 2, \ldots, n\}` the azimuthal frequency
+(:math:`l < 0` for the :math:`\sin` modes and :math:`l \geq 0` for the :math:`\cos` modes). The first modes are
+
+===  ===  ===  ==============================
+  j    n    l  name
+===  ===  ===  ==============================
+  0    0    0  piston
+  1    1   -1  vertical tilt
+  2    1    1  horizontal tilt
+  3    2   -2  oblique astigmatism
+  4    2    0  defocus
+  5    2    2  vertical astigmatism
+  6    3   -3  vertical trefoil
+  7    3   -1  vertical coma
+  8    3    1  horizontal coma
+  9    3    3  oblique trefoil
+ 10    4   -4  oblique quadrafoil
+ 11    4   -2  oblique secondary astigmatism
+ 12    4    0  primary spherical
+===  ===  ===  ==============================
+
+The polynomials are evaluated on the unit disk :math:`\rho \leq 1` (zero outside) and are **not** normalized:
+every mode has unit peak amplitude, so a Zernike coefficient is the peak phase of that mode in radians.
 
 """
+import math
+import typing as tp
 import warnings
 
-import numpy as np
 import torch
-from scipy.special import binom
-from zernikepy import zernike_polynomials
+
+__all__ = [
+    'create_pupil_mesh',
+    'osa_index_to_nl',
+    'nl_to_osa_index',
+    'zernike_polynomial',
+    'zernike_basis',
+    'create_zernike_aberrations',
+    'create_special_pupil',
+]
 
 
 def create_pupil_mesh(n_pixels: int) -> tuple[torch.Tensor, ...]:
@@ -33,120 +70,192 @@ def create_pupil_mesh(n_pixels: int) -> tuple[torch.Tensor, ...]:
     return kx, ky
 
 
-def zernike_nl(n: int, l: int, rho: torch.float, phi: float, radius: float = 1) -> torch.Tensor:
-    """
-    Compute the Zernike polynomial of order n and m in the polar coordinates
+def osa_index_to_nl(index: int) -> tuple[int, int]:
+    r"""
+    Convert the OSA/ANSI single index :math:`j` of a Zernike polynomial to its :math:`(n, l)` pair.
 
-    Parameters
-    ----------
-    n : int
-        Index `n` in the definition on wikipedia, positive integer.
-    l : int
-        :math:`|l| = m`, `m` is the index m in the definition on wikipedia. `l` can be positive or negative.
-    rho : torch.Float
-        Radial distance.
-    phi : float
-        Azimuthal angle.
-    radius : float
-        Radius of the disk on which the Zernike polynomial is defined, default is 1.
-
-    Returns
-    -------
-    Z: torch.Tensor
-        Zernike polynomial Z(rho, phi) evaluated at `rho` and `phi` given indices `n` and `l`.
-
-    """
-    m = abs(l)
-    R = 0
-    for k in np.arange(0, (n - m) / 2 + 1):
-        R = R + (-1) ** k * binom(n - k, k) * binom(n - 2 * k, (n - m) / 2 - k) * (rho / radius) ** (n - 2 * k)
-
-    # radial part
-    Z = torch.where(rho <= radius, R, 0)
-
-    # angular part
-    Z *= np.cos(m * phi) if l >= 0 else np.sin(m * phi)
-    return Z
-
-
-def index_to_nl(index: int) -> tuple[int, int]:
-    """
-    Find the [n, l]-pair given OSA index l for Zernike polynomials.
-
-    The OSA index 'j' is defined as :math:`j = (n(n + 2) + l) / 2`.
+    The index is defined as :math:`j = (n(n + 2) + l) / 2`; the radial order :math:`n` is the largest integer
+    with :math:`n(n + 1) / 2 \leq j`, and :math:`l = 2j - n(n + 2)`.
 
     Parameters
     ----------
     index : int
-        OSA index j.
+        OSA index :math:`j \geq 0`.
 
     Returns
     -------
-    (n, - n + 2 * l) : Tuple[int, int]
-        Corresponding (n, l)-pair.
+    (n, l) : Tuple[int, int]
+        Radial order and azimuthal frequency.
 
     """
-    n = 0
-    while True:
-        for l in range(n + 1):
-            if n * (n + 1) / 2 + l == index:
-                return n, - n + 2 * l
-            elif n * (n + 1) / 2 + l > index:
-                raise ValueError('Index out of bounds.')
-        n += 1
+    if index < 0:
+        raise ValueError(f'The OSA index must be a non-negative integer, not {index}.')
+    n = (math.isqrt(8 * index + 1) - 1) // 2
+    l = 2 * index - n * (n + 2)
+    return n, l
 
 
-def create_zernike_aberrations(zernike_coefficients: torch.Tensor, n_pix_pupil: int, mesh_type: str) -> torch.Tensor:
-    """
-    Create Zernike aberrations for the pupil function.
-
-    Arbitrary Zernike aberrations can be applied to the Cartesian propagator.
-
-    How it works:
-    - Given the Zernike coefficients as a 1D Tensor of length `n_zernike`, a stack of the first `n_zernike`
-    Zernike polynomials are constructed.
-    - Then, the coefficients and the polynomials are multiplied and summed accordingly to create a phase mask.
-    Finally, we create the complex field to be multiple with the existing pupil function to add this aberration.
-
-    For the Spherical case, only the axis-symmetric Zernike polynomials (i.e. only dependent on the radius `rho` not the
-    angle `phi`), such as _defocus_ and 'primary spherical', can be applied due to the axis-symmetric assumption of the
-    spherical propagator. See `Spherical_propagators.py` for details.
+def nl_to_osa_index(n: int, l: int) -> int:
+    r"""
+    Convert the :math:`(n, l)` pair of a Zernike polynomial to its OSA/ANSI single index :math:`j = (n(n + 2) + l) / 2`.
 
     Parameters
     ----------
-    zernike_coefficients : torch.Tensor
-        1D Tensor of Zernike coefficients
-    n_pix_pupil : int
-        Number of pixels of the pupil function
-    mesh_type : str
-        Choose 'spherical' or 'cartesian'.
+    n : int
+        Radial order, :math:`n \geq 0`.
+    l : int
+        Azimuthal frequency, :math:`|l| \leq n` and :math:`n - l` even.
 
     Returns
     -------
-    Zernike_aberrations: torch.Tensor
-        Of type torch.complex64.
+    index : int
+        OSA index.
 
     """
-    n_zernike = len(zernike_coefficients)
+    if n < 0 or abs(l) > n or (n - l) % 2:
+        raise ValueError(f'Invalid Zernike indices (n, l) = ({n}, {l}): need n >= 0, |l| <= n and n - l even.')
+    return (n * (n + 2) + l) // 2
+
+
+def zernike_polynomial(n: int, l: int, rho: torch.Tensor, phi: torch.Tensor) -> torch.Tensor:
+    r"""
+    Evaluate the (unnormalized) Zernike polynomial :math:`Z_n^l(\rho, \phi)`.
+
+    .. math::
+
+        Z_n^l(\rho, \phi) = R_n^{|l|}(\rho) \times \begin{cases} \cos(|l| \phi) & l \geq 0 \\ \sin(|l| \phi) & l < 0 \end{cases},
+        \qquad
+        R_n^m(\rho) = \sum_{k=0}^{(n - m)/2} (-1)^k \binom{n - k}{k} \binom{n - 2k}{(n - m)/2 - k} \rho^{n - 2k},
+
+    and :math:`Z_n^l = 0` outside the unit disk :math:`\rho > 1`.
+
+    Parameters
+    ----------
+    n : int
+        Radial order, :math:`n \geq 0`.
+    l : int
+        Azimuthal frequency, :math:`|l| \leq n` and :math:`n - l` even.
+    rho : torch.Tensor
+        Radial coordinate, :math:`\rho \geq 0`.
+    phi : torch.Tensor
+        Azimuthal angle, same shape as `rho`.
+
+    Returns
+    -------
+    Z : torch.Tensor
+        :math:`Z_n^l` evaluated at `(rho, phi)`, same shape and dtype as `rho`.
+
+    """
+    m = abs(l)
+    if n < 0 or m > n or (n - m) % 2:
+        raise ValueError(f'Invalid Zernike indices (n, l) = ({n}, {l}): need n >= 0, |l| <= n and n - l even.')
+    radial = torch.zeros_like(rho)
+    for k in range((n - m) // 2 + 1):
+        coefficient = (-1) ** k * math.comb(n - k, k) * math.comb(n - 2 * k, (n - m) // 2 - k)
+        radial = radial + coefficient * rho ** (n - 2 * k)
+    angular = torch.cos(m * phi) if l >= 0 else torch.sin(m * phi)
+    return torch.where(rho <= 1, radial * angular, torch.zeros_like(radial))
+
+
+def zernike_basis(n_modes: int, n_pix_pupil: int, mesh_type: str = 'cartesian') -> torch.Tensor:
+    r"""
+    Stack the first `n_modes` Zernike polynomials (OSA order) sampled on the pupil.
+
+    Parameters
+    ----------
+    n_modes : int
+        Number of modes, i.e. OSA indices :math:`0, \ldots, n_{\mathrm{modes}} - 1`.
+    n_pix_pupil : int
+        Number of pixels of the pupil function.
+    mesh_type : str
+        'cartesian': modes are sampled on the square grid of :func:`create_pupil_mesh`, giving a tensor of
+        shape `(n_modes, n_pix_pupil, n_pix_pupil)`.
+        'spherical': modes are sampled along the radius :math:`\rho \in [0, 1]` only, giving a tensor of shape
+        `(n_modes, n_pix_pupil)`. The spherical propagators assume an axisymmetric pupil, so the modes with
+        :math:`l \neq 0` are identically zero on this mesh.
+
+    Returns
+    -------
+    basis : torch.Tensor
+        Zernike modes of dtype `torch.float32`.
+
+    """
+    if n_modes < 1:
+        raise ValueError(f'At least one Zernike mode is required, got n_modes={n_modes}.')
     if mesh_type == 'cartesian':
-        zernike_basis = zernike_polynomials(mode=n_zernike-1, size=n_pix_pupil, select='all')
-        zernike_coefficients = zernike_coefficients.reshape(1, 1, n_zernike)
-        zernike_phase = torch.sum(zernike_coefficients * torch.from_numpy(zernike_basis), dim=2)
+        kx, ky = create_pupil_mesh(n_pixels=n_pix_pupil)
+        kx, ky = kx.to(torch.float64), ky.to(torch.float64)
+        rho = torch.sqrt(kx ** 2 + ky ** 2)
+        phi = torch.atan2(ky, kx)
     elif mesh_type == 'spherical':
-        rho = torch.linspace(0, 1, n_pix_pupil)
-        phi = 0
-        zernike_phase = torch.zeros(n_pix_pupil)
-        for i in range(n_zernike):
-            n, l = index_to_nl(index=i)
-            curr_coefficient = zernike_coefficients[i]
-            if l != 0 and curr_coefficient != 0:
-                warnings.warn("Warning: Zernike polynomials that are not axis-symmetric \
-                                are not supported in spherical coordinates!")
-            elif l == 0:
-                zernike_phase += curr_coefficient * zernike_nl(n=n, l=l, rho=rho, phi=phi)
+        rho = torch.linspace(0, 1, n_pix_pupil, dtype=torch.float64)
+        phi = torch.zeros_like(rho)
     else:
         raise ValueError(f"Invalid mesh type {mesh_type}, choose 'spherical' or 'cartesian'.")
 
+    modes = []
+    for index in range(n_modes):
+        n, l = osa_index_to_nl(index)
+        if mesh_type == 'spherical' and l != 0:
+            modes.append(torch.zeros_like(rho))
+        else:
+            modes.append(zernike_polynomial(n, l, rho, phi))
+    return torch.stack(modes).to(torch.float32)
+
+
+def _warn_if_not_axisymmetric(zernike_coefficients: torch.Tensor) -> None:
+    """Warn about non-zero coefficients of modes that the spherical mesh cannot represent."""
+    ignored = [index for index, coefficient in enumerate(zernike_coefficients.detach().cpu().tolist())
+               if coefficient != 0 and osa_index_to_nl(index)[1] != 0]
+    if ignored:
+        warnings.warn(f'Zernike modes {ignored} are not axisymmetric and are ignored in spherical coordinates; '
+                      f'use a Cartesian propagator to apply them.', stacklevel=3)
+
+
+def create_zernike_aberrations(
+        zernike_coefficients: tp.Union[torch.Tensor, tp.Sequence[float]],
+        n_pix_pupil: int,
+        mesh_type: str,
+        basis: tp.Optional[torch.Tensor] = None,
+) -> torch.Tensor:
+    r"""
+    Create the complex phase aberration :math:`\exp(\mathrm{i} \sum_j c_j Z_j)` to multiply the pupil with.
+
+    Parameters
+    ----------
+    zernike_coefficients : torch.Tensor or sequence of floats
+        Coefficients :math:`c_j` (peak phase in radians) of the first modes in OSA order. Gradients with respect
+        to a tensor of coefficients are propagated.
+    n_pix_pupil : int
+        Number of pixels of the pupil function.
+    mesh_type : str
+        Choose 'spherical' or 'cartesian', see :func:`zernike_basis`.
+    basis : torch.Tensor, optional
+        Precomputed output of ``zernike_basis(len(zernike_coefficients), n_pix_pupil, mesh_type)``, possibly on
+        another device. Pass it to avoid rebuilding the basis when only the coefficients change.
+
+    Returns
+    -------
+    zernike_aberrations : torch.Tensor
+        Of dtype `torch.complex64`, of shape `(n_pix_pupil, n_pix_pupil)` for the Cartesian mesh and
+        `(n_pix_pupil,)` for the spherical mesh, on the device of `basis` (CPU if not given).
+
+    """
+    if not isinstance(zernike_coefficients, torch.Tensor):
+        zernike_coefficients = torch.tensor(zernike_coefficients)
+    zernike_coefficients = zernike_coefficients.reshape(-1)
+    n_modes = zernike_coefficients.shape[0]
+
+    if basis is None:
+        basis = zernike_basis(n_modes, n_pix_pupil, mesh_type)
+    elif basis.shape[0] != n_modes or basis.shape[-1] != n_pix_pupil:
+        raise ValueError(f'The basis of shape {tuple(basis.shape)} does not match {n_modes} coefficients '
+                         f'and a pupil of {n_pix_pupil} pixels.')
+    if mesh_type == 'spherical':
+        _warn_if_not_axisymmetric(zernike_coefficients)
+
+    coefficients = zernike_coefficients.to(basis.device).reshape(-1, *([1] * (basis.ndim - 1)))
+    zernike_phase = torch.sum(coefficients * basis, dim=0)
     return torch.exp(1j * zernike_phase).to(torch.complex64)
 
 

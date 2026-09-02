@@ -12,7 +12,6 @@ import torch
 
 from .propagator import Propagator
 from ..utils.integrate import simpsons_rule
-from ..utils.zernike import create_zernike_aberrations
 
 
 class SphericalPropagator(Propagator, ABC):
@@ -33,6 +32,8 @@ class SphericalPropagator(Propagator, ABC):
       .. math:: \mathbf{e}_{\infty}(\theta, \phi) = \mathbf{e}_{\infty}(\theta).
 
     """
+
+    _zernike_mesh_type = 'spherical'
 
     def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
                  zernike_coefficients=None,
@@ -104,7 +105,6 @@ class SphericalPropagator(Propagator, ABC):
         self.integrator = integrator
 
         # Precompute Zernike aberrations
-        self._zernike_aberrations = None
         self._compute_zernike_aberrations()
 
     def update_custom_field(self, custom_field):
@@ -135,12 +135,6 @@ class SphericalPropagator(Propagator, ABC):
             Correction factor of shape (n_pix_pupil,).
         """
         return self.correction_factor
-
-    def _compute_zernike_aberrations(self):
-        """Compute Zernike aberrations."""
-        self._zernike_aberrations = create_zernike_aberrations(
-            self.zernike_coefficients, self.n_pix_pupil, mesh_type='spherical'
-        ).to(self.device)
 
     def get_pupil(self):
         """Get the pupil function with all corrections applied."""

@@ -12,7 +12,7 @@ import torch
 
 from .propagator import Propagator
 from ..utils.czt import custom_ifft2
-from ..utils.zernike import create_special_pupil, create_zernike_aberrations
+from ..utils.zernike import create_special_pupil
 
 
 class CartesianPropagator(Propagator, ABC):
@@ -28,6 +28,8 @@ class CartesianPropagator(Propagator, ABC):
     Set it to `False` to ignore the correction factor, to obtain low-NA analytic PSFs 
     such as the Airy disk.
     """
+
+    _zernike_mesh_type = 'cartesian'
 
     def __init__(self, n_pix_pupil=128, n_pix_psf=128, device='cpu',
                  zernike_coefficients=None,
@@ -107,14 +109,7 @@ class CartesianPropagator(Propagator, ABC):
         self.defocus_filters = torch.exp(1j * self.k * s_zz * defocus_range * self.refractive_index)
 
         # Precompute Zernike aberrations
-        self._zernike_aberrations = None
         self._compute_zernike_aberrations()
-
-    def _compute_zernike_aberrations(self):
-        """Compute Zernike aberrations."""
-        self._zernike_aberrations = create_zernike_aberrations(
-            self.zernike_coefficients, self.n_pix_pupil, mesh_type='cartesian'
-        ).to(self.device)
 
     def get_pupil(self):
         """Get the pupil function with all corrections applied."""

@@ -6,5 +6,4 @@ scikit-image
 scipy>=1.9.1
 torch>=2.0.0
 tqdm
-zernikepy>=0.0.5
 notebook
