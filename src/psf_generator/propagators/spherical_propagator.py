@@ -53,9 +53,8 @@ class SphericalPropagator(Propagator, ABC):
                          gibson_lanni=gibson_lanni, z_p=z_p, n_s=n_s,
                          n_g=n_g, n_g0=n_g0, t_g=t_g, t_g0=t_g0,
                          n_i=n_i, n_i0=n_i0, t_i0=t_i0)
-        # PSF coordinates
-        x = torch.linspace(-self.fov / 2, self.fov / 2, self.n_pix_psf)
-        self.yy, self.xx = torch.meshgrid(x, x, indexing='ij')
+        # PSF coordinates (pixel-centred grid, see ``Propagator.x``)
+        self.yy, self.xx = torch.meshgrid(self.x, self.x, indexing='ij')
         rr = torch.sqrt(self.xx ** 2 + self.yy ** 2)
         r_unique, rr_indices = torch.unique(rr, return_inverse=True)
         self.rs = r_unique.to(self.device)  # compute minimal number of points
@@ -75,8 +74,8 @@ class SphericalPropagator(Propagator, ABC):
         self.k = 2.0 * math.pi / self.wavelength
         sin_t, cos_t = torch.sin(thetas), torch.cos(thetas)
 
-        defocus_range = torch.linspace(self.defocus_min, self.defocus_max, self.n_defocus)
-        self.defocus_filters = torch.exp(1j * self.k * defocus_range[:,None] * cos_t[None,:] * self.refractive_index).to(self.device)   # [n_defocus, n_thetas]
+        defocus_range = self.z
+        self.defocus_filters = torch.exp(1j * self.k * defocus_range[:, None] * cos_t[None, :] * self.refractive_index).to(self.device)   # [n_defocus, n_thetas]
 
         self.correction_factor = torch.ones(self.n_pix_pupil).to(torch.complex64).to(self.device)
         if self.apod_factor:

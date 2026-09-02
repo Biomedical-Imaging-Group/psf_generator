@@ -69,36 +69,40 @@ def _create_w_phase(start: float, end: float, steps: int, include_end: bool) -> 
     w_phase = (end - start) / points
     return w_phase
 
-def _apply_fftshift(x: torch.Tensor, shape_out: tp.Optional[tp.Tuple], k_start: float,
-                    K: int, N: int, w_phase: float, a_phase: float) -> torch.Tensor:
-    """
-    Apply fftshift on the input image.
+def _apply_fftshift(x: torch.Tensor, shape_out: tp.Tuple, N: int, w_phase: float, a_phase: float) -> torch.Tensor:
+    r"""
+    Chirp Z-transform of an image whose origin is at its centre.
+
+    ``czt2d`` takes the first pixel as the origin, i.e. along each axis it evaluates
+    :math:`X_j = \sum_{m=0}^{N-1} x_m \mathrm{e}^{\mathrm{i} m (w j - a)}`.
+    For an image centred on pixel :math:`(N - 1) / 2` the sum has to run over the centred index
+    :math:`m - (N - 1) / 2` instead, which amounts to multiplying the output by
+    :math:`\mathrm{e}^{-\mathrm{i} (N - 1) (w j - a) / 2}` along each axis.
+    This correction is exact for any sampling range, symmetric or not.
 
     Parameters
     ----------
     x : torch.Tensor
         Input 2D image.
-    shape_out : tuple or None
-        shape of the output image.
-    k_start : float
-        start point of sampling.
-    K : int
-        size of the output image.
+    shape_out : tuple
+        Shape of the output image.
     N : int
-        size of the input image.
+        Size of the input image.
     w_phase : float
-        W factor
+        W factor.
     a_phase : float
         A factor.
 
     Returns
     -------
     output: torch.Tensor
-        fftshifted image.
+        Transform of the centred image.
     """
-    k = torch.arange(K)
+    K = shape_out[0]
+    k = torch.arange(K, dtype=torch.float64)
     kx, ky = torch.meshgrid(k, k, indexing='ij')
-    center_correction = torch.exp(1j * (N - 1) / 2 * (2 * k_start - w_phase * (kx + ky))).to(x.device)
+    center_correction = torch.exp(-1j * (N - 1) / 2 * (w_phase * (kx + ky) - 2 * a_phase))
+    center_correction = center_correction.to(torch.complex64).to(x.device)
     return czt2d(x, shape_out, w_phase, a_phase) * center_correction
 
 
@@ -141,7 +145,7 @@ def custom_fft2(x: torch.Tensor, shape_out=None, k_start: float = 0.0, k_end: fl
     a_phase = k_start
 
     if fftshift_input:
-        result = _apply_fftshift(x, shape_out, k_start, K, N, w_phase, a_phase)
+        result = _apply_fftshift(x, shape_out, N, w_phase, a_phase)
     else:
         result = czt2d(x, shape_out, w_phase, a_phase)
 
@@ -192,11 +196,7 @@ def custom_ifft2(x: torch.Tensor, shape_out=None, k_start: float = 0.0, k_end: f
     a_phase = - k_start
 
     if fftshift_input:
-        result = _apply_fftshift(x, shape_out, k_start, K, N, w_phase, a_phase)
-        angle = 2 * (N - 1) * k_end
-        if not isinstance(angle, torch.Tensor):
-            angle = torch.tensor(angle)
-        result *= torch.exp(1j * angle)
+        result = _apply_fftshift(x, shape_out, N, w_phase, a_phase)
     else:
         result = czt2d(x, shape_out, w_phase, a_phase)
 

@@ -14,6 +14,11 @@ from ..utils.misc import convert_tensor_to_array
 from ..utils.zernike import create_zernike_aberrations, zernike_basis
 
 
+def _centred_grid(n: int, step: float) -> torch.Tensor:
+    """Return the coordinates ``(i - n // 2) * step`` for ``i = 0, ..., n - 1`` (centred on index ``n // 2``)."""
+    return (torch.arange(n, dtype=torch.float32) - n // 2) * step
+
+
 class Propagator(ABC):
     r"""
     Base class propagator.
@@ -33,12 +38,15 @@ class Propagator(ABC):
     na : float, optional
         Numerical aperture. Default value is `1.3`.
     pix_size : float, optional
-        Camera pixel size, in nanometer. Default value is `20`.
+        Camera pixel size, in nanometer. This is the sampling step of the PSF grid: the PSF is evaluated at
+        :math:`x_i = (i - \lfloor n_{\mathrm{pix}}/2 \rfloor)\, \mathrm{pix\_size}` along both lateral axes, so
+        the optical axis goes through pixel ``n_pix_psf // 2`` (see attribute ``x``). Default value is `20`.
     defocus_step : float, optional
-        Step size of the defocus along the optical (z) axis on one side of the focal plane in nanometer.
-        Default value is `0.0`.
+        Distance between consecutive z-slices, in nanometer. The slices are located at
+        :math:`z_i = (i - \lfloor n_{\mathrm{defocus}}/2 \rfloor)\, \mathrm{defocus\_step}`, so slice
+        ``n_defocus // 2`` is the focal plane (see attribute ``z``). Default value is `0.0`.
     n_defocus : int, optional
-        Number of z-stack. Default value is `1`.
+        Number of z-slices. Default value is `1`.
     apod_factor : bool, optional
         Apply apodization factor or not. Default value is `False`.
     envelope : float, optional
@@ -81,6 +89,13 @@ class Propagator(ABC):
     index mismatch between stratified layers of the microscope.
     This aberration is computed by method `self.compute_optical_path`.
 
+    4. x : torch.Tensor of shape `(n_pix_psf,)`,
+    physical lateral coordinates of the PSF grid in nanometer (identical along both lateral axes):
+    ``x[i] = (i - n_pix_psf // 2) * pix_size``.
+
+    5. z : torch.Tensor of shape `(n_defocus,)`,
+    physical axial coordinates of the z-slices in nanometer: ``z[i] = (i - n_defocus // 2) * defocus_step``.
+
     """
 
     def __init__(self,
@@ -119,8 +134,13 @@ class Propagator(ABC):
         self.fov = pix_size * n_pix_psf
         self.defocus_step = defocus_step
         self.n_defocus = n_defocus
-        self.defocus_min = -defocus_step * n_defocus // 2
-        self.defocus_max = defocus_step * n_defocus // 2
+        # Physical coordinates of the PSF grid. Every axis is centred on index n // 2, so the optical
+        # axis (x = y = 0) and the focal plane (z = 0) are sampled exactly, and neighbouring samples are
+        # exactly pix_size (resp. defocus_step) apart.
+        self.x = _centred_grid(n_pix_psf, pix_size)
+        self.z = _centred_grid(n_defocus, defocus_step)
+        self.defocus_min = float(self.z[0])
+        self.defocus_max = float(self.z[-1])
         # Zernike basis (cached per number of coefficients) and the resulting phase aberration; both are
         # computed by the subclasses once the pupil geometry is known.
         self._zernike_basis = None

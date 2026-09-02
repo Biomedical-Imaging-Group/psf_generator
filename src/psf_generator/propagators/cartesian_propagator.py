@@ -72,10 +72,6 @@ class CartesianPropagator(Propagator, ABC):
         self.k = 2 * torch.pi / self.wavelength
         self.s_max = torch.tensor(self.na / self.n_i0)
 
-         # Zoom factor to determine pixel size with custom FFT
-        self.zoom_factor = 2 * self.s_max * self.fov * self.refractive_index / self.wavelength \
-             / (self.n_pix_pupil - 1)
-
         # Coordinates in pupil space s_x, s_y, s_z
         n_pix_pupil = self.n_pix_pupil
         self.s_x = torch.linspace(-1, 1, n_pix_pupil).to(self.device)
@@ -84,11 +80,13 @@ class CartesianPropagator(Propagator, ABC):
         s_zz = torch.sqrt((1 - self.s_max ** 2 * (s_xx ** 2 + s_yy ** 2)
                           ).clamp(min=0.001)).reshape(1, 1, n_pix_pupil, n_pix_pupil)
 
-        # Coordinates in object space
-        total_fft_range = 1.0 / self.ds
-        k_start = -self.zoom_factor * torch.pi
-        k_end = self.zoom_factor * torch.pi
-        self.x = torch.linspace(k_start, k_end, self.n_pix_pupil).to(self.device) / (2.0 * torch.pi) * total_fft_range
+        # Frequency range of the chirp Z transform that maps the pupil onto the PSF grid ``self.x``:
+        # one step ``ds = 2 / (n_pix_pupil - 1)`` in the normalized pupil coordinate advances the phase
+        # ``k * n * s_max * ds * x`` at lateral position ``x``. The transform samples this phase from x[0]
+        # to x[-1] (endpoints included) in ``n_pix_psf`` steps, i.e. exactly at the pixel centres.
+        phase_per_pupil_step = self.k * self.refractive_index * float(self.s_max) * (2.0 / (n_pix_pupil - 1))
+        self.k_start = phase_per_pupil_step * float(self.x[0])
+        self.k_end = phase_per_pupil_step * float(self.x[-1])
 
         # Correction factors
         self.correction_factor = torch.ones(1, 1, n_pix_pupil, n_pix_pupil).to(torch.complex64).to(self.device)
@@ -104,8 +102,7 @@ class CartesianPropagator(Propagator, ABC):
             path = self.compute_optical_path(sin_t)
             self.correction_factor *= torch.exp(1j * self.k * path)
 
-        defocus_range = torch.linspace(self.defocus_min, self.defocus_max, self.n_defocus,
-                                       ).reshape(-1, 1, 1, 1).to(self.device)
+        defocus_range = self.z.reshape(-1, 1, 1, 1).to(self.device)
         self.defocus_filters = torch.exp(1j * self.k * s_zz * defocus_range * self.refractive_index)
 
         # Precompute Zernike aberrations
@@ -156,10 +153,9 @@ class CartesianPropagator(Propagator, ABC):
 
     def compute_focus_field(self):
         """Compute the electric field at the focal plane."""
-        field = custom_ifft2(self.get_pupil()  * self.defocus_filters,
-                              shape_out=(self.n_pix_psf, self.n_pix_psf),
-                              k_start=-self.zoom_factor * torch.pi,
-                              k_end=self.zoom_factor * torch.pi,
-                              norm='forward', fftshift_input=True, include_end=True) * (self.ds * self.s_max) ** 2
+        field = custom_ifft2(self.get_pupil() * self.defocus_filters,
+                             shape_out=(self.n_pix_psf, self.n_pix_psf),
+                             k_start=self.k_start, k_end=self.k_end,
+                             norm='forward', fftshift_input=True, include_end=True) * (self.ds * self.s_max) ** 2
         return field / (2 * math.pi * math.sqrt(self.refractive_index))
 

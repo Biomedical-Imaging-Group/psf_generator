@@ -43,10 +43,9 @@ def benchmark_scalar_accuracy_on_airy_disk(
         'pix_size': pix_size,
     }
 
-    # define ground truth: Airy disk
-    fov = pix_size * n_pix_psf
+    # define ground truth: Airy disk, sampled on the same pixel-centred grid as the propagators (``Propagator.x``)
     airy_disk_function = lambda x: torch.where(x > 1e-6, 2 * bessel_j1(x) / x, 1 - x ** 2 / 8)
-    x = torch.linspace(- fov / 2, fov / 2, n_pix_psf)
+    x = (torch.arange(n_pix_psf) - n_pix_psf // 2) * pix_size
     xx, yy = torch.meshgrid(x, x, indexing='ij')
     rr = torch.sqrt(xx ** 2 + yy ** 2)
     refractive_index = 1.0

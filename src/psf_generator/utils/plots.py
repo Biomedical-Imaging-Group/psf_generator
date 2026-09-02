@@ -270,7 +270,7 @@ def plot_psf(
         if propagator is None:
             raise ValueError('propagator parameter is required for stationary_phase quantity')
         
-        zz = torch.linspace(propagator.defocus_min, propagator.defocus_max, propagator.n_defocus)
+        zz = propagator.z
         correction = torch.exp(- 1j * propagator.k * zz * propagator.refractive_index)
         correction = convert_tensor_to_array(correction)
 
