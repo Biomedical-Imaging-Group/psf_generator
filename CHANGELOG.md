@@ -34,6 +34,11 @@ Numerical results differ slightly from 0.1.0 because of the first two items.
 
 ### Fixed
 
+- The Cartesian propagators raised `ZeroDivisionError` for `n_pix_psf = 1`: the chirp Z transform divided by
+  `n_pix_psf - 1` although a single sample needs no step. A one-pixel PSF now returns the value at the optical
+  axis, i.e. the centre pixel of a larger odd grid.
+- The argument validation rejected NumPy scalars (`np.int64` is not a subclass of `int`), so a size taken from
+  an array or from `np.arange` raised a `ValueError`; any `numbers.Real` is now accepted.
 - `custom_fft2` and `custom_ifft2` silently returned `None` for an unsupported `norm`; they now raise a
   `ValueError`. A non-square requested output warns instead of printing to stdout.
 - `plots.apply_disk_mask` built its grid with `np.linspace(0, n, n)` instead of `np.arange(n)`, so the disk was
@@ -83,6 +88,8 @@ Numerical results differ slightly from 0.1.0 because of the first two items.
 ### Packaging
 
 - The version is single-sourced from `psf_generator.__version__` and shown in the documentation.
+- `tifffile` is declared as an explicit dependency: `handle_data` now uses it directly to read and write TIFF
+  files (it was already installed as a dependency of `scikit-image`).
 
 ## 0.1.0 (2025-06-17)
 

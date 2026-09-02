@@ -1,6 +1,7 @@
 """Tests for saving and restoring propagator parameters (to_dict / from_dict / save_parameters / load_parameters)."""
 import json
 
+import numpy as np
 import pytest
 import torch
 
@@ -136,3 +137,18 @@ def test_valid_edge_case_parameters_are_accepted(make_propagator, propagator_typ
     make_propagator(propagator_type, na=1.5, n_i0=1.5)
     prop = make_propagator(propagator_type, n_pix_pupil=2, n_pix_psf=2, n_defocus=1)
     assert torch.isfinite(prop.compute_focus_field()).all()
+
+
+@pytest.mark.parametrize('propagator_type', ALL_PROPAGATORS)
+def test_numpy_scalars_are_accepted_as_sizes(make_propagator, propagator_type):
+    """Sizes taken from an array (``np.int64`` is not a subclass of ``int``) must not be rejected."""
+    prop = make_propagator(propagator_type, n_pix_pupil=np.int64(33), n_pix_psf=np.int64(32),
+                           n_defocus=np.int64(2), wavelength=np.float32(500), pix_size=np.float64(50),
+                           na=np.float32(1.2))
+    assert torch.isfinite(prop.compute_focus_field()).all()
+
+
+@pytest.mark.parametrize('propagator_type', ALL_PROPAGATORS)
+def test_booleans_are_not_valid_sizes(make_propagator, propagator_type):
+    with pytest.raises(ValueError, match='n_pix_psf'):
+        make_propagator(propagator_type, n_pix_psf=True)

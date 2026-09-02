@@ -6,6 +6,7 @@ The abstract propagator class.
 """
 import inspect
 import json
+import numbers
 import os
 from abc import ABC, abstractmethod
 
@@ -44,8 +45,12 @@ def _validate_device(device) -> None:
 
 
 def _validate_number(name: str, value, minimum, strict: bool = False) -> None:
-    """Raise a :class:`ValueError` unless `value` is a number above `minimum` (excluded if `strict`)."""
-    valid = isinstance(value, (int, float)) and not isinstance(value, bool)
+    """Raise a :class:`ValueError` unless `value` is a number above `minimum` (excluded if `strict`).
+
+    ``numbers.Real`` rather than ``(int, float)``, so that the NumPy scalars a caller may get from an array
+    or from ``np.arange`` (``np.int64`` is not a subclass of ``int``) are accepted; ``bool`` is not a size.
+    """
+    valid = isinstance(value, numbers.Real) and not isinstance(value, bool)
     valid = valid and (value > minimum if strict else value >= minimum)
     if not valid:
         comparison = 'greater than' if strict else 'at least'

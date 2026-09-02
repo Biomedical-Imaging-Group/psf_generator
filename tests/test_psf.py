@@ -241,3 +241,16 @@ def test_cartesian_and_spherical_agree_with_aberrations(make_propagator, cartesi
         torch.tensor(coefficients), spherical.n_pix_pupil, 'spherical', basis=uniform_basis).to(spherical.device)
     on_uniform_mesh = _normalized_in_focus_intensity(spherical.compute_focus_field())
     assert (on_uniform_mesh - reference).abs().max() > 2e-2
+
+
+@pytest.mark.parametrize('propagator_type', [ScalarCartesianPropagator, VectorialCartesianPropagator])
+def test_single_pixel_psf_matches_the_centre_of_a_larger_grid(make_propagator, propagator_type):
+    """``n_pix_psf=1`` samples x = y = 0, the same point as the centre pixel of an odd grid."""
+    n_channels = 3 if propagator_type in VECTORIAL_PROPAGATORS else 1
+    single = make_propagator(propagator_type, n_pix_psf=1).compute_focus_field()
+    assert tuple(single.shape) == (N_DEFOCUS, n_channels, 1, 1)
+
+    n_pix_psf = 33
+    larger = make_propagator(propagator_type, n_pix_psf=n_pix_psf).compute_focus_field()
+    centre = larger[..., n_pix_psf // 2, n_pix_psf // 2][..., None, None]
+    assert (single - centre).abs().max() < 1e-5 * centre.abs().max()

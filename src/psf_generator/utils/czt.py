@@ -73,10 +73,15 @@ def _create_w_phase(start: float, end: float, steps: int, include_end: bool) -> 
     -------
     w_phase : float
         W factor
+
+    Notes
+    -----
+    A single sample with `include_end` is degenerate: it sits at `start`, so the step between samples is zero
+    (there is no second sample to step to) and no division by ``steps - 1 == 0`` takes place.
     """
-    points = steps - 1 if include_end else steps
-    w_phase = (end - start) / points
-    return w_phase
+    if include_end:
+        return 0.0 if steps == 1 else (end - start) / (steps - 1)
+    return (end - start) / steps
 
 def _apply_fftshift(x: torch.Tensor, shape_out: tp.Tuple, N: int, w_phase: float, a_phase: float) -> torch.Tensor:
     r"""
