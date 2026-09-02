@@ -6,6 +6,7 @@ Here you will find the theory of the unifying framework of different PSF models 
 background
 basic
 correction_factors
+imaging
 
 ```
 

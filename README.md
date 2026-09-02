@@ -24,6 +24,27 @@ This results in the following four _propagators_
 For details on the theory, please refer to our paper
 [here](https://doi.org/10.1111/jmi.70045).
 
+## Beyond the focus field: imaging and modalities
+
+The propagators describe the illumination (focusing) path. Two more layers build on them:
+
+- `psf_generator.imaging` computes the image of a radiating dipole through the detection path of the
+  microscope (objective, coverslip and immersion medium, tube lens): `SphericalDipoleImager` (Bessel
+  integrals, fast) and `CartesianDipoleImager` (chirp Z transform, any pupil aberration). The reverse path
+  differs from focusing by its apodization, Jacobian and Fresnel factors, see the documentation.
+- `psf_generator.modalities` combines illumination, sample and detection into the image recorded by a
+  technique: `ISCATMicroscope`, `COBRIMicroscope` and `DarkFieldMicroscope` image a Rayleigh `Particle`
+  interfering with a reference wave (interferometric scattering microscopy). Other modalities (confocal,
+  image scanning microscopy, ...) can be added as subclasses of `Modality`.
+
+```python
+from psf_generator.modalities import ISCATMicroscope, Particle
+
+gold = Particle(radius=15, permittivity=-3.7328 + 2.7725j)   # 30 nm gold at 517.5 nm
+microscope = ISCATMicroscope(gold, wavelength=517.5, na=1.3, n_s=1.33, z_focus=1000, pix_size=40, n_pix_psf=101)
+contrast = microscope.compute_contrast(positions=[(0, 0, z) for z in range(0, 2001, 50)])  # (41, 101, 101) iPSF
+```
+
 # Documentation
 Documentation can be found here: https://psf-generator.readthedocs.io/
 

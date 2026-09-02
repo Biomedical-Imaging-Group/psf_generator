@@ -124,6 +124,42 @@ load_from_npy(filepath)
 load_image(filepath)
 ```
 
+## Imaging a dipole and simulating a modality
+
+The propagators describe the illumination path (a pupil function focused into the sample). The *dipole imagers*
+of `psf_generator.imaging` describe the reverse, detection path: the image of a dipole radiating at any position
+in the sample, through the coverslip and the immersion medium (see the theory section "Imaging a dipole"). They
+take the same optical parameters as the propagators, plus the axial position `z_focus` of the focal plane, and
+return the image field of shape (n_positions, 3, n_pix_psf, n_pix_psf) for a batch of dipole positions:
+
+```python
+from psf_generator.imaging import SphericalDipoleImager
+
+imager = SphericalDipoleImager(wavelength=520, na=1.4, n_s=1.33, z_focus=500, pix_size=40, n_pix_psf=101)
+field = imager.compute_image(dipole=(1.0, 0.0, 0.0), positions=[(0, 0, 0), (0, 0, 500), (200, -100, 1000)])
+```
+
+A *modality* (`psf_generator.modalities`) combines the illumination, the response of the sample and the
+detection into the image recorded by a microscopy technique. The interferometric scattering family images a
+Rayleigh scatterer interfering with a reference wave:
+
+```python
+from psf_generator.modalities import ISCATMicroscope, Particle
+
+gold = Particle(radius=15, permittivity=-3.7328 + 2.7725j)          # 30 nm gold nanoparticle at 517.5 nm
+microscope = ISCATMicroscope(gold, wavelength=517.5, na=1.3, n_s=1.33, n_g=1.5, n_i=1.5,
+                             z_focus=1000, pix_size=40, n_pix_psf=101, n_pix_pupil=201)
+positions = [(0, 0, z) for z in range(0, 2001, 50)]                  # (x_p, y_p, z_p) in nm, z_p above the coverslip
+image = microscope.compute_image(positions)                           # (41, 101, 101), units of the incident intensity
+contrast = microscope.compute_contrast(positions)                     # (I - I_ref) / I_ref, the iPSF
+reference, scattered = microscope.compute_fields(positions)           # complex fields
+microscope.save_parameters('iscat.json')                              # and Modality.load_parameters('iscat.json')
+```
+
+`COBRIMicroscope` (transmission) and `DarkFieldMicroscope` share the same interface; `attenuation` scales the
+reference wave, `e0x`/`e0y` set the illumination polarization and `imager='cartesian'` switches to the Cartesian
+imager, which accepts any Zernike aberration of the detection path. See `demos/scripts/iscat_demo.py`.
+
 ## Complete demo
 Here is a simple demo to compute the pupil and PSF and visualize the results.
 Check 'demos/' for more examples.

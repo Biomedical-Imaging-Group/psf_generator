@@ -21,6 +21,25 @@ Numerical results differ slightly from 0.1.0 because of the first two items.
 
 ### Added
 
+- `psf_generator.imaging`: the detection path of the microscope. `SphericalDipoleImager` and
+  `CartesianDipoleImager` compute the image of a radiating dipole (a fluorophore, or the dipole induced in a
+  nanoparticle) located anywhere in the sample, through the coverslip and the immersion medium, with the
+  geometric factors of the reverse path (`1/sqrt(cos)` apodization, no `1/s_z` Jacobian, reciprocal Fresnel
+  coefficients, radiation pattern in the sample medium, evanescent components beyond the critical angle) and
+  Zernike aberrations of the detection path; heights and lateral positions are batched. In a homogeneous medium
+  the image equals the apodized focus field of the vectorial propagators.
+- `psf_generator.modalities`: complete image-formation models. `ISCATMicroscope`, `COBRIMicroscope` and
+  `DarkFieldMicroscope` (interferometric scattering, coherent bright-field and dark-field microscopy) image a
+  Rayleigh `Particle` interfering with the reflected or transmitted illumination, with the optical paths of the
+  reference and scattered waves, an optional attenuation of the reference and any illumination polarization;
+  `compute_image`, `compute_contrast` (the iPSF) and `compute_fields`. `Modality` is the base class for further
+  techniques (confocal, image scanning microscopy).
+- `psf_generator.utils.parameters.Parametrized`: the JSON round trip (`to_dict`, `from_dict`,
+  `save_parameters`, `load_parameters`) shared by the propagators, the imagers (`IMAGERS` registry, key
+  `'imager'`) and the modalities (`MODALITIES` registry, key `'modality'`). The format written by the
+  propagators is unchanged.
+- Theory page "Imaging a dipole: the detection path" in the documentation and the demo script
+  `demos/scripts/iscat_demo.py`.
 - The propagators validate their arguments and raise a `ValueError` with a clear message for an unknown
   `device`, `n_pix_pupil < 2`, `n_pix_psf < 1`, `n_defocus < 1`, a non-positive `wavelength`, `pix_size` or
   `na`, and `na > n_i0` (which used to produce NaNs or a meaningless field silently; `na == n_i0` is allowed).
