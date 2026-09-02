@@ -74,8 +74,8 @@ def apply_disk_mask(img):
         warnings.warn(msg)
     # create mask
     mask = np.zeros((lx, ly))
-    i = np.linspace(0, lx, lx)
-    j = np.linspace(0, ly, ly)
+    i = np.arange(lx)
+    j = np.arange(ly)
     ii, jj = np.meshgrid(i, j, indexing='ij')
     disk = (ii - lx // 2) ** 2 + (jj - ly // 2) ** 2 <= (diameter // 2) ** 2
     mask[disk] = 1

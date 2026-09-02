@@ -34,6 +34,16 @@ Numerical results differ slightly from 0.1.0 because of the first two items.
 
 ### Fixed
 
+- `custom_fft2` and `custom_ifft2` silently returned `None` for an unsupported `norm`; they now raise a
+  `ValueError`. A non-square requested output warns instead of printing to stdout.
+- `plots.apply_disk_mask` built its grid with `np.linspace(0, n, n)` instead of `np.arange(n)`, so the disk was
+  stretched by up to one pixel and was not symmetric on odd images.
+- Documentation: `t_g` / `t_g0` are the thickness of the cover slip, not of the sample; the formula for the
+  internal `t_i` (in the `Propagator` docstring and in the theory pages) carried a leading defocus term that
+  the code does not have, since the library applies the defocus through the propagation kernel; the matrix in
+  the `VectorialSphericalPropagator` docstring was garbled; `simpsons_rule` works with any odd number of
+  samples, not only with `2^K + 1`.
+
 - `save_image` wrote TIFF files whose axes tifffile had to guess: a scalar PSF stack of shape
   `(n_defocus, 1, x, y)` was refused with "not enough samples for RGB", and a vectorial stack
   `(n_defocus, 3, x, y)` was stored as planar RGB and read back transposed as `(n_defocus, x, y, 3)`. TIFF

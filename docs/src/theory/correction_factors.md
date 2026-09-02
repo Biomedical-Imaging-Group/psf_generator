@@ -48,12 +48,12 @@ These aberrations can be computed using the following formula expressed in spher
 where $n_s$, $n_i$, $n_g$ are the refractive indices of the sample, immersion medium, and glass respectively, $t_s$, $t_i$, $t_g$ are the thicknesses of the sample, immersion medium, and glass respectively, and their counterparts with stars are the design conditions. 
 
 A particular case proposed in {cite:p}`gibson1991experimental` is commonly encountered: it is difficult in practice to assess the thickness of the immersion medium.
-Since this distance is manually tuned to obtain an optimal focus of a point emitter at depth $t_s$ on the camera, this focusing condition gives the following relation:
+Since this distance is manually tuned to obtain an optimal focus of a point emitter at depth $t_s$ on the camera, this focusing condition (in focus, i.e. at zero defocus) gives the following relation:
 
 ```{math}
     :label: eq:gibson-lanni-t_i
     
-    t_i = t_s + n_i \left( -\frac{t_s}{n_s} - \frac{t_g}{n_g} + \frac{t_g^*}{n_g^*} + \frac{t_i^*}{n_i^*} \right)
+    t_i = n_i \left( -\frac{t_s}{n_s} - \frac{t_g}{n_g} + \frac{t_g^*}{n_g^*} + \frac{t_i^*}{n_i^*} \right)
 ```
 which can be inserted in Eq. [%s](#eq:stratified-layers-general-formula).
 This particular expression has first been derived for the spherical scalar case in {cite:p}`gibson1991experimental` and extended to the spherical vectorial case in {cite:p}`torok1995electromagnetic, torok1997electromagnetic`.

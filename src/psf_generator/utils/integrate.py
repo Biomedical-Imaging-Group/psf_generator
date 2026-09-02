@@ -126,7 +126,8 @@ def simpsons_rule(fs: torch.Tensor, dx: float) -> torch.Tensor:
     Notes
     -----
     - :math:`h = \frac{b - a}{N - 1}`.
-    - Simpson's rule only works correctly with grids of odd sizes (i.e. :math:`N = 2^K + 1`).
+    - Simpson's rule only works correctly with grids of an odd number of samples :math:`N` (any odd :math:`N`
+      will do); an even :math:`N` triggers a warning and loses the high-order accuracy.
 
     References
     ----------

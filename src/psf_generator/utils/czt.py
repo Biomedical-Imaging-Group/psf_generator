@@ -13,9 +13,12 @@ A collection of custom 2D FFT functions.
 __all__ = ['custom_fft2', 'custom_ifft2']
 
 import typing as tp
+import warnings
 
 import torch
 from torch.fft import fft, fft2, ifft, ifft2
+
+_VALID_NORMS = ('ortho', 'forward', 'backward')
 
 
 def _validate_shape(shape_in: tp.Tuple, shape_out: tp.Optional[tp.Tuple]) -> tp.Tuple:
@@ -41,9 +44,15 @@ def _validate_shape(shape_in: tp.Tuple, shape_out: tp.Optional[tp.Tuple]) -> tp.
         shape_out = shape_in
     K, L = shape_out[-2:]
     if K != L:
-        print('Warning: Output of different size in each dimension; enforcing squared output.')
+        warnings.warn('Output of different size in each dimension; enforcing squared output.', stacklevel=3)
         shape_out = (max(K, L), max(K, L))
     return shape_out
+
+
+def _validate_norm(norm: str) -> None:
+    """Raise a :class:`ValueError` if `norm` is not one of the supported normalization modes."""
+    if norm not in _VALID_NORMS:
+        raise ValueError(f'Invalid normalization mode {norm!r}, choose from {_VALID_NORMS}.')
 
 def _create_w_phase(start: float, end: float, steps: int, include_end: bool) -> float:
     """
@@ -125,7 +134,7 @@ def custom_fft2(x: torch.Tensor, shape_out=None, k_start: float = 0.0, k_end: fl
     k_end : float
         End point of sampling on the complex circle. Default is :math:`2\pi`.
     norm : {"ortho", "forward", "backward"}, optional
-        Normalization mode. Default is "ortho".
+        Normalization mode. Default is "ortho". Any other value raises a `ValueError`.
     fftshift_input : bool, optional
         Whether to apply fftshift on the input image. Default is "False".
     include_end : bool, optional
@@ -137,6 +146,7 @@ def custom_fft2(x: torch.Tensor, shape_out=None, k_start: float = 0.0, k_end: fl
         Custom 2D FFT of the input image.
 
     """
+    _validate_norm(norm)
     shape_out = _validate_shape(x.shape[-2:], shape_out)
     K = shape_out[0]
     N = x.shape[-2]
@@ -149,12 +159,11 @@ def custom_fft2(x: torch.Tensor, shape_out=None, k_start: float = 0.0, k_end: fl
     else:
         result = czt2d(x, shape_out, w_phase, a_phase)
 
-    if norm =='ortho':
+    if norm == 'ortho':
         return result / K
-    elif norm == 'forward':
-        return result / K**2
-    elif norm == 'backward':
-        return result
+    if norm == 'forward':
+        return result / K ** 2
+    return result
 
 
 def custom_ifft2(x: torch.Tensor, shape_out=None, k_start: float = 0.0, k_end: float = 2 * torch.pi,
@@ -176,7 +185,7 @@ def custom_ifft2(x: torch.Tensor, shape_out=None, k_start: float = 0.0, k_end: f
     k_end : float
         End point of sampling on the complex circle. Default is :math:`2\pi`.
     norm : {"ortho", "forward", "backward"}, optional
-        Normalization mode. Default is "ortho".
+        Normalization mode. Default is "ortho". Any other value raises a `ValueError`.
     fftshift_input : bool, optional
         Whether to apply fftshift on the input image. Default is "False".
     include_end : bool, optional
@@ -188,6 +197,7 @@ def custom_ifft2(x: torch.Tensor, shape_out=None, k_start: float = 0.0, k_end: f
         Custom 2D inverse FFT of the input image.
 
     """
+    _validate_norm(norm)
     shape_out = _validate_shape(x.shape[-2:], shape_out)
     K = shape_out[0]
     N = x.shape[-2]
@@ -200,12 +210,11 @@ def custom_ifft2(x: torch.Tensor, shape_out=None, k_start: float = 0.0, k_end: f
     else:
         result = czt2d(x, shape_out, w_phase, a_phase)
 
-    if norm =='ortho':
+    if norm == 'ortho':
         return result / K
-    elif norm == 'forward':
+    if norm == 'forward':
         return result
-    elif norm == 'backward':
-        return result / K**2
+    return result / K ** 2
 
 
 def czt1d(x: torch.Tensor, shape_out=None, w_phase=None, a_phase: torch.Tensor = 0.0) -> torch.Tensor:

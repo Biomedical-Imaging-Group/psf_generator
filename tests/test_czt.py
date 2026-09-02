@@ -4,7 +4,7 @@ import math
 import pytest
 import torch
 
-from psf_generator.utils.czt import custom_ifft2
+from psf_generator.utils.czt import custom_fft2, custom_ifft2
 
 
 def _direct_inverse_transform(x, n_out, k_start, k_end, centred):
@@ -49,3 +49,19 @@ def test_zoom_of_uncentred_input_matches_direct_sum(n_in, n_out, k_start, k_end)
                           norm='forward', fftshift_input=False, include_end=True)
     expected = _direct_inverse_transform(x, n_out, k_start, k_end, centred=False)
     torch.testing.assert_close(result.to(torch.complex128), expected, atol=1e-4, rtol=1e-4)
+
+
+@pytest.mark.parametrize('transform', [custom_fft2, custom_ifft2])
+def test_invalid_norm_raises(transform):
+    x = torch.zeros(4, 4, dtype=torch.complex64)
+    with pytest.raises(ValueError, match='normalization mode'):
+        transform(x, norm='unitary')
+    for norm in ('ortho', 'forward', 'backward'):
+        assert transform(x, norm=norm) is not None
+
+
+def test_non_square_output_warns_and_is_squared():
+    x = torch.zeros(4, 4, dtype=torch.complex64)
+    with pytest.warns(UserWarning, match='different size in each dimension'):
+        result = custom_ifft2(x, shape_out=(6, 3))
+    assert result.shape == (6, 6)

@@ -2,6 +2,7 @@
 import os
 
 import matplotlib
+import numpy as np
 import pytest
 import torch
 
@@ -9,7 +10,7 @@ matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt  # noqa: E402
 
-from psf_generator.utils.plots import plot_psf, plot_pupil  # noqa: E402
+from psf_generator.utils.plots import apply_disk_mask, plot_psf, plot_pupil  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
@@ -35,3 +36,13 @@ def test_plots_create_missing_directories(tmp_path):
     filepath = str(tmp_path / 'a' / 'b' / 'psf.png')
     plot_psf(torch.ones(3, 1, 8, 8, dtype=torch.complex64), 'scalar_cartesian', filepath=filepath)
     assert os.path.isfile(filepath)
+
+
+def test_disk_mask_is_symmetric_and_keeps_the_centre():
+    image = np.ones((9, 9))
+    masked = apply_disk_mask(image)
+    assert masked[4, 4] == 1
+    assert np.all(np.isnan(masked[[0, 0, -1, -1], [0, -1, 0, -1]]))  # the four corners
+    kept = ~np.isnan(masked)
+    assert np.array_equal(kept, kept[::-1, :])
+    assert np.array_equal(kept, kept[:, ::-1])

@@ -103,9 +103,9 @@ class Propagator(ABC):
     n_g0 : float, optional
         Design condition of the refractive index of the cover slip. Default value is `1.5`.
     t_g : float, optional
-        Thickness of the sample. Default value is `170e3`.
+        Thickness of the (glass) cover slip. Default value is `170e3`.
     t_g0 : float, optional
-        Design condition of the thickness of the sample. Default value is `170e3`.
+        Design condition of the thickness of the (glass) cover slip. Default value is `170e3`.
     n_i : float, optional
         Refractive index of the immersion medium. Default value is `1.5`.
     n_i0 : float, optional
@@ -118,8 +118,12 @@ class Propagator(ABC):
     Internal parameters:
 
     1. t_i : float,
-    thickness of the immersion medium. It is computed from
-    :math:`t_i = z_p - z + n_i \left( -\frac{z_p}{n_s} - \frac{t_g}{n_g} + \frac{t_g^0}{n_g^0} + \frac{t_i^0}{n_i^0} \right)`.
+    thickness of the immersion medium for which an emitter at depth :math:`z_p` is paraxially in focus. It is
+    computed from
+    :math:`t_i = n_i \left( \frac{t_g^0}{n_g^0} + \frac{t_i^0}{n_i^0} - \frac{t_g}{n_g} - \frac{z_p}{n_s} \right)`,
+    i.e. Eq. (3.56) of Aguet's thesis (https://bigwww.epfl.ch/publications/aguet0903.pdf) with zero defocus:
+    the defocus :math:`z` of the library is applied separately by the propagation kernel, not by moving the
+    objective.
 
     2. refractive_index : float,
     refractive index of the propagation medium. It is equal to :math:`n_s` if gibson_lanni=True, :math:`n_i`, otherwise.

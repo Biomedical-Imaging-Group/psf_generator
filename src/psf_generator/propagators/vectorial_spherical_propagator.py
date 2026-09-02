@@ -26,9 +26,9 @@ class VectorialSphericalPropagator(SphericalPropagator):
             \mathbf{E}(\boldsymbol{\rho}) =
             - \frac{\mathrm{i} fk}{2}
             \begin{bmatrix}
-                {2}^y\sin2\varphi\\
-                - I_{2}^x\sin2\varphi + [I_{0}^y + I_{2}^y\cos2\varphi]\\
-                -2\mathrm{i} I_{1}^x\cos\varphi  - 2\mathrm{i} I_{1}^y\sin\varphi
+                I_{0}^x - I_{2}^x\cos2\varphi - I_{2}^y\sin2\varphi\\
+                I_{0}^y - I_{2}^x\sin2\varphi + I_{2}^y\cos2\varphi\\
+                -2\mathrm{i} \left( I_{1}^x\cos\varphi + I_{1}^y\sin\varphi \right)
             \end{bmatrix},
 
     where
