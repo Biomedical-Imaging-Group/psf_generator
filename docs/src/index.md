@@ -158,7 +158,8 @@ microscope.save_parameters('iscat.json')                              # and Moda
 
 `COBRIMicroscope` (transmission) and `DarkFieldMicroscope` share the same interface; `attenuation` scales the
 reference wave, `e0x`/`e0y` set the illumination polarization and `imager='cartesian'` switches to the Cartesian
-imager, which accepts any Zernike aberration of the detection path. See `demos/scripts/iscat_demo.py`.
+imager, which accepts any Zernike aberration of the detection path. See the notebook
+`demos/notebooks/iscat_microscopy.ipynb` for a guided tour and `demos/scripts/iscat_demo.py` for a script.
 
 ## Complete demo
 Here is a simple demo to compute the pupil and PSF and visualize the results.

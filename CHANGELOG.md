@@ -38,8 +38,8 @@ Numerical results differ slightly from 0.1.0 because of the first two items.
   `save_parameters`, `load_parameters`) shared by the propagators, the imagers (`IMAGERS` registry, key
   `'imager'`) and the modalities (`MODALITIES` registry, key `'modality'`). The format written by the
   propagators is unchanged.
-- Theory page "Imaging a dipole: the detection path" in the documentation and the demo script
-  `demos/scripts/iscat_demo.py`.
+- Theory page "Imaging a dipole: the detection path" in the documentation, the demo script
+  `demos/scripts/iscat_demo.py` and the notebook `demos/notebooks/iscat_microscopy.ipynb`.
 - The propagators validate their arguments and raise a `ValueError` with a clear message for an unknown
   `device`, `n_pix_pupil < 2`, `n_pix_psf < 1`, `n_defocus < 1`, a non-positive `wavelength`, `pix_size` or
   `na`, and `na > n_i0` (which used to produce NaNs or a meaningless field silently; `na == n_i0` is allowed).
